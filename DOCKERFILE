@@ -1,0 +1,16 @@
+FROM alpine:3.20
+
+WORKDIR /app
+
+# Keep build minimal and copy the full project so this container works
+# immediately as a generic starter for any stack.
+COPY . .
+
+RUN adduser -D appuser \
+	&& chown -R appuser:appuser /app
+
+USER appuser
+
+# Default behavior keeps the container running for development.
+# Override CMD or provide another command with docker compose when your app is ready.
+CMD ["sh", "-c", "echo 'Container is ready. Replace CMD with your app start command.'; sleep infinity"]

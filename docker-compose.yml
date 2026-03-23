@@ -1,0 +1,13 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: DOCKERFILE
+    container_name: quan-ly-tai-chinh-app
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true
