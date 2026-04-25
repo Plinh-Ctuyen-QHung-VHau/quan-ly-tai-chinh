@@ -1,6 +1,12 @@
-import { IsOptional, IsEnum, IsUUID, IsDateString, IsString } from 'class-validator';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { TransactionType } from './transaction.dto';
+import {
+  IsOptional,
+  IsEnum,
+  IsUUID,
+  IsDateString,
+  IsString,
+} from "class-validator";
+import { PaginationQueryDto } from "../../common/dto/pagination-query.dto";
+import { TransactionType } from "./transaction.dto";
 
 export class GetTransactionsQueryDto extends PaginationQueryDto {
   @IsOptional()
@@ -25,11 +31,11 @@ export class GetTransactionsQueryDto extends PaginationQueryDto {
 }
 
 export class GetTransactionSummaryQueryDto {
-    @IsOptional()
-    @IsDateString()
-    fromDate?: string;
-  
-    @IsOptional()
-    @IsDateString()
-    toDate?: string;
+  @IsOptional()
+  @IsDateString()
+  fromDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  toDate?: string;
 }

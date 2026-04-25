@@ -1,5 +1,5 @@
-import { IsInt, IsOptional, Min, Max, IsString, IsIn } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsInt, IsOptional, Min, Max, IsString, IsIn } from "class-validator";
+import { Type } from "class-transformer";
 
 export class PaginationQueryDto {
   @IsOptional()
@@ -17,9 +17,9 @@ export class PaginationQueryDto {
 
   @IsOptional()
   @IsString()
-  sortBy: string = 'transaction_date';
+  sortBy: string = "transaction_date";
 
   @IsOptional()
-  @IsIn(['ASC', 'DESC'])
-  sortOrder: 'ASC' | 'DESC' = 'DESC';
+  @IsIn(["ASC", "DESC"])
+  sortOrder: "ASC" | "DESC" = "DESC";
 }

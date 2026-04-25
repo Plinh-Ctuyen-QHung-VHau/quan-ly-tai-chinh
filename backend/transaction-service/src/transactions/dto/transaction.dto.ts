@@ -7,17 +7,17 @@ import {
   IsEnum,
   Min,
   IsUrl,
-} from 'class-validator';
+} from "class-validator";
 
 export enum TransactionType {
-  INCOME = 'income',
-  EXPENSE = 'expense',
+  INCOME = "income",
+  EXPENSE = "expense",
 }
 
 export enum TransactionSource {
-    CAMERA = 'camera',
-    GALLERY = 'gallery',
-    OCR = 'ocr',
+  CAMERA = "camera",
+  GALLERY = "gallery",
+  OCR = "ocr",
 }
 
 export class CreateTransactionDto {
@@ -75,7 +75,7 @@ export class UpdateTransactionDto {
   @IsOptional()
   @IsDateString()
   transactionDate?: string;
-  
+
   @IsOptional()
   @IsString()
   merchantName?: string;

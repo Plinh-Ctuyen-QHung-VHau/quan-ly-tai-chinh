@@ -1,20 +1,47 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool, QueryResult } from 'pg';
-import { PG_CONNECTION } from '../../database/database.module';
-import { CreateTransactionDto, UpdateTransactionDto } from './dto/transaction.dto';
-import { GetTransactionsQueryDto, GetTransactionSummaryQueryDto } from './dto/get-transactions-query.dto';
+import { Injectable, Inject } from "@nestjs/common";
+import { Pool, QueryResult } from "pg";
+import { PG_CONNECTION } from "../../database/database.module";
+import {
+  CreateTransactionDto,
+  UpdateTransactionDto,
+} from "./dto/transaction.dto";
+import {
+  GetTransactionsQueryDto,
+  GetTransactionSummaryQueryDto,
+} from "./dto/get-transactions-query.dto";
 
 @Injectable()
 export class TransactionsRepository {
   constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
 
   async create(userId: string, dto: CreateTransactionDto) {
-    const { type, amount, categoryId, note, transactionDate, source, imageUrl, merchantName, ocrResultId } = dto;
+    const {
+      type,
+      amount,
+      categoryId,
+      note,
+      transactionDate,
+      source,
+      imageUrl,
+      merchantName,
+      ocrResultId,
+    } = dto;
     const result = await this.pool.query(
       `INSERT INTO "transaction".transactions 
         (user_id, type, amount, category_id, note, transaction_date, source, image_url, merchant_name, ocr_result_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [userId, type, amount, categoryId, note, transactionDate, source, imageUrl, merchantName, ocrResultId],
+      [
+        userId,
+        type,
+        amount,
+        categoryId,
+        note,
+        transactionDate,
+        source,
+        imageUrl,
+        merchantName,
+        ocrResultId,
+      ],
     );
     return result.rows[0];
   }
@@ -28,8 +55,18 @@ export class TransactionsRepository {
   }
 
   async findAll(userId: string, queryDto: GetTransactionsQueryDto) {
-    const { type, categoryId, fromDate, toDate, keyword, page, limit, sortBy, sortOrder } = queryDto;
-    
+    const {
+      type,
+      categoryId,
+      fromDate,
+      toDate,
+      keyword,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    } = queryDto;
+
     let query = `SELECT t.*, c.name as category_name, c.icon as category_icon FROM "transaction".transactions t
                  LEFT JOIN "transaction".categories c ON t.category_id = c.id
                  WHERE t.user_id = $1`;
@@ -58,12 +95,17 @@ export class TransactionsRepository {
       paramIndex++;
     }
 
-    const countResult = await this.pool.query(`SELECT COUNT(*) FROM (${query}) as subquery`, params);
+    const countResult = await this.pool.query(
+      `SELECT COUNT(*) FROM (${query}) as subquery`,
+      params,
+    );
     const totalItems = parseInt(countResult.rows[0].count, 10);
 
-    const validSortBy = ['transaction_date', 'amount', 'created_at'];
-    const safeSortBy = validSortBy.includes(sortBy) ? sortBy : 'transaction_date';
-    const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+    const validSortBy = ["transaction_date", "amount", "created_at"];
+    const safeSortBy = validSortBy.includes(sortBy)
+      ? sortBy
+      : "transaction_date";
+    const safeSortOrder = sortOrder === "ASC" ? "ASC" : "DESC";
 
     query += ` ORDER BY t.${safeSortBy} ${safeSortOrder}, t.created_at DESC`;
     query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
@@ -84,7 +126,8 @@ export class TransactionsRepository {
   }
 
   async update(id: string, userId: string, dto: UpdateTransactionDto) {
-    const { type, amount, categoryId, note, transactionDate, merchantName } = dto;
+    const { type, amount, categoryId, note, transactionDate, merchantName } =
+      dto;
     const result = await this.pool.query(
       `UPDATE "transaction".transactions SET
         type = COALESCE($1, type),
@@ -95,7 +138,16 @@ export class TransactionsRepository {
         merchant_name = COALESCE($6, merchant_name),
         updated_at = NOW()
        WHERE id = $7 AND user_id = $8 RETURNING *`,
-      [type, amount, categoryId, note, transactionDate, merchantName, id, userId],
+      [
+        type,
+        amount,
+        categoryId,
+        note,
+        transactionDate,
+        merchantName,
+        id,
+        userId,
+      ],
     );
     return result.rows[0];
   }
@@ -110,7 +162,7 @@ export class TransactionsRepository {
 
   async getHistory(userId: string) {
     const result = await this.pool.query(
-        `SELECT 
+      `SELECT 
             DATE(transaction_date) as date, 
             json_agg(
                 json_build_object(
@@ -129,7 +181,7 @@ export class TransactionsRepository {
          GROUP BY DATE(transaction_date)
          ORDER BY date DESC
          LIMIT 30`, // Limit to last 30 days of transactions for performance
-        [userId]
+      [userId],
     );
     return result.rows;
   }
@@ -147,12 +199,12 @@ export class TransactionsRepository {
     let paramIndex = 2;
 
     if (fromDate) {
-        query += ` AND transaction_date >= $${paramIndex++}`;
-        params.push(fromDate);
+      query += ` AND transaction_date >= $${paramIndex++}`;
+      params.push(fromDate);
     }
     if (toDate) {
-        query += ` AND transaction_date <= $${paramIndex++}`;
-        params.push(toDate);
+      query += ` AND transaction_date <= $${paramIndex++}`;
+      params.push(toDate);
     }
 
     const result = await this.pool.query(query, params);
@@ -160,9 +212,9 @@ export class TransactionsRepository {
     const balance = parseFloat(totalIncome) - parseFloat(totalExpense);
 
     return {
-        totalIncome: parseFloat(totalIncome),
-        totalExpense: parseFloat(totalExpense),
-        balance,
+      totalIncome: parseFloat(totalIncome),
+      totalExpense: parseFloat(totalExpense),
+      balance,
     };
   }
 }

@@ -4,11 +4,11 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
-} from '@nestjs/common';
-import { Response } from 'express';
-import { errorResponse } from '../../../shared/response/errorResponse';
-import { ERROR_CODES } from '../../../shared/errors/errorCodes';
-import { AppError } from '../../../shared/errors/AppError';
+} from "@nestjs/common";
+import { Response } from "express";
+import { errorResponse } from "../../../shared/response/errorResponse";
+import { ERROR_CODES } from "../../../shared/errors/errorCodes";
+import { AppError } from "../../../shared/errors/AppError";
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -17,7 +17,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'An unexpected error occurred';
+    let message = "An unexpected error occurred";
     let code = ERROR_CODES.INTERNAL_SERVER_ERROR;
     let details: any;
 
@@ -33,7 +33,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       code = exception.code;
       details = exception.details;
     } else if (exception instanceof Error) {
-        message = exception.message;
+      message = exception.message;
     }
 
     response.status(status).json(errorResponse(message, code, details));

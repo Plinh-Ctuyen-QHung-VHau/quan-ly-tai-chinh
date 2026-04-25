@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
-import { Pool } from 'pg';
-import { ConfigService } from '@nestjs/config';
+import { Module } from "@nestjs/common";
+import { Pool } from "pg";
+import { ConfigService } from "@nestjs/config";
 
-export const PG_CONNECTION = 'PG_CONNECTION';
+export const PG_CONNECTION = "PG_CONNECTION";
 
 @Module({
   providers: [
@@ -11,9 +11,9 @@ export const PG_CONNECTION = 'PG_CONNECTION';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const pool = new Pool({
-          connectionString: configService.get<string>('database.url'),
+          connectionString: configService.get<string>("database.url"),
         });
-        await pool.query('SELECT NOW()');
+        await pool.query("SELECT NOW()");
         return pool;
       },
     },

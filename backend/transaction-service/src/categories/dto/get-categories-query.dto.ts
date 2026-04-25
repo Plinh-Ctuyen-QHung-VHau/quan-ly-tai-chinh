@@ -1,8 +1,8 @@
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsEnum, IsOptional } from "class-validator";
 
 export enum CategoryType {
-    INCOME = 'income',
-    EXPENSE = 'expense',
+  INCOME = "income",
+  EXPENSE = "expense",
 }
 
 export class GetCategoriesQueryDto {
