@@ -6,7 +6,7 @@ import { TransactionClient } from "../clients/transaction.client";
 import { NotificationsService } from "../notifications/notifications.service";
 import { EventPublisher } from "../events/event.publisher";
 import { AppMetrics } from "../metrics/app.metrics";
-import { AppError } from "../shared/errors/AppError";
+import { AppError } from "@shared/errors/AppError";
 
 @Injectable()
 export class BudgetsService {

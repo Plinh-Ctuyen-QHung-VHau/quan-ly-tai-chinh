@@ -1,9 +1,9 @@
 import { Injectable, Inject, NotFoundException } from "@nestjs/common";
 import { Pool } from "pg";
-import { PG_CONNECTION } from "../../database/database.module";
+import { PG_CONNECTION } from "@app/database/database.module";
 import { UpdateProfileDto, UpdateUserSettingsDto } from "./dto/update-user.dto";
-import { AppError } from "../../../shared/errors/AppError";
-import { ERROR_CODES } from "../../../shared/errors/errorCodes";
+import { AppError } from "@shared/errors/AppError";
+import { ERROR_CODES } from "@shared/errors/errorCodes";
 
 @Injectable()
 export class UsersRepository {

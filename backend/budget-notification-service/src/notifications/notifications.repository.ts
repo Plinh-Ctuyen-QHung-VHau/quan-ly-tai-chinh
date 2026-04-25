@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Pool } from "pg";
-import { DATABASE_POOL } from "../database/database.constants";
+import { PG_CONNECTION } from "../database/database.module";
 import { FindNotificationsDto } from "./dto/find-notifications.dto";
 
 export interface Notification {
@@ -22,7 +22,7 @@ export interface NotificationSettings {
 
 @Injectable()
 export class NotificationsRepository {
-  constructor(@Inject(DATABASE_POOL) private readonly pool: Pool) {}
+  constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
 
   async create(
     notification: Omit<Notification, "id" | "isRead" | "createdAt">,

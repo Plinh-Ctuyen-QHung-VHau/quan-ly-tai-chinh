@@ -7,7 +7,7 @@ import {
 import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
 import { ConfigService } from "@nestjs/config";
-import { ERROR_CODES } from "../../../shared/errors/errorCodes";
+import { ERROR_CODES } from "@shared/errors/errorCodes";
 
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {

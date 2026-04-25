@@ -6,7 +6,7 @@ import {
 import { FindNotificationsDto } from "./dto/find-notifications.dto";
 import { UpdateNotificationSettingsDto } from "./dto/update-notification-settings.dto";
 import { AppMetrics } from "../metrics/app.metrics";
-import { AppError } from "../shared/errors/AppError";
+import { AppError } from "@shared/errors/AppError";
 
 @Injectable()
 export class NotificationsService {

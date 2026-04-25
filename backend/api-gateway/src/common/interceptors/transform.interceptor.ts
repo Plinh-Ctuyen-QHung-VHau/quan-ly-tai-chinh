@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
-import { successResponse } from "../../../shared/response/successResponse";
+import { successResponse } from "@shared/response/successResponse";
 
 export interface Response<T> {
   data: T;

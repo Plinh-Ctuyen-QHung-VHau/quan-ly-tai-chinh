@@ -13,4 +13,10 @@ export const httpRequestDurationHistogram = new Histogram({
   buckets: [0.1, 0.5, 1, 1.5, 2, 5],
 });
 
+export const CommonMetrics = {
+  httpRequestCounter,
+  httpRequestDurationHistogram,
+  register,
+};
+
 export { register };

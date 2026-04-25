@@ -15,8 +15,8 @@ import {
   GetTransactionsQueryDto,
   GetTransactionSummaryQueryDto,
 } from "./dto/get-transactions-query.dto";
-import { AppError } from "../../../shared/errors/AppError";
-import { ERROR_CODES } from "../../../shared/errors/errorCodes";
+import { AppError } from "@shared/errors/AppError";
+import { ERROR_CODES } from "@shared/errors/errorCodes";
 import { TRANSACTION_METRICS } from "../metrics/transaction-metrics";
 
 @Injectable()

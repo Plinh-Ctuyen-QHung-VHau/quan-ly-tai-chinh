@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { UsersRepository } from "./users.repository";
 import { UpdateProfileDto, UpdateUserSettingsDto } from "./dto/update-user.dto";
-import { AppError } from "../../../shared/errors/AppError";
-import { ERROR_CODES } from "../../../shared/errors/errorCodes";
+import { AppError } from "@shared/errors/AppError";
+import { ERROR_CODES } from "@shared/errors/errorCodes";
 
 @Injectable()
 export class UsersService {

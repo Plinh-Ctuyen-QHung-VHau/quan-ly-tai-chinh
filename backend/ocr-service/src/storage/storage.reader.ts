@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { AppError } from "../../shared/errors/AppError";
-import { ERROR_CODES } from "../../shared/errors/errorCodes";
+import { AppError } from "@shared/errors/AppError";
+import { ERROR_CODES } from "@shared/errors/errorCodes";
 
 @Injectable()
 export class StorageReader {

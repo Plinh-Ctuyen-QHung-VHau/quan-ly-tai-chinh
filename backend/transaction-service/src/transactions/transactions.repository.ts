@@ -1,6 +1,6 @@
 import { Injectable, Inject } from "@nestjs/common";
 import { Pool, QueryResult } from "pg";
-import { PG_CONNECTION } from "../../database/database.module";
+import { PG_CONNECTION } from "../database/database.module";
 import {
   CreateTransactionDto,
   UpdateTransactionDto,

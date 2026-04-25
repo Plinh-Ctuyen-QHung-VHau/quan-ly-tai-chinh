@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { HealthModule } from "./health/health.module";
+import { HealthController } from "./health/health.controller";
 import { MetricsModule } from "./metrics/metrics.module";
 import { DatabaseModule } from "./database/database.module";
-import configuration from "./config/configuration";
+import { configModuleOptions } from "./config/configuration";
 import { BudgetsModule } from "./budgets/budgets.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { ClientsModule } from "./clients/clients.module";
@@ -11,19 +11,15 @@ import { EventsModule } from "./events/events.module";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      load: [configuration],
-    }),
-    HealthModule,
-    MetricsModule,
+    ConfigModule.forRoot(configModuleOptions),
     DatabaseModule,
+    MetricsModule,
     BudgetsModule,
     NotificationsModule,
     ClientsModule,
     EventsModule,
   ],
-  controllers: [],
+  controllers: [HealthController],
   providers: [],
 })
 export class AppModule {}

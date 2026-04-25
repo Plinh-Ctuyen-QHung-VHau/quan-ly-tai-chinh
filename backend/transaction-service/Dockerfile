@@ -7,7 +7,7 @@ COPY transaction-service/package*.json ./
 RUN npm install
 
 COPY transaction-service ./
-COPY shared ./shared
+COPY shared ../shared
 
 RUN npm run build
 

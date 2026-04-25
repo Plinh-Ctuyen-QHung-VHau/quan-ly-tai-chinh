@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Counter } from "prom-client";
-import { METRICS_PREFIX } from "./metrics.constants";
+
+const METRICS_PREFIX = "budget_notification_service";
 
 @Injectable()
 export class AppMetrics {

@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger, OnModuleDestroy } from "@nestjs/common";
 import { ConfigType } from "@nestjs/config";
 import { createWorker, Worker } from "tesseract.js";
-import configuration from "../../config/configuration";
-import { AppError } from "../../shared/errors/AppError";
+import { configuration } from "../../config/configuration";
+import { AppError } from "@shared/errors/AppError";
 import { OcrEngineAdapter, OcrResult } from "./ocr-engine.adapter";
 
 @Injectable()

@@ -6,9 +6,9 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { Response } from "express";
-import { errorResponse } from "../../../shared/response/errorResponse";
-import { ERROR_CODES } from "../../../shared/errors/errorCodes";
-import { AppError } from "../../../shared/errors/AppError";
+import { errorResponse } from "@shared/response/errorResponse";
+import { ERROR_CODES } from "@shared/errors/errorCodes";
+import { AppError } from "@shared/errors/AppError";
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {

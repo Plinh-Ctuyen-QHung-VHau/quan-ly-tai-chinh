@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigType } from "@nestjs/config";
 import * as sharp from "sharp";
-import configuration from "../config/configuration";
+import { configuration } from "../config/configuration";
 import { AppMetrics } from "../metrics/app.metrics";
 
 @Injectable()

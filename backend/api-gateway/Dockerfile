@@ -7,7 +7,7 @@ COPY api-gateway/package*.json ./
 RUN npm install
 
 COPY api-gateway ./
-COPY shared ./shared
+COPY shared ../shared
 
 RUN npm run build
 

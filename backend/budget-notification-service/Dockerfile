@@ -7,7 +7,7 @@ COPY budget-notification-service/package*.json ./
 RUN npm install
 
 COPY budget-notification-service ./
-COPY shared ./shared
+COPY shared ../shared
 
 RUN npm run build
 

@@ -6,7 +6,7 @@ import { OcrEngineAdapter } from "./adapters/ocr-engine.adapter";
 import { ScanImageDto } from "./dto/scan-image.dto";
 import { OcrParser } from "./ocr.parser";
 import { OcrRepository } from "./ocr.repository";
-import configuration from "../config/configuration";
+import { configuration } from "../config/configuration";
 import { AppMetrics } from "../metrics/app.metrics";
 import { ImagePreprocessorService } from "./image-preprocessor.service";
 import { race, firstValueFrom, throwError, timer } from "rxjs";

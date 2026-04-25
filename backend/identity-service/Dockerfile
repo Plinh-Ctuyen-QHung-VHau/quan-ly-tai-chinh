@@ -7,7 +7,7 @@ COPY identity-service/package*.json ./
 RUN npm install
 
 COPY identity-service ./
-COPY shared ./shared
+COPY shared ../shared
 
 RUN npm run build
 

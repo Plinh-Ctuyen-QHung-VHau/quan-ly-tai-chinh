@@ -2,10 +2,10 @@ import { Inject, Injectable } from "@nestjs/common";
 import { ConfigType } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import configuration from "../config/configuration";
+import { configuration } from "../config/configuration";
 import { TransactionSummary } from "./transaction-summary.interface";
-import { AppError } from "../shared/errors/AppError";
-import { errorCodes } from "../shared/errors/errorCodes";
+import { AppError } from "@shared/errors/AppError";
+import { ERROR_CODES } from "@shared/errors/errorCodes";
 
 @Injectable()
 export class TransactionClient {

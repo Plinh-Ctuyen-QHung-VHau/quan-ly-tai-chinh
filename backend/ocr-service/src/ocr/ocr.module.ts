@@ -9,7 +9,7 @@ import { OcrParser } from "./ocr.parser";
 import { OcrEngineAdapter } from "./adapters/ocr-engine.adapter";
 import { MockOcrEngineAdapter } from "./adapters/mock-ocr-engine.adapter";
 import { TesseractOcrEngineAdapter } from "./adapters/tesseract-ocr-engine.adapter";
-import configuration from "../config/configuration";
+import { configuration } from "../config/configuration";
 import { ImagePreprocessorService } from "./image-preprocessor.service";
 
 const ocrEngineFactory = {
