@@ -1,0 +1,21 @@
+# Ignore node_modules and local build artifacts
+node_modules
+dist
+
+# Ignore local environment files
+.env
+.env.*
+!.env.example
+!.env.docker.example
+
+# Ignore logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Ignore Docker-related files from the build context
+Dockerfile
+docker-compose*.yml
+.dockerignore

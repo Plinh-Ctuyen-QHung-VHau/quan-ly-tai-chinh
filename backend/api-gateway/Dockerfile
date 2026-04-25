@@ -2,15 +2,17 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY api-gateway/package*.json ./
 
-# Use pnpm if you have pnpm-lock.yaml, otherwise use npm
-# RUN npm install -g pnpm
-# RUN pnpm install --prod
-RUN npm install --omit=dev
+RUN npm install
 
-COPY dist ./dist
+COPY api-gateway ./
+COPY shared ./shared
+
+RUN npm run build
+
+RUN npm prune --omit=dev
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/main.js"]

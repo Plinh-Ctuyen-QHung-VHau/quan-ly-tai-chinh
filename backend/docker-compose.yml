@@ -1,8 +1,8 @@
-version: "3.8"
-
 services:
   api-gateway:
-    build: ./api-gateway
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
     ports:
       - "3000:3000"
     env_file:
@@ -16,7 +16,9 @@ services:
       - budget-notification-service
 
   identity-service:
-    build: ./identity-service
+    build:
+      context: .
+      dockerfile: identity-service/Dockerfile
     ports:
       - "3001:3001"
     env_file:
@@ -25,7 +27,9 @@ services:
       - microservice-network
 
   transaction-service:
-    build: ./transaction-service
+    build:
+      context: .
+      dockerfile: transaction-service/Dockerfile
     ports:
       - "3002:3002"
     env_file:
@@ -34,7 +38,9 @@ services:
       - microservice-network
 
   ocr-service:
-    build: ./ocr-service
+    build:
+      context: .
+      dockerfile: ocr-service/Dockerfile
     ports:
       - "3003:3003"
     env_file:
@@ -43,7 +49,9 @@ services:
       - microservice-network
 
   budget-notification-service:
-    build: ./budget-notification-service
+    build:
+      context: .
+      dockerfile: budget-notification-service/Dockerfile
     ports:
       - "3004:3004"
     env_file:

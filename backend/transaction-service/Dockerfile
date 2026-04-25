@@ -2,11 +2,17 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --omit=dev
+COPY transaction-service/package*.json ./
 
-COPY dist ./dist
+RUN npm install
+
+COPY transaction-service ./
+COPY shared ./shared
+
+RUN npm run build
+
+RUN npm prune --omit=dev
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/main.js"]

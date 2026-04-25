@@ -4,7 +4,7 @@ services:
   # Backend services are defined in backend/docker-compose.yml
   backend:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
     ports:
       - "3000:3000" # API Gateway

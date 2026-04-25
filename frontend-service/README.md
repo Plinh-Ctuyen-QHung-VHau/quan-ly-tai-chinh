@@ -171,3 +171,23 @@ Error response:
 - This is an MVP only.
 - No chatbot, NLP, insights, export reports, multi-currency, or recommendation/forecast features are included.
 - The app is designed to run in Expo Go without custom native code.
+
+## Environment Variables
+
+This project uses environment variables to configure the connection to the Supabase backend and the API server.
+
+Create a `.env` file in the root of the `frontend-service` directory. You can use the `.env.example` file as a template.
+
+```
+EXPO_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+EXPO_PUBLIC_API_BASE_URL=http://localhost:3000
+```
+
+**IMPORTANT**: Because this is an Expo project, all environment variables that need to be accessible in the client-side code **must** be prefixed with `EXPO_PUBLIC_`.
+
+After creating or modifying the `.env` file, you must clear the Expo cache and restart the development server:
+
+```bash
+npx expo start -c
+```
