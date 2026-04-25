@@ -1,13 +1,37 @@
+version: "3.8"
+
 services:
-  app:
+  # Backend services are defined in backend/docker-compose.yml
+  backend:
     build:
-      context: .
-      dockerfile: DOCKERFILE
-    container_name: quan-ly-tai-chinh-app
-    working_dir: /app
-    volumes:
-      - ./:/app
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
-      - "3000:3000"
-    stdin_open: true
-    tty: true
+      - "3000:3000" # API Gateway
+      - "3001:3001" # Identity Service
+      - "3002:3002" # Transaction Service
+      - "3003:3003" # OCR Service
+      - "3004:3004" # Budget & Notification Service
+      - "9090:9090" # Prometheus
+    env_file:
+      - ./backend/api-gateway/.env
+      - ./backend/identity-service/.env
+      - ./backend/transaction-service/.env
+      - ./backend/ocr-service/.env
+      - ./backend/budget-notification-service/.env
+    networks:
+      - app-network
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend-service
+      dockerfile: Dockerfile # Assuming you have a Dockerfile for the frontend
+    ports:
+      - "8081:8081" # Expo Go port
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

@@ -2,75 +2,55 @@ version: "3.8"
 
 services:
   api-gateway:
-    build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
+    build: ./api-gateway
     ports:
       - "3000:3000"
     env_file:
       - ./api-gateway/.env
-    volumes:
-      - ./api-gateway/src:/app/src
+    networks:
+      - microservice-network
     depends_on:
       - identity-service
       - transaction-service
       - ocr-service
       - budget-notification-service
-    networks:
-      - app-network
 
   identity-service:
-    build:
-      context: ./identity-service
-      dockerfile: Dockerfile
+    build: ./identity-service
     ports:
-      - "3001:3000"
+      - "3001:3001"
     env_file:
       - ./identity-service/.env
-    volumes:
-      - ./identity-service/src:/app/src
     networks:
-      - app-network
+      - microservice-network
 
   transaction-service:
-    build:
-      context: ./transaction-service
-      dockerfile: Dockerfile
+    build: ./transaction-service
     ports:
-      - "3002:3000"
+      - "3002:3002"
     env_file:
       - ./transaction-service/.env
-    volumes:
-      - ./transaction-service/src:/app/src
     networks:
-      - app-network
+      - microservice-network
 
   ocr-service:
-    build:
-      context: ./ocr-service
-      dockerfile: Dockerfile
+    build: ./ocr-service
     ports:
-      - "3003:3000"
+      - "3003:3003"
     env_file:
       - ./ocr-service/.env
-    volumes:
-      - ./ocr-service/src:/app/src
     networks:
-      - app-network
+      - microservice-network
 
   budget-notification-service:
-    build:
-      context: ./budget-notification-service
-      dockerfile: Dockerfile
+    build: ./budget-notification-service
     ports:
-      - "3004:3000"
+      - "3004:3004"
     env_file:
       - ./budget-notification-service/.env
-    volumes:
-      - ./budget-notification-service/src:/app/src
     networks:
-      - app-network
+      - microservice-network
 
 networks:
-  app-network:
+  microservice-network:
     driver: bridge
