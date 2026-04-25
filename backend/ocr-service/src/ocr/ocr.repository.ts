@@ -6,13 +6,13 @@ import { ParsedOcrResult } from "./ocr.parser";
 
 @Injectable()
 export class OcrRepository {
-  constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
+  constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) { }
 
   async createRequest(userId: string, dto: ScanOcrDto) {
     const { imageUrl, sourceType } = dto;
     const result = await this.pool.query(
       `INSERT INTO "ocr".ocr_requests (user_id, image_url, source_type, status)
-       VALUES ($1, $2, $3, 'pending') RETURNING id`,
+       VALUES ($1, $2, $3, 'pending') RETURNING id, image_url, source_type, status, created_at`,
       [userId, imageUrl, sourceType],
     );
     return result.rows[0];
@@ -41,24 +41,24 @@ export class OcrRepository {
     const {
       suggestedAmount,
       suggestedDate,
-      suggestedMerchantName,
+      merchantName,
       suggestedType,
       suggestedCategory,
-      rawText,
+      parsedFieldsJson,
     } = parsedResult;
 
     const result = await this.pool.query(
       `INSERT INTO "ocr".ocr_results 
-        (request_id, raw_text, suggested_amount, suggested_date, suggested_merchant_name, suggested_type, suggested_category)
+        (request_id, suggested_amount, suggested_date, merchant_name, suggested_type, suggested_category, parsed_fields_json)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [
         requestId,
-        rawText,
         suggestedAmount,
         suggestedDate,
-        suggestedMerchantName,
+        merchantName,
         suggestedType,
         suggestedCategory,
+        JSON.stringify(parsedFieldsJson),
       ],
     );
     return result.rows[0];

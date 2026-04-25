@@ -2,7 +2,7 @@
   "name": "api-gateway",
   "version": "1.0.0",
   "description": "API Gateway for the smart expense management system",
-  "main": "dist/main.js",
+  "main": "dist/app/src/main.js",
   "scripts": {
     "build": "nest build",
     "start": "nest start",

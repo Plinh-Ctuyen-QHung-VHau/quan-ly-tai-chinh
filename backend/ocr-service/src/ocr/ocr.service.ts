@@ -1,9 +1,9 @@
 import { Injectable, Inject, Logger } from "@nestjs/common";
 import { ConfigType } from "@nestjs/config";
-import { AppError } from "../shared/errors/AppError";
+import { AppError } from "@shared/errors/AppError";
 import { StorageReader } from "../storage/storage.reader";
-import { OcrEngineAdapter } from "./adapters/ocr-engine.adapter";
-import { ScanImageDto } from "./dto/scan-image.dto";
+import { OCR_ENGINE_ADAPTER, OcrEngineAdapter } from "./adapters/ocr-engine.adapter";
+import { ScanOcrDto } from "./dto/ocr.dto";
 import { OcrParser } from "./ocr.parser";
 import { OcrRepository } from "./ocr.repository";
 import { configuration } from "../config/configuration";
@@ -19,29 +19,25 @@ export class OcrService {
   constructor(
     private readonly ocrRepository: OcrRepository,
     private readonly storageReader: StorageReader,
+    @Inject(OCR_ENGINE_ADAPTER)
     private readonly ocrEngine: OcrEngineAdapter,
     private readonly ocrParser: OcrParser,
     private readonly metrics: AppMetrics,
     private readonly imagePreprocessor: ImagePreprocessorService,
     @Inject(configuration.KEY)
     private readonly appConfig: ConfigType<typeof configuration>,
-  ) {}
+  ) { }
 
-  async scan(userId: string, scanImageDto: ScanImageDto) {
+  async scan(userId: string, scanOcrDto: ScanOcrDto) {
     this.metrics.ocrRequestsTotal.inc();
     const startTime = Date.now();
 
-    const { imageUrl, storagePath } = scanImageDto;
-    const path = storagePath || this.storageReader.getPathFromUrl(imageUrl);
+    const { imageUrl, sourceType } = scanOcrDto;
 
-    const ocrRequest = await this.ocrRepository.createRequest({
-      userId,
-      imageUrl,
-      storagePath: path,
-    });
+    const ocrRequest = await this.ocrRepository.createRequest(userId, scanOcrDto);
 
     try {
-      const ocrPromise = this.performOcr(path);
+      const ocrPromise = this.performOcr(imageUrl);
 
       const timeout$ = timer(this.appConfig.ocr.timeoutMs).pipe(
         map(() => {
@@ -59,19 +55,17 @@ export class OcrService {
         ),
       );
 
-      const finalResult = await this.ocrRepository.createResult({
-        requestId: ocrRequest.id,
-        userId,
-        ...result,
-      });
+      const finalResult = await this.ocrRepository.createResult(
+        ocrRequest.id,
+        result,
+      );
 
-      await this.ocrRepository.updateRequestStatus(ocrRequest.id, "processed");
       this.metrics.ocrSuccessTotal.inc();
       const duration = (Date.now() - startTime) / 1000;
       this.metrics.ocrProcessingDurationSeconds.observe(duration);
 
       return {
-        ocrRequestId: finalResult.requestId,
+        ocrRequestId: finalResult.request_id,
         ocrResultId: finalResult.id,
         imageUrl,
         ...finalResult,
@@ -89,24 +83,21 @@ export class OcrService {
         this.metrics.ocrEngineErrorsTotal.inc();
       }
 
-      await this.ocrRepository.updateRequestStatus(ocrRequest.id, "failed", {
-        error: error.message,
-        reason: error.details?.reason,
-      });
+      await this.ocrRepository.updateRequestStatus(ocrRequest.id, "failed", error.message);
 
       this.metrics.ocrFailuresTotal.inc();
       const duration = (Date.now() - startTime) / 1000;
       this.metrics.ocrProcessingDurationSeconds.observe(duration);
 
-      throw error; // Re-throw the original AppError
+      throw error;
     }
   }
 
-  private async performOcr(path: string) {
+  private async performOcr(imageUrl: string) {
     let imageBuffer: Buffer;
     try {
-      this.logger.log(`Reading image from storage: ${path}`);
-      imageBuffer = await this.storageReader.read(path);
+      this.logger.log(`Reading image from storage: ${imageUrl}`);
+      imageBuffer = await this.storageReader.downloadImage(imageUrl);
     } catch (error) {
       throw new AppError(
         "OCR_PROCESSING_FAILED",
@@ -151,10 +142,9 @@ export class OcrService {
       throw new AppError("NOT_FOUND", `OCR request with ID ${id} not found.`);
     }
 
-    // Rescan using the original image path/url
     return this.scan(userId, {
-      imageUrl: originalRequest.imageUrl,
-      storagePath: originalRequest.storagePath,
+      imageUrl: originalRequest.image_url,
+      sourceType: originalRequest.source_type,
     });
   }
 }

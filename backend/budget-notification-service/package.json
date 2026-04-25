@@ -2,7 +2,7 @@
   "name": "budget-notification-service",
   "version": "1.0.0",
   "description": "Budget and notification service",
-  "main": "dist/main.js",
+  "main": "dist/app/src/main.js",
   "scripts": {
     "build": "nest build",
     "start": "nest start",

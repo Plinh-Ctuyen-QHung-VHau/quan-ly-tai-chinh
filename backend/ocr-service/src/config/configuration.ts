@@ -1,4 +1,4 @@
-import { ConfigModuleOptions } from "@nestjs/config";
+import { ConfigModuleOptions, registerAs } from "@nestjs/config";
 import * as Joi from "joi";
 
 export const configValidationSchema = Joi.object({
@@ -14,7 +14,7 @@ export const configValidationSchema = Joi.object({
   OCR_MAX_IMAGE_WIDTH: Joi.number().default(1600),
 });
 
-export const configuration = () => ({
+export const configuration = registerAs("app", () => ({
   port: parseInt(process.env.PORT, 10) || 3003,
   database: {
     url: process.env.DATABASE_URL,
@@ -22,7 +22,7 @@ export const configuration = () => ({
   supabase: {
     url: process.env.SUPABASE_URL,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    storageBucket: process.env.SUPABASE_STORAGE_BUCKET || "receipts",
+    bucketName: process.env.SUPABASE_STORAGE_BUCKET || "receipts",
   },
   ocr: {
     engine: process.env.OCR_ENGINE || "tesseract",
@@ -33,7 +33,7 @@ export const configuration = () => ({
       maxWidth: parseInt(process.env.OCR_MAX_IMAGE_WIDTH, 10) || 1600,
     },
   },
-});
+}));
 
 export const configModuleOptions: ConfigModuleOptions = {
   isGlobal: true,

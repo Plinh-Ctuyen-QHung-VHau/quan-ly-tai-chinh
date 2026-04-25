@@ -2,7 +2,7 @@
   "name": "identity-service",
   "version": "1.0.0",
   "description": "Identity service",
-  "main": "dist/main.js",
+  "main": "dist/app/src/main.js",
   "scripts": {
     "build": "nest build",
     "start": "nest start",

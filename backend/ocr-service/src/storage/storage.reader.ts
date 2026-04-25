@@ -11,16 +11,20 @@ export class StorageReader {
 
   constructor(private readonly configService: ConfigService) {
     this.supabase = createClient(
-      configService.get<string>("supabase.url"),
-      configService.get<string>("supabase.serviceRoleKey"),
+      configService.get<string>("app.supabase.url"),
+      configService.get<string>("app.supabase.serviceRoleKey"),
     );
-    this.bucketName = configService.get<string>("supabase.bucketName");
+    this.bucketName = configService.get<string>("app.supabase.bucketName");
   }
 
+  /**
+   * Download image buffer from Supabase storage using a storage path.
+   */
   async downloadImage(path: string): Promise<Buffer> {
+    const storagePath = this.getPathFromUrl(path);
     const { data, error } = await this.supabase.storage
       .from(this.bucketName)
-      .download(path);
+      .download(storagePath);
 
     if (error) {
       throw new AppError(
@@ -32,5 +36,28 @@ export class StorageReader {
 
     const buffer = Buffer.from(await data.arrayBuffer());
     return buffer;
+  }
+
+  /**
+   * Alias for downloadImage - kept for compatibility.
+   */
+  async read(path: string): Promise<Buffer> {
+    return this.downloadImage(path);
+  }
+
+  /**
+   * Extract the storage path from a full URL or return the path as-is.
+   */
+  getPathFromUrl(urlOrPath: string): string {
+    try {
+      const url = new URL(urlOrPath);
+      // Extract path after /storage/v1/object/public/<bucket>/
+      const match = url.pathname.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/);
+      if (match) return match[1];
+      return urlOrPath;
+    } catch {
+      // Not a URL, treat as path directly
+      return urlOrPath;
+    }
   }
 }
