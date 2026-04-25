@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "api-gateway"
+    static_configs:
+      - targets: ["api-gateway:3000"]
+
+  - job_name: "identity-service"
+    static_configs:
+      - targets: ["identity-service:3000"]
+
+  - job_name: "transaction-service"
+    static_configs:
+      - targets: ["transaction-service:3000"]
+
+  - job_name: "ocr-service"
+    static_configs:
+      - targets: ["ocr-service:3000"]
+
+  - job_name: "budget-notification-service"
+    static_configs:
+      - targets: ["budget-notification-service:3000"]

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Quan ly chi tieu thong minh",
-    "slug": "quan-ly-chi-tieu-thong-minh",
+    "name": "Frontend Service",
+    "slug": "frontend-service",
     "scheme": "qlcttm",
     "version": "1.0.0",
     "orientation": "portrait",
