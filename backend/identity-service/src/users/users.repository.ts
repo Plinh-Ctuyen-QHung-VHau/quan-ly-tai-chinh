@@ -1,74 +1,103 @@
-import { Injectable, Inject, NotFoundException } from "@nestjs/common";
-import { Pool } from "pg";
-import { PG_CONNECTION } from "@app/database/database.module";
+import { Injectable } from "@nestjs/common";
+import { SupabaseService } from "../supabase/supabase.service";
 import { UpdateProfileDto, UpdateUserSettingsDto } from "./dto/update-user.dto";
 import { AppError } from "@shared/errors/AppError";
 import { ERROR_CODES } from "@shared/errors/errorCodes";
 
+const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "identity";
+
 @Injectable()
 export class UsersRepository {
-  constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
+
+  private get supabase() {
+    return this.supabaseService.getClient().schema(SCHEMA);
+  }
 
   async findProfileById(userId: string) {
-    const result = await this.pool.query(
-      "SELECT id, full_name, avatar_url, created_at, updated_at FROM identity.profiles WHERE id = $1",
-      [userId],
-    );
-    if (result.rows.length === 0) {
-      return null;
+    const { data, error } = await this.supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, created_at, updated_at")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      throw new AppError(error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
     }
-    return result.rows[0];
+    return data;
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
-    const { fullName, avatarUrl } = dto;
-    const result = await this.pool.query(
-      `UPDATE identity.profiles SET 
-        full_name = COALESCE($1, full_name), 
-        avatar_url = COALESCE($2, avatar_url),
-        updated_at = NOW()
-       WHERE id = $3 RETURNING *`,
-      [fullName, avatarUrl, userId],
-    );
-    return result.rows[0];
+    const updatePayload: Record<string, any> = {};
+    if (dto.fullName !== undefined) updatePayload.full_name = dto.fullName;
+    if (dto.avatarUrl !== undefined) updatePayload.avatar_url = dto.avatarUrl;
+
+    const { data, error } = await this.supabase
+      .from("profiles")
+      .update(updatePayload)
+      .eq("id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new AppError(error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
+    }
+    return data;
   }
 
   async findSettingsByUserId(userId: string) {
-    const result = await this.pool.query(
-      "SELECT id, user_id, timezone, language, theme, created_at, updated_at FROM identity.user_settings WHERE user_id = $1",
-      [userId],
-    );
-    if (result.rows.length === 0) {
-      // Create default settings if not exist
+    const { data, error } = await this.supabase
+      .from("user_settings")
+      .select("id, user_id, timezone, language, theme, created_at, updated_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      throw new AppError(error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
+    }
+    if (!data) {
       return this.createDefaultSettings(userId);
     }
-    return result.rows[0];
+    return data;
   }
 
   async updateSettings(userId: string, dto: UpdateUserSettingsDto) {
-    const { timezone, language, theme } = dto;
-    const result = await this.pool.query(
-      `UPDATE identity.user_settings SET 
-        timezone = COALESCE($1, timezone), 
-        language = COALESCE($2, language),
-        theme = COALESCE($3, theme),
-        updated_at = NOW()
-       WHERE user_id = $4 RETURNING *`,
-      [timezone, language, theme, userId],
-    );
-    if (result.rows.length === 0) {
-      throw new AppError("Settings not found for user", ERROR_CODES.NOT_FOUND);
+    const updatePayload: Record<string, any> = {};
+    if (dto.timezone !== undefined) updatePayload.timezone = dto.timezone;
+    if (dto.language !== undefined) updatePayload.language = dto.language;
+    if (dto.theme !== undefined) updatePayload.theme = dto.theme;
+
+    const { data, error } = await this.supabase
+      .from("user_settings")
+      .update(updatePayload)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new AppError(
+        "Settings not found for user",
+        ERROR_CODES.NOT_FOUND,
+      );
     }
-    return result.rows[0];
+    return data;
   }
 
   private async createDefaultSettings(userId: string) {
-    const result = await this.pool.query(
-      `INSERT INTO identity.user_settings (user_id, timezone, language, theme)
-           VALUES ($1, 'UTC', 'vi', 'light')
-           RETURNING *`,
-      [userId],
-    );
-    return result.rows[0];
+    const { data, error } = await this.supabase
+      .from("user_settings")
+      .insert({
+        user_id: userId,
+        timezone: "UTC",
+        language: "vi",
+        theme: "light",
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new AppError(error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
+    }
+    return data;
   }
 }
