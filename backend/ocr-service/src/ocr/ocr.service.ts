@@ -1,107 +1,160 @@
-import { Injectable, Inject, NotFoundException } from "@nestjs/common";
-import { Counter, Histogram } from "prom-client";
-import { OcrRepository } from "./ocr.repository";
-import { ScanOcrDto } from "./dto/ocr.dto";
+import { Injectable, Inject, Logger } from "@nestjs/common";
+import { ConfigType } from "@nestjs/config";
+import { AppError } from "../shared/errors/AppError";
 import { StorageReader } from "../storage/storage.reader";
-import {
-  OcrEngineAdapter,
-  OCR_ENGINE_ADAPTER,
-} from "./adapters/ocr-engine.adapter";
+import { OcrEngineAdapter } from "./adapters/ocr-engine.adapter";
+import { ScanImageDto } from "./dto/scan-image.dto";
 import { OcrParser } from "./ocr.parser";
-import { AppError } from "../../shared/errors/AppError";
-import { ERROR_CODES } from "../../shared/errors/errorCodes";
-import { OCR_METRICS } from "../metrics/ocr-metrics";
+import { OcrRepository } from "./ocr.repository";
+import configuration from "../config/configuration";
+import { AppMetrics } from "../metrics/app.metrics";
+import { ImagePreprocessorService } from "./image-preprocessor.service";
+import { race, firstValueFrom, throwError, timer } from "rxjs";
+import { catchError, map } from "rxjs/operators";
 
 @Injectable()
 export class OcrService {
-  private readonly ocrRequests: Counter<string>;
-  private readonly ocrSuccess: Counter<string>;
-  private readonly ocrFailures: Counter<string>;
-  private readonly ocrDuration: Histogram<string>;
+  private readonly logger = new Logger(OcrService.name);
 
   constructor(
     private readonly ocrRepository: OcrRepository,
     private readonly storageReader: StorageReader,
-    @Inject(OCR_ENGINE_ADAPTER) private readonly ocrEngine: OcrEngineAdapter,
+    private readonly ocrEngine: OcrEngineAdapter,
     private readonly ocrParser: OcrParser,
-  ) {
-    this.ocrRequests = OCR_METRICS.ocrRequests;
-    this.ocrSuccess = OCR_METRICS.ocrSuccess;
-    this.ocrFailures = OCR_METRICS.ocrFailures;
-    this.ocrDuration = OCR_METRICS.ocrDuration;
-  }
+    private readonly metrics: AppMetrics,
+    private readonly imagePreprocessor: ImagePreprocessorService,
+    @Inject(configuration.KEY)
+    private readonly appConfig: ConfigType<typeof configuration>,
+  ) {}
 
-  async scan(userId: string, dto: ScanOcrDto) {
-    this.ocrRequests.inc({ source: dto.sourceType });
-    const endTimer = this.ocrDuration.startTimer();
+  async scan(userId: string, scanImageDto: ScanImageDto) {
+    this.metrics.ocrRequestsTotal.inc();
+    const startTime = Date.now();
 
-    const { id: requestId } = await this.ocrRepository.createRequest(
+    const { imageUrl, storagePath } = scanImageDto;
+    const path = storagePath || this.storageReader.getPathFromUrl(imageUrl);
+
+    const ocrRequest = await this.ocrRepository.createRequest({
       userId,
-      dto,
-    );
+      imageUrl,
+      storagePath: path,
+    });
 
     try {
-      // The imageUrl from the client is the full public URL. We need the path part.
-      const url = new URL(dto.imageUrl);
-      const path = url.pathname.split(
-        `/${this.storageReader["bucketName"]}/`,
-      )[1];
+      const ocrPromise = this.performOcr(path);
 
-      const imageBuffer = await this.storageReader.downloadImage(path);
-      const rawText = await this.ocrEngine.extractText(imageBuffer);
-      const parsedResult = this.ocrParser.parse(rawText);
-
-      const ocrResult = await this.ocrRepository.createResult(
-        requestId,
-        parsedResult,
-      );
-      await this.ocrRepository.updateRequestStatus(requestId, "processed");
-
-      this.ocrSuccess.inc({ source: dto.sourceType });
-      endTimer({ status: "success" });
-
-      return ocrResult;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown OCR processing error";
-      await this.ocrRepository.updateRequestStatus(
-        requestId,
-        "failed",
-        errorMessage,
+      const timeout$ = timer(this.appConfig.ocr.timeoutMs).pipe(
+        map(() => {
+          throw new AppError(
+            "OCR_PROCESSING_FAILED",
+            "OCR process timed out.",
+            { reason: "OCR_TIMEOUT" },
+          );
+        }),
       );
 
-      this.ocrFailures.inc({ source: dto.sourceType });
-      endTimer({ status: "failure" });
+      const result = await firstValueFrom(
+        race(ocrPromise, timeout$).pipe(
+          catchError((err) => throwError(() => err)),
+        ),
+      );
 
-      throw new AppError(errorMessage, ERROR_CODES.OCR_PROCESSING_FAILED, {
-        originalError: error,
+      const finalResult = await this.ocrRepository.createResult({
+        requestId: ocrRequest.id,
+        userId,
+        ...result,
       });
+
+      await this.ocrRepository.updateRequestStatus(ocrRequest.id, "processed");
+      this.metrics.ocrSuccessTotal.inc();
+      const duration = (Date.now() - startTime) / 1000;
+      this.metrics.ocrProcessingDurationSeconds.observe(duration);
+
+      return {
+        ocrRequestId: finalResult.requestId,
+        ocrResultId: finalResult.id,
+        imageUrl,
+        ...finalResult,
+      };
+    } catch (error) {
+      this.logger.error(
+        `OCR scanning failed for request ${ocrRequest.id}`,
+        error,
+      );
+
+      if (error.details?.reason === "OCR_TIMEOUT") {
+        this.metrics.ocrTimeoutTotal.inc();
+      }
+      if (error.details?.reason === "TESSERACT_FAILED") {
+        this.metrics.ocrEngineErrorsTotal.inc();
+      }
+
+      await this.ocrRepository.updateRequestStatus(ocrRequest.id, "failed", {
+        error: error.message,
+        reason: error.details?.reason,
+      });
+
+      this.metrics.ocrFailuresTotal.inc();
+      const duration = (Date.now() - startTime) / 1000;
+      this.metrics.ocrProcessingDurationSeconds.observe(duration);
+
+      throw error; // Re-throw the original AppError
     }
+  }
+
+  private async performOcr(path: string) {
+    let imageBuffer: Buffer;
+    try {
+      this.logger.log(`Reading image from storage: ${path}`);
+      imageBuffer = await this.storageReader.read(path);
+    } catch (error) {
+      throw new AppError(
+        "OCR_PROCESSING_FAILED",
+        "Failed to read image from storage.",
+        { reason: "STORAGE_READ_FAILED", originalError: error.message },
+      );
+    }
+
+    const processedBuffer = await this.imagePreprocessor.process(imageBuffer);
+
+    this.logger.log("Processing image with OCR engine...");
+    const ocrResult = await this.ocrEngine.recognize(processedBuffer);
+
+    this.logger.log("Parsing OCR text...");
+    const parsedData = this.ocrParser.parse(
+      ocrResult.text,
+      this.appConfig.ocr.engine,
+      this.appConfig.ocr.lang,
+    );
+
+    return {
+      extractedText: ocrResult.text,
+      confidenceScore: ocrResult.confidence,
+      ...parsedData,
+    };
   }
 
   async getResult(id: string, userId: string) {
     const result = await this.ocrRepository.findResultById(id, userId);
     if (!result) {
-      throw new AppError("OCR result not found", ERROR_CODES.NOT_FOUND);
+      throw new AppError("NOT_FOUND", `OCR result with ID ${id} not found.`);
     }
     return result;
   }
 
   async retry(id: string, userId: string) {
-    const request = await this.ocrRepository.findRequestById(id, userId);
-    if (!request) {
-      throw new AppError("OCR request not found", ERROR_CODES.NOT_FOUND);
+    const originalRequest = await this.ocrRepository.findRequestById(
+      id,
+      userId,
+    );
+    if (!originalRequest) {
+      throw new AppError("NOT_FOUND", `OCR request with ID ${id} not found.`);
     }
 
-    // Check if there's already a successful result
-    const existingResult = await this.ocrRepository.findResultByRequestId(id);
-    if (existingResult && request.status === "processed") {
-      return existingResult; // Don't re-process successful requests, just return the result
-    }
-
+    // Rescan using the original image path/url
     return this.scan(userId, {
-      imageUrl: request.image_url,
-      sourceType: request.source_type,
+      imageUrl: originalRequest.imageUrl,
+      storagePath: originalRequest.storagePath,
     });
   }
 }
