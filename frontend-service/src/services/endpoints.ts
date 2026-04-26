@@ -8,7 +8,7 @@ export const endpoints = {
   },
 
   categories: {
-    list: "/api/api/categories",
+    list: (type: "income" | "expense") => `/api/api/categories?type=${type}`,
   },
 
   transactions: {

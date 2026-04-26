@@ -16,9 +16,9 @@ export class CategoriesController {
   @Get()
   @UsePipes(new ValidationPipe({ transform: true }))
   findAll(
-    @GetUserId() userId: string,
+    @GetUserId() _userId: string,
     @Query() queryDto: GetCategoriesQueryDto,
   ) {
-    return this.categoriesService.findAll(userId, queryDto);
+    return this.categoriesService.findAll(_userId, queryDto);
   }
 }

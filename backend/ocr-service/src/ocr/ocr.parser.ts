@@ -4,7 +4,6 @@ export interface ParsedOcrResult {
   suggestedAmount: number | null;
   suggestedDate: Date | null;
   suggestedType: "income" | "expense";
-  merchantName: string | null;
   suggestedCategory: string | null;
   parsedFieldsJson: Record<string, any>;
 }
@@ -56,7 +55,6 @@ export class OcrParser {
       detectedAmounts,
     );
     const suggestedDate = detectedDates.length > 0 ? detectedDates[0] : null;
-    const merchantName = this.findMerchant(lines);
     const suggestedType = this.findType(normalizedText);
     const suggestedCategory = this.findCategory(normalizedText);
 
@@ -64,14 +62,12 @@ export class OcrParser {
       suggestedAmount,
       suggestedDate,
       suggestedType,
-      merchantName,
       suggestedCategory,
       parsedFieldsJson: {
         rawText,
         normalizedText,
         detectedAmounts,
         detectedDates,
-        merchantName,
         suggestedType,
         suggestedCategory,
         ocrEngine,
@@ -144,50 +140,6 @@ export class OcrParser {
         }
       })
       .filter((date) => date && !isNaN(date.getTime())) as Date[];
-  }
-
-  private findMerchant(lines: string[]): string | null {
-    const knownMerchants = [
-      "grab",
-      "winmart",
-      "highlands coffee",
-      "evn",
-      "circle k",
-      "gs25",
-      "tiki",
-      "shopee",
-      "lazada",
-      "petrolimex",
-      "phúc long",
-      "starbucks",
-    ];
-    for (const line of lines) {
-      for (const merchant of knownMerchants) {
-        if (line.includes(merchant)) {
-          return merchant
-            .split(" ")
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(" ");
-        }
-      }
-    }
-
-    // Fallback: find the first line that contains letters and is not just a date or amount
-    for (const line of lines) {
-      if (
-        /[a-zA-Z]/.test(line) &&
-        !/^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$/.test(line.trim())
-      ) {
-        const cleanedLine = line.replace(/[:*]/g, "").trim();
-        if (cleanedLine.length > 2 && cleanedLine.length < 50) {
-          return cleanedLine
-            .split(" ")
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(" ");
-        }
-      }
-    }
-    return null;
   }
 
   private findType(text: string): "income" | "expense" {

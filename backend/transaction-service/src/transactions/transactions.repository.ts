@@ -13,7 +13,7 @@ const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "transaction";
 
 @Injectable()
 export class TransactionsRepository {
-  constructor(private readonly supabaseService: SupabaseService) { }
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   private get supabase() {
     return this.supabaseService.getClient().schema(SCHEMA);
@@ -195,7 +195,9 @@ export class TransactionsRepository {
 
     const { data, error } = await this.supabase
       .from("transactions")
-      .select("id, type, amount, note, merchant_name, transaction_date, categories!category_id(name, icon)")
+      .select(
+        "id, type, amount, note, merchant_name, transaction_date, categories!category_id(name, icon)",
+      )
       .eq("user_id", userId)
       .gte("transaction_date", thirtyDaysAgo.toISOString())
       .order("transaction_date", { ascending: false });

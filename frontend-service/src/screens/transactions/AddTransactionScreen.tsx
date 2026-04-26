@@ -20,6 +20,9 @@ export function AddTransactionScreen() {
   const setDraftOcrResult = useTransactionStore(
     (state) => state.setDraftOcrResult,
   );
+  const setDraftSourceType = useTransactionStore(
+    (state) => state.setDraftSourceType,
+  );
   const [loading, setLoading] = useState(false);
 
   const pickImage = async (sourceType: "camera" | "gallery") => {
@@ -39,7 +42,7 @@ export function AddTransactionScreen() {
           return;
         }
         result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ["images"],
           quality: 0.8,
         });
       } else {
@@ -53,23 +56,26 @@ export function AddTransactionScreen() {
           return;
         }
         result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ["images"],
           quality: 0.8,
         });
       }
 
-      if (result.canceled || !result.assets.length) {
+      if (result.canceled || !result.assets?.length) {
         return;
       }
 
       const imageUri = result.assets[0].uri;
-      const storagePath = await uploadReceiptImage(imageUri, user.id);
+      const imageUrl = await uploadReceiptImage(imageUri, user.id);
+
       const ocrResult = await scanReceipt({
         sourceType,
-        imageUrl: storagePath,
+        imageUrl,
       });
-      setDraftReceiptPath(storagePath);
+
+      setDraftReceiptPath(imageUrl);
       setDraftOcrResult(ocrResult);
+      setDraftSourceType(sourceType);
       navigation.navigate("TransactionConfirm");
     } catch (error) {
       const normalized = normalizeAxiosError(error);

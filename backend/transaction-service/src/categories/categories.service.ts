@@ -6,7 +6,7 @@ import { GetCategoriesQueryDto } from "./dto/get-categories-query.dto";
 export class CategoriesService {
   constructor(private readonly categoriesRepository: CategoriesRepository) {}
 
-  async findAll(userId: string, queryDto: GetCategoriesQueryDto) {
-    return this.categoriesRepository.findAll(userId, queryDto);
+  async findAll(_userId: string, queryDto: GetCategoriesQueryDto) {
+    return this.categoriesRepository.findAll(_userId, queryDto);
   }
 }

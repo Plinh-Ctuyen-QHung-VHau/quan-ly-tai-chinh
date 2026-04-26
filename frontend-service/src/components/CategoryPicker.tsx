@@ -14,10 +14,6 @@ export function CategoryPicker({
   selectedId,
   onSelect,
 }: CategoryPickerProps) {
-  if (!items.length) {
-    return <Text style={styles.empty}>Chưa có danh mục.</Text>;
-  }
-
   return (
     <FlatList
       horizontal

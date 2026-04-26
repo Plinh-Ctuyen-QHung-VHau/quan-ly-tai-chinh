@@ -97,17 +97,6 @@ export function HomeScreen() {
       </View>
 
       <AppCard>
-        <Text style={styles.cardTitle}>Kiểm tra kết nối Backend</Text>
-        <Text style={{ marginBottom: 5, color: "#475569" }}>
-          URL: {process.env.EXPO_PUBLIC_API_BASE_URL || "Không có API_BASE_URL"}
-        </Text>
-        <Text style={{ marginBottom: 10, color: "#475569" }}>
-          {healthStatus ? `Kết quả: ${healthStatus}` : "Chưa kiểm tra"}
-        </Text>
-        <AppButton title="Test Backend Health" onPress={testBackend} />
-      </AppCard>
-
-      <AppCard>
         <Text style={styles.cardTitle}>Thống kê giao dịch</Text>
         <View style={styles.statRow}>
           <Text style={styles.statLabel}>Tổng thu</Text>
@@ -131,8 +120,20 @@ export function HomeScreen() {
 
       <AppCard>
         <Text style={styles.cardTitle}>Ngân sách hiện tại</Text>
-        {budgetStatus?.status === "no-budget" ? (
-          <Text style={styles.muted}>Chưa có ngân sách.</Text>
+        {!budgetStatus || budgetStatus.status === "no-budget" ? (
+          <>
+            <Text style={styles.muted}>
+              Bạn chưa có ngân sách cho kỳ hiện tại.
+            </Text>
+            <View style={styles.emptyActions}>
+              <AppButton
+                title="Tạo ngân sách"
+                onPress={() =>
+                  navigation.navigate("BudgetForm", { mode: "create" })
+                }
+              />
+            </View>
+          </>
         ) : (
           <>
             <View style={styles.statRow}>
@@ -223,5 +224,8 @@ const styles = StyleSheet.create({
   },
   muted: {
     color: "#64748b",
+  },
+  emptyActions: {
+    marginTop: 12,
   },
 });

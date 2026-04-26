@@ -6,18 +6,15 @@ const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "transaction";
 
 @Injectable()
 export class CategoriesRepository {
-  constructor(private readonly supabaseService: SupabaseService) { }
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   private get supabase() {
     return this.supabaseService.getClient().schema(SCHEMA);
   }
 
-  async findAll(userId: string, queryDto: GetCategoriesQueryDto) {
+  async findAll(_userId: string, queryDto: GetCategoriesQueryDto) {
     const { type } = queryDto;
-    let query = this.supabase
-      .from("categories")
-      .select("id, name, type, icon, created_at, updated_at")
-      .or(`user_id.eq.${userId},user_id.is.null`);
+    let query = this.supabase.from("categories").select("*");
 
     if (type) {
       query = query.eq("type", type);
@@ -30,12 +27,11 @@ export class CategoriesRepository {
     return data;
   }
 
-  async findById(id: string, userId: string) {
+  async findById(id: string, _userId: string) {
     const { data, error } = await this.supabase
       .from("categories")
       .select("id, name, type")
       .eq("id", id)
-      .or(`user_id.eq.${userId},user_id.is.null`)
       .maybeSingle();
 
     if (error) throw new Error(error.message);

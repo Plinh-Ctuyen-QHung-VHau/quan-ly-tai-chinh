@@ -35,7 +35,10 @@ export async function updateTransaction(
   id: string,
   payload: Partial<Transaction>,
 ) {
-  const response = await apiClient.put(endpoints.transactions.update(id), payload);
+  const response = await apiClient.put(
+    endpoints.transactions.update(id),
+    payload,
+  );
   return handleApiResponse<Transaction>(response);
 }
 
@@ -45,8 +48,11 @@ export async function deleteTransaction(id: string) {
 }
 
 export async function getCategories(type: "income" | "expense") {
-  const response = await apiClient.get(endpoints.categories.list, {
-    params: { type },
-  });
-  return handleApiResponse<Category[]>(response);
+  try {
+    const res = await apiClient.get(endpoints.categories.list(type));
+    return Array.isArray(res.data?.data) ? (res.data.data as Category[]) : [];
+  } catch (error) {
+    console.log("Get categories error", error);
+    return [];
+  }
 }

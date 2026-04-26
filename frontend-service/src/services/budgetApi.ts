@@ -3,9 +3,23 @@ import { handleApiResponse } from "../utils/responseHandler";
 import { Budget, BudgetStatus } from "../types/budget";
 import { endpoints } from "./endpoints";
 
-export async function getCurrentBudgetStatus() {
-  const response = await apiClient.get(endpoints.budgets.currentStatus);
-  return handleApiResponse<BudgetStatus>(response);
+export async function getCurrentBudgetStatus(): Promise<BudgetStatus | null> {
+  try {
+    const response = await apiClient.get(endpoints.budgets.currentStatus);
+    return handleApiResponse<BudgetStatus>(response);
+  } catch (error: any) {
+    const status = error?.statusCode ?? error?.response?.status;
+    const message = error?.message ?? error?.response?.data?.message;
+
+    if (
+      status === 404 &&
+      message === "No active budget found for the current period."
+    ) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export async function createBudget(

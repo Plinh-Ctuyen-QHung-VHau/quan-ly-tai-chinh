@@ -5,13 +5,21 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
 import { AppInput } from "../../components/AppInput";
-import { createBudget, updateBudget } from "../../services/budgetApi";
+import {
+  createBudget,
+  getCurrentBudgetStatus,
+  updateBudget,
+} from "../../services/budgetApi";
+import { useBudgetStore } from "../../store/budgetStore";
 import { Budget, BudgetPeriod } from "../../types/budget";
 import { isPositiveAmount, validateBudgetPeriod } from "../../utils/validators";
 
 export function BudgetFormScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const setCurrentBudgetStatus = useBudgetStore(
+    (state) => state.setCurrentBudgetStatus,
+  );
   const mode = (route.params?.mode ?? "create") as "create" | "edit";
   const budget = route.params?.budget as Budget | undefined;
 
@@ -55,6 +63,9 @@ export function BudgetFormScreen() {
       } else {
         await createBudget(payload);
       }
+
+      const currentBudgetStatus = await getCurrentBudgetStatus();
+      setCurrentBudgetStatus(currentBudgetStatus);
 
       Alert.alert("Thành công", "Ngân sách đã được lưu.");
       navigation.goBack();

@@ -22,6 +22,7 @@ export function TransactionConfirmScreen() {
   const draftReceiptPath = useTransactionStore(
     (state) => state.draftReceiptPath,
   );
+  const draftSourceType = useTransactionStore((state) => state.draftSourceType);
   const clearDraft = useTransactionStore((state) => state.clearDraft);
   const user = useAuthStore((state) => state.user);
 
@@ -50,8 +51,10 @@ export function TransactionConfirmScreen() {
       try {
         const list = await getCategories(type);
         setCategories(list);
-        if (!categoryId && list.length) {
-          setCategoryId(list[0].id);
+        const safeList = Array.isArray(list) ? list : [];
+
+        if (!categoryId && safeList.length) {
+          setCategoryId(safeList[0].id);
         }
       } catch (err) {
         setError(
@@ -69,6 +72,18 @@ export function TransactionConfirmScreen() {
     () => draftOcr?.imageUrl ?? draftReceiptPath ?? "",
     [draftOcr?.imageUrl, draftReceiptPath],
   );
+
+  const validImageUrl = useMemo(() => {
+    if (
+      previewImage &&
+      (previewImage.startsWith("http://") ||
+        previewImage.startsWith("https://"))
+    ) {
+      return previewImage;
+    }
+
+    return undefined;
+  }, [previewImage]);
 
   const handleSave = async () => {
     setError("");
@@ -88,6 +103,11 @@ export function TransactionConfirmScreen() {
       return;
     }
 
+    if (!draftSourceType) {
+      setError("Thiếu nguồn ảnh giao dịch.");
+      return;
+    }
+
     setSaving(true);
     try {
       await createTransaction({
@@ -97,7 +117,8 @@ export function TransactionConfirmScreen() {
         note: note.trim() || undefined,
         transactionDate,
         merchantName: merchantName.trim() || undefined,
-        imageUrl: previewImage || undefined,
+        imageUrl: validImageUrl,
+        source: draftSourceType,
       });
       clearDraft();
       Alert.alert("Đã lưu", "Giao dịch đã được lưu thành công.");
@@ -127,7 +148,7 @@ export function TransactionConfirmScreen() {
           <Text style={styles.summaryText}>
             Merchant: {draftOcr?.merchantName ?? "-"}
           </Text>
-          <Text style={styles.summaryText}>Image: {previewImage || "-"}</Text>
+          <Text style={styles.summaryText}>Image: {validImageUrl || "-"}</Text>
         </View>
 
         <View style={styles.typeRow}>

@@ -7,7 +7,7 @@ const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "ocr";
 
 @Injectable()
 export class OcrRepository {
-  constructor(private readonly supabaseService: SupabaseService) { }
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   private get supabase() {
     return this.supabaseService.getClient().schema(SCHEMA);
@@ -62,22 +62,32 @@ export class OcrRepository {
     const {
       suggestedAmount,
       suggestedDate,
-      merchantName,
       suggestedType,
       suggestedCategory,
       parsedFieldsJson,
     } = parsedResult;
 
+    const parsedFields =
+      parsedFieldsJson && typeof parsedFieldsJson === "object"
+        ? {
+            ...parsedFieldsJson,
+            suggestedCategory: suggestedCategory ?? null,
+          }
+        : {
+            suggestedCategory: suggestedCategory ?? null,
+          };
+
     const { data, error } = await this.supabase
       .from("ocr_results")
       .insert({
         request_id: requestId,
-        suggested_amount: suggestedAmount,
-        suggested_date: suggestedDate,
-        merchant_name: merchantName,
-        suggested_type: suggestedType,
-        suggested_category: suggestedCategory,
-        parsed_fields_json: parsedFieldsJson,
+        extracted_text: null,
+        suggested_amount: suggestedAmount ?? null,
+        suggested_date: suggestedDate ?? null,
+        suggested_type: suggestedType ?? null,
+        suggested_category_id: null,
+        confidence_score: null,
+        parsed_fields_json: parsedFields,
       })
       .select()
       .single();
@@ -85,7 +95,6 @@ export class OcrRepository {
     if (error) throw new Error(error.message);
     return data;
   }
-
   /**
    * Find result by ID, ensuring it belongs to the given user via ocr_requests join.
    * Uses 2-query approach since Supabase nested selects may not work for reverse joins.

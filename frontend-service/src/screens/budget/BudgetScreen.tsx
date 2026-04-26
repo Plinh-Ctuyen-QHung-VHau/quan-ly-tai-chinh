@@ -4,6 +4,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
+import { EmptyState } from "../../components/EmptyState";
 import { LoadingView } from "../../components/LoadingView";
 import { deleteBudget, getCurrentBudgetStatus } from "../../services/budgetApi";
 import { useBudgetStore } from "../../store/budgetStore";
@@ -72,59 +73,64 @@ export function BudgetScreen() {
       <AppCard>
         <Text style={styles.title}>Ngân sách hiện tại</Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <View style={styles.row}>
-          <Text style={styles.label}>Budget</Text>
-          <Text style={styles.value}>
-            {formatCurrency(currentStatus?.budgetAmount ?? 0)}
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Đã chi</Text>
-          <Text style={styles.valueExpense}>
-            {formatCurrency(currentStatus?.spentAmount ?? 0)}
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Còn lại</Text>
-          <Text style={styles.valueIncome}>
-            {formatCurrency(currentStatus?.remainingAmount ?? 0)}
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Đã dùng</Text>
-          <Text
-            style={styles.value}
-          >{`${Math.round(currentStatus?.percentUsed ?? 0)}%`}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Trạng thái</Text>
-          <Text style={styles.value}>
-            {currentStatus?.status ?? "no-budget"}
-          </Text>
-        </View>
-        <View style={styles.actions}>
-          <AppButton
-            title={
-              currentStatus?.status === "no-budget"
-                ? "Tạo budget"
-                : "Sửa budget"
-            }
-            onPress={() =>
-              navigation.navigate("BudgetForm", {
-                mode: currentStatus?.status === "no-budget" ? "create" : "edit",
-                budget: currentStatus,
-              })
+        {!currentStatus || currentStatus.status === "no-budget" ? (
+          <EmptyState
+            title="Bạn chưa có ngân sách cho kỳ hiện tại"
+            description="Hãy tạo ngân sách để theo dõi chi tiêu trong kỳ này."
+            actionLabel="Tạo ngân sách"
+            onAction={() =>
+              navigation.navigate("BudgetForm", { mode: "create" })
             }
           />
-          {currentStatus?.id ? (
-            <AppButton
-              title="Xóa budget"
-              variant="danger"
-              onPress={handleDelete}
-              loading={deleting}
-            />
-          ) : null}
-        </View>
+        ) : (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.label}>Budget</Text>
+              <Text style={styles.value}>
+                {formatCurrency(currentStatus.budgetAmount)}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Đã chi</Text>
+              <Text style={styles.valueExpense}>
+                {formatCurrency(currentStatus.spentAmount)}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Còn lại</Text>
+              <Text style={styles.valueIncome}>
+                {formatCurrency(currentStatus.remainingAmount)}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Đã dùng</Text>
+              <Text style={styles.value}>
+                {`${Math.round(currentStatus.percentUsed)}%`}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Trạng thái</Text>
+              <Text style={styles.value}>{currentStatus.status}</Text>
+            </View>
+            <View style={styles.actions}>
+              <AppButton
+                title="Sửa budget"
+                onPress={() =>
+                  navigation.navigate("BudgetForm", {
+                    mode: "edit",
+                    budget: currentStatus,
+                  })
+                }
+              />
+              <AppButton
+                title="Xóa budget"
+                variant="danger"
+                onPress={handleDelete}
+                loading={deleting}
+              />
+            </View>
+          </>
+        )}
       </AppCard>
     </ScrollView>
   );

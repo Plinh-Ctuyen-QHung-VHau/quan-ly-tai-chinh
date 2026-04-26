@@ -20,7 +20,7 @@ export function TransactionHistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState("10");
-  const [type, setType] = useState<TransactionType | "all">("all");
+  const [type, setType] = useState<TransactionType>("income");
   const [categoryId, setCategoryId] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -29,24 +29,18 @@ export function TransactionHistoryScreen() {
 
   const loadCategories = useCallback(async () => {
     try {
-      if (type === "all") {
-        const [expense, income] = await Promise.all([
-          getCategories("expense"),
-          getCategories("income"),
-        ]);
-        const merged = [...expense, ...income].filter(
-          (item, index, array) =>
-            array.findIndex((candidate) => candidate.id === item.id) === index,
-        );
-        setCategories(merged);
-      } else {
-        setCategories(await getCategories(type));
+      if (type !== "income" && type !== "expense") {
+        setCategories([]);
+        return;
       }
-    } catch {
+
+      const data = await getCategories(type);
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.log("Load categories error:", error);
       setCategories([]);
     }
   }, [type]);
-
   const loadTransactions = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -82,7 +76,8 @@ export function TransactionHistoryScreen() {
     void loadCategories();
   }, [loadCategories]);
 
-  if (loading && !transactions.length) {
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+  if (loading && !safeTransactions.length) {
     return <LoadingView label="Đang tải giao dịch..." />;
   }
 
@@ -95,7 +90,7 @@ export function TransactionHistoryScreen() {
         </Text>
 
         <View style={styles.typeRow}>
-          {(["all", "income", "expense"] as const).map((value) => (
+          {(["income", "expense"] as const).map((value) => (
             <AppButton
               key={value}
               title={value}
@@ -168,8 +163,8 @@ export function TransactionHistoryScreen() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      {transactions.length ? (
-        transactions.map((transaction) => (
+      {safeTransactions.length ? (
+        safeTransactions.map((transaction) => (
           <TransactionItem
             key={transaction.id}
             transaction={transaction}
