@@ -24,7 +24,9 @@ apiClient.interceptors.request.use(
       data: { session },
     } = await supabase.auth.getSession();
 
-    if (session?.access_token) {
+    const isHealthEndpoint = config.url?.includes('/health');
+
+    if (session?.access_token && !isHealthEndpoint) {
       config.headers.Authorization = `Bearer ${session.access_token}`;
     }
 

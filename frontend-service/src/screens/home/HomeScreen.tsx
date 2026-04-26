@@ -16,6 +16,7 @@ import { getTransactionSummary } from "../../services/transactionApi";
 import { BudgetStatus } from "../../types/budget";
 import { TransactionSummary } from "../../types/transaction";
 import { formatCurrency } from "../../utils/formatCurrency";
+import { apiClient } from "../../services/apiClient";
 
 export function HomeScreen() {
   const navigation = useNavigation<any>();
@@ -24,6 +25,17 @@ export function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [healthStatus, setHealthStatus] = useState<string>("");
+
+  const testBackend = async () => {
+    try {
+      setHealthStatus("Đang kiểm tra...");
+      const res = await apiClient.get("/api/health");
+      setHealthStatus(`Thành công: ${JSON.stringify(res.data)}`);
+    } catch (err: any) {
+      setHealthStatus(`Lỗi: ${err.message || JSON.stringify(err)}`);
+    }
+  };
 
   const loadData = useCallback(async () => {
     setError("");
@@ -82,6 +94,17 @@ export function HomeScreen() {
           onPress={() => navigation.navigate("AddTransaction")}
         />
       </View>
+
+      <AppCard>
+        <Text style={styles.cardTitle}>Kiểm tra kết nối Backend</Text>
+        <Text style={{ marginBottom: 5, color: "#475569" }}>
+          URL: {process.env.EXPO_PUBLIC_API_BASE_URL || "Không có API_BASE_URL"}
+        </Text>
+        <Text style={{ marginBottom: 10, color: "#475569" }}>
+          {healthStatus ? `Kết quả: ${healthStatus}` : "Chưa kiểm tra"}
+        </Text>
+        <AppButton title="Test Backend Health" onPress={testBackend} />
+      </AppCard>
 
       <AppCard>
         <Text style={styles.cardTitle}>Thống kê giao dịch</Text>
