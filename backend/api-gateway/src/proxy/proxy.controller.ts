@@ -5,7 +5,7 @@ import { SupabaseAuthGuard } from "../auth/supabase-auth.guard";
 
 @Controller("/api")
 export class ProxyController {
-  constructor(private readonly proxyService: ProxyService) {}
+  constructor(private readonly proxyService: ProxyService) { }
 
   @UseGuards(SupabaseAuthGuard)
   @All("*")

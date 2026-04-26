@@ -17,6 +17,7 @@ export async function signUp(payload: RegisterPayload) {
     options: {
       data: {
         full_name: payload.fullName,
+        emailRedirectTo: "exp://[IP_ADDRESS]",
       },
     },
   });

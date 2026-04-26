@@ -17,6 +17,7 @@ import { BudgetStatus } from "../../types/budget";
 import { TransactionSummary } from "../../types/transaction";
 import { formatCurrency } from "../../utils/formatCurrency";
 import { apiClient } from "../../services/apiClient";
+import { endpoints } from "../../services/endpoints";
 
 export function HomeScreen() {
   const navigation = useNavigation<any>();
@@ -30,7 +31,7 @@ export function HomeScreen() {
   const testBackend = async () => {
     try {
       setHealthStatus("Đang kiểm tra...");
-      const res = await apiClient.get("/api/health");
+      const res = await apiClient.get(endpoints.health);
       setHealthStatus(`Thành công: ${JSON.stringify(res.data)}`);
     } catch (err: any) {
       setHealthStatus(`Lỗi: ${err.message || JSON.stringify(err)}`);

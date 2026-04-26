@@ -3,7 +3,8 @@ import * as Joi from "joi";
 
 export const configValidationSchema = Joi.object({
   PORT: Joi.number().default(3000),
-  SUPABASE_JWT_SECRET: Joi.string().required(),
+  SUPABASE_URL: Joi.string().uri().required(),
+  SUPABASE_SERVICE_ROLE_KEY: Joi.string().required(),
   IDENTITY_SERVICE_URL: Joi.string().uri().required(),
   TRANSACTION_SERVICE_URL: Joi.string().uri().required(),
   OCR_SERVICE_URL: Joi.string().uri().required(),
@@ -15,7 +16,8 @@ export const configValidationSchema = Joi.object({
 export const configuration = () => ({
   port: parseInt(process.env.PORT, 10) || 3000,
   supabase: {
-    jwtSecret: process.env.SUPABASE_JWT_SECRET,
+    url: process.env.SUPABASE_URL,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   },
   services: {
     identity: process.env.IDENTITY_SERVICE_URL,

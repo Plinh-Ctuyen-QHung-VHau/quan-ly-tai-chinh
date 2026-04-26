@@ -14,14 +14,12 @@ export class ProxyService {
     private readonly httpService: HttpService,
   ) {
     this.serviceUrls = {
-      "/api/users": this.configService.get<string>("services.identity"),
-      "/api/transactions": this.configService.get<string>(
-        "services.transaction",
-      ),
-      "/api/categories": this.configService.get<string>("services.transaction"),
-      "/api/ocr": this.configService.get<string>("services.ocr"),
-      "/api/budgets": this.configService.get<string>("services.budget"),
-      "/api/notifications": this.configService.get<string>("services.budget"),
+      "/api/api/users": this.configService.get<string>("services.identity") + "/users",
+      "/api/api/transactions": this.configService.get<string>("services.transaction") + "/transactions",
+      "/api/api/categories": this.configService.get<string>("services.transaction") + "/categories",
+      "/api/api/ocr": this.configService.get<string>("services.ocr") + "/ocr",
+      "/api/api/budgets": this.configService.get<string>("services.budget") + "/budgets",
+      "/api/api/notifications": this.configService.get<string>("services.budget") + "/notifications",
     };
   }
 
