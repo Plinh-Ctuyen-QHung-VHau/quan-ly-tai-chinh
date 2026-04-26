@@ -1,8 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { Pool } from "pg";
-import { PG_CONNECTION } from "../database/database.module";
+import { SupabaseService } from "../supabase/supabase.service";
 import { CreateBudgetDto } from "./dto/create-budget.dto";
 import { UpdateBudgetDto } from "./dto/update-budget.dto";
+
+const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "budget";
 
 // This is a simplified entity representation
 export interface Budget {
@@ -21,53 +22,61 @@ export interface Budget {
 
 @Injectable()
 export class BudgetsRepository {
-  constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
+
+  private get supabase() {
+    return this.supabaseService.getClient().schema(SCHEMA);
+  }
 
   async create(
     userId: string,
     createBudgetDto: CreateBudgetDto,
   ): Promise<Budget> {
     const { budgetAmount, budgetPeriod, startDate, endDate } = createBudgetDto;
-    const query = `
-      INSERT INTO budget.budgets (user_id, budget_amount, budget_period, start_date, end_date)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *;
-    `;
-    const res = await this.pool.query(query, [
-      userId,
-      budgetAmount,
-      budgetPeriod,
-      startDate,
-      endDate,
-    ]);
-    return this.mapToBudget(res.rows[0]);
+    const { data, error } = await this.supabase
+      .from("budgets")
+      .insert({
+        user_id: userId,
+        budget_amount: budgetAmount,
+        budget_period: budgetPeriod,
+        start_date: startDate,
+        end_date: endDate,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return this.mapToBudget(data);
   }
 
   async findById(id: string, userId: string): Promise<Budget | null> {
-    const query = `SELECT * FROM budget.budgets WHERE id = $1 AND user_id = $2 AND status != 'deleted'`;
-    const res = await this.pool.query(query, [id, userId]);
-    if (res.rowCount === 0) {
-      return null;
-    }
-    return this.mapToBudget(res.rows[0]);
+    const { data, error } = await this.supabase
+      .from("budgets")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .neq("status", "deleted")
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? this.mapToBudget(data) : null;
   }
 
   async findCurrentActive(userId: string): Promise<Budget | null> {
-    const now = new Date();
-    const query = `
-        SELECT * FROM budget.budgets 
-        WHERE user_id = $1 
-        AND status = 'active' 
-        AND start_date <= $2 
-        AND end_date >= $2
-        ORDER BY created_at DESC
-        LIMIT 1;
-    `;
-    const res = await this.pool.query(query, [userId, now]);
-    if (res.rowCount === 0) {
-      return null;
-    }
-    return this.mapToBudget(res.rows[0]);
+    const now = new Date().toISOString();
+    const { data, error } = await this.supabase
+      .from("budgets")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .lte("start_date", now)
+      .gte("end_date", now)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? this.mapToBudget(data) : null;
   }
 
   async update(
@@ -75,65 +84,73 @@ export class BudgetsRepository {
     userId: string,
     updateBudgetDto: UpdateBudgetDto,
   ): Promise<Budget | null> {
-    const { budgetAmount, budgetPeriod, startDate, endDate } = updateBudgetDto;
-    const query = `
-      UPDATE budget.budgets
-      SET 
-        budget_amount = COALESCE($1, budget_amount),
-        budget_period = COALESCE($2, budget_period),
-        start_date = COALESCE($3, start_date),
-        end_date = COALESCE($4, end_date),
-        updated_at = NOW()
-      WHERE id = $5 AND user_id = $6 AND status != 'deleted'
-      RETURNING *;
-    `;
-    const res = await this.pool.query(query, [
-      budgetAmount,
-      budgetPeriod,
-      startDate,
-      endDate,
-      id,
-      userId,
-    ]);
-    if (res.rowCount === 0) {
-      return null;
-    }
-    return this.mapToBudget(res.rows[0]);
+    const updatePayload: Record<string, any> = {};
+    if (updateBudgetDto.budgetAmount !== undefined)
+      updatePayload.budget_amount = updateBudgetDto.budgetAmount;
+    if (updateBudgetDto.budgetPeriod !== undefined)
+      updatePayload.budget_period = updateBudgetDto.budgetPeriod;
+    if (updateBudgetDto.startDate !== undefined)
+      updatePayload.start_date = updateBudgetDto.startDate;
+    if (updateBudgetDto.endDate !== undefined)
+      updatePayload.end_date = updateBudgetDto.endDate;
+
+    const { data, error } = await this.supabase
+      .from("budgets")
+      .update(updatePayload)
+      .eq("id", id)
+      .eq("user_id", userId)
+      .neq("status", "deleted")
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data ? this.mapToBudget(data) : null;
   }
 
   async softDelete(id: string, userId: string): Promise<boolean> {
-    const query = `UPDATE budget.budgets SET status = 'deleted', updated_at = NOW() WHERE id = $1 AND user_id = $2`;
-    const res = await this.pool.query(query, [id, userId]);
-    return res.rowCount > 0;
+    const { error, count } = await this.supabase
+      .from("budgets")
+      .update({ status: "deleted" })
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (error) throw new Error(error.message);
+    return (count || 0) > 0;
   }
 
   async updateAlertSent(
     id: string,
     alertType: "80" | "100",
   ): Promise<Budget | null> {
-    const field = alertType === "80" ? "alert_80_sent" : "alert_100_sent";
-    const query = `
-        UPDATE budget.budgets 
-        SET ${field} = true, updated_at = NOW() 
-        WHERE id = $1
-        RETURNING *;
-    `;
-    const res = await this.pool.query(query, [id]);
-    return res.rowCount > 0 ? this.mapToBudget(res.rows[0]) : null;
+    const updatePayload: Record<string, any> =
+      alertType === "80"
+        ? { alert_80_sent: true }
+        : { alert_100_sent: true };
+
+    const { data, error } = await this.supabase
+      .from("budgets")
+      .update(updatePayload)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data ? this.mapToBudget(data) : null;
   }
 
   async updateStatus(
     id: string,
     status: "active" | "inactive" | "exceeded",
   ): Promise<Budget | null> {
-    const query = `
-        UPDATE budget.budgets 
-        SET status = $1, updated_at = NOW() 
-        WHERE id = $2
-        RETURNING *;
-    `;
-    const res = await this.pool.query(query, [status, id]);
-    return res.rowCount > 0 ? this.mapToBudget(res.rows[0]) : null;
+    const { data, error } = await this.supabase
+      .from("budgets")
+      .update({ status })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data ? this.mapToBudget(data) : null;
   }
 
   private mapToBudget(row: any): Budget {

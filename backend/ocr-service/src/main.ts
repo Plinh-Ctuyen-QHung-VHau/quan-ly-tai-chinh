@@ -15,8 +15,14 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  const port = configService.get<number>("port");
-  await app.listen(port);
-  console.log(`OCR Service is running on: ${await app.getUrl()}`);
+  const port =
+    configService.get<number>("port") ||
+    Number(process.env.PORT) ||
+    3003;
+
+  await app.listen(port, "0.0.0.0");
+
+  console.log(`OCR Service is running on: http://0.0.0.0:${port}`);
 }
+
 bootstrap();

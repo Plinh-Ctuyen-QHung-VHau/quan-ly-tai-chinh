@@ -3,7 +3,6 @@ import { ConfigModule, ConfigService, ConfigType } from "@nestjs/config";
 import { OcrService } from "./ocr.service";
 import { OcrController } from "./ocr.controller";
 import { OcrRepository } from "./ocr.repository";
-import { DatabaseModule } from "../database/database.module";
 import { StorageModule } from "../storage/storage.module";
 import { OcrParser } from "./ocr.parser";
 import { OCR_ENGINE_ADAPTER, OcrEngineAdapter } from "./adapters/ocr-engine.adapter";
@@ -29,7 +28,7 @@ const ocrEngineFactory = {
 };
 
 @Module({
-  imports: [DatabaseModule, StorageModule, ConfigModule],
+  imports: [StorageModule, ConfigModule],
   controllers: [OcrController],
   providers: [
     OcrService,

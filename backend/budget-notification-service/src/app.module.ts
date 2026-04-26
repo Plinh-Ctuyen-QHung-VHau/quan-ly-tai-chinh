@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { HealthController } from "./health/health.controller";
 import { MetricsModule } from "./metrics/metrics.module";
-import { DatabaseModule } from "./database/database.module";
+import { SupabaseModule } from "./supabase/supabase.module";
 import { configModuleOptions } from "./config/configuration";
 import { BudgetsModule } from "./budgets/budgets.module";
 import { NotificationsModule } from "./notifications/notifications.module";
@@ -12,7 +12,7 @@ import { EventsModule } from "./events/events.module";
 @Module({
   imports: [
     ConfigModule.forRoot(configModuleOptions),
-    DatabaseModule,
+    SupabaseModule,
     MetricsModule,
     BudgetsModule,
     NotificationsModule,
@@ -22,4 +22,4 @@ import { EventsModule } from "./events/events.module";
   controllers: [HealthController],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }

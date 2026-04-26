@@ -1,7 +1,8 @@
-import { Inject, Injectable } from "@nestjs/common";
-import { Pool } from "pg";
-import { PG_CONNECTION } from "../database/database.module";
+import { Injectable } from "@nestjs/common";
+import { SupabaseService } from "../supabase/supabase.service";
 import { FindNotificationsDto } from "./dto/find-notifications.dto";
+
+const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "budget";
 
 export interface Notification {
   id: string;
@@ -22,19 +23,29 @@ export interface NotificationSettings {
 
 @Injectable()
 export class NotificationsRepository {
-  constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
+
+  private get supabase() {
+    return this.supabaseService.getClient().schema(SCHEMA);
+  }
 
   async create(
     notification: Omit<Notification, "id" | "isRead" | "createdAt">,
   ): Promise<Notification> {
     const { userId, type, title, message } = notification;
-    const query = `
-      INSERT INTO budget.notifications (user_id, type, title, message)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
-    `;
-    const res = await this.pool.query(query, [userId, type, title, message]);
-    return this.mapToNotification(res.rows[0]);
+    const { data, error } = await this.supabase
+      .from("notifications")
+      .insert({
+        user_id: userId,
+        type,
+        title,
+        message,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return this.mapToNotification(data);
   }
 
   async find(
@@ -50,58 +61,85 @@ export class NotificationsRepository {
     } = findDto;
     const offset = (page - 1) * limit;
 
-    let whereClause = "WHERE user_id = $1";
-    const queryParams: any[] = [userId];
+    // Count query
+    let countQuery = this.supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
 
     if (isRead !== undefined) {
-      queryParams.push(isRead);
-      whereClause += ` AND is_read = $${queryParams.length}`;
+      countQuery = countQuery.eq("is_read", isRead);
     }
 
-    const countQuery = `SELECT COUNT(*) FROM budget.notifications ${whereClause}`;
-    const totalRes = await this.pool.query(countQuery, queryParams);
-    const total = parseInt(totalRes.rows[0].count, 10);
+    const { count: total, error: countError } = await countQuery;
+    if (countError) throw new Error(countError.message);
 
-    const dataQuery = `
-        SELECT * FROM budget.notifications 
-        ${whereClause}
-        ORDER BY ${sortBy} ${sortOrder}
-        LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
-    `;
-    const res = await this.pool.query(dataQuery, [
-      ...queryParams,
-      limit,
-      offset,
-    ]);
+    // Data query
+    let dataQuery = this.supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order(sortBy, { ascending: sortOrder === "ASC" })
+      .range(offset, offset + limit - 1);
+
+    if (isRead !== undefined) {
+      dataQuery = dataQuery.eq("is_read", isRead);
+    }
+
+    const { data, error: dataError } = await dataQuery;
+    if (dataError) throw new Error(dataError.message);
 
     return {
-      notifications: res.rows.map(this.mapToNotification),
-      total,
+      notifications: (data || []).map(this.mapToNotification),
+      total: total || 0,
     };
   }
 
   async findById(id: string, userId: string): Promise<Notification | null> {
-    const query = `SELECT * FROM budget.notifications WHERE id = $1 AND user_id = $2`;
-    const res = await this.pool.query(query, [id, userId]);
-    return res.rowCount > 0 ? this.mapToNotification(res.rows[0]) : null;
+    const { data, error } = await this.supabase
+      .from("notifications")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? this.mapToNotification(data) : null;
   }
 
   async markAsRead(id: string, userId: string): Promise<Notification | null> {
-    const query = `UPDATE budget.notifications SET is_read = true WHERE id = $1 AND user_id = $2 RETURNING *`;
-    const res = await this.pool.query(query, [id, userId]);
-    return res.rowCount > 0 ? this.mapToNotification(res.rows[0]) : null;
+    const { data, error } = await this.supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("id", id)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data ? this.mapToNotification(data) : null;
   }
 
   async markAllAsRead(userId: string): Promise<number> {
-    const query = `UPDATE budget.notifications SET is_read = true WHERE user_id = $1 AND is_read = false`;
-    const res = await this.pool.query(query, [userId]);
-    return res.rowCount;
+    const { count, error } = await this.supabase
+      .from("notifications")
+      .update({ is_read: true }, { count: "exact" })
+      .eq("user_id", userId)
+      .eq("is_read", false);
+
+    if (error) throw new Error(error.message);
+    return count || 0;
   }
 
   async getSettings(userId: string): Promise<NotificationSettings | null> {
-    const query = `SELECT * FROM budget.notification_settings WHERE user_id = $1`;
-    const res = await this.pool.query(query, [userId]);
-    return res.rowCount > 0 ? this.mapToSettings(res.rows[0]) : null;
+    const { data, error } = await this.supabase
+      .from("notification_settings")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? this.mapToSettings(data) : null;
   }
 
   async updateSettings(
@@ -109,22 +147,23 @@ export class NotificationsRepository {
     settings: Partial<NotificationSettings>,
   ): Promise<NotificationSettings> {
     const { enableAll, enableBudgetAlert, enableDailyReminder } = settings;
-    const query = `
-      INSERT INTO budget.notification_settings (user_id, enable_all, enable_budget_alert, enable_daily_reminder)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (user_id) DO UPDATE SET
-        enable_all = EXCLUDED.enable_all,
-        enable_budget_alert = EXCLUDED.enable_budget_alert,
-        enable_daily_reminder = EXCLUDED.enable_daily_reminder
-      RETURNING *;
-    `;
-    const res = await this.pool.query(query, [
-      userId,
-      enableAll,
-      enableBudgetAlert,
-      enableDailyReminder,
-    ]);
-    return this.mapToSettings(res.rows[0]);
+
+    const { data, error } = await this.supabase
+      .from("notification_settings")
+      .upsert(
+        {
+          user_id: userId,
+          enable_all: enableAll,
+          enable_budget_alert: enableBudgetAlert,
+          enable_daily_reminder: enableDailyReminder,
+        },
+        { onConflict: "user_id" },
+      )
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return this.mapToSettings(data);
   }
 
   private mapToNotification(row: any): Notification {

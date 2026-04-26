@@ -1,21 +1,30 @@
-import { Inject, Injectable } from "@nestjs/common";
-import { Pool } from "pg";
-import { PG_CONNECTION } from "../database/database.module";
+import { Injectable, Logger } from "@nestjs/common";
+import { SupabaseService } from "../supabase/supabase.service";
+
+const EVENT_LOG_SCHEMA = process.env.EVENT_LOG_SCHEMA || "app_common";
 
 @Injectable()
 export class EventPublisher {
-  constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
+  private readonly logger = new Logger(EventPublisher.name);
+
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   async publish(eventType: string, payload: any) {
     try {
-      await this.pool.query(
-        `INSERT INTO app_common.event_logs (event_type, payload) VALUES ($1, $2)`,
-        [eventType, payload],
-      );
+      const { error } = await this.supabaseService
+        .getClient()
+        .schema(EVENT_LOG_SCHEMA)
+        .from("event_logs")
+        .insert({
+          event_type: eventType,
+          payload,
+        });
+
+      if (error) {
+        this.logger.error("Failed to publish event:", error.message);
+      }
     } catch (error) {
-      // In a real-world scenario, you might want to handle this more gracefully
-      // (e.g., using a dead-letter queue or more robust logging)
-      console.error("Failed to publish event:", error);
+      this.logger.error("Failed to publish event:", error);
     }
   }
 }

@@ -1,6 +1,5 @@
-import { Injectable, Inject } from "@nestjs/common";
-import { Pool, QueryResult } from "pg";
-import { PG_CONNECTION } from "../database/database.module";
+import { Injectable } from "@nestjs/common";
+import { SupabaseService } from "../supabase/supabase.service";
 import {
   CreateTransactionDto,
   UpdateTransactionDto,
@@ -10,9 +9,15 @@ import {
   GetTransactionSummaryQueryDto,
 } from "./dto/get-transactions-query.dto";
 
+const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "transaction";
+
 @Injectable()
 export class TransactionsRepository {
-  constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
+
+  private get supabase() {
+    return this.supabaseService.getClient().schema(SCHEMA);
+  }
 
   async create(userId: string, dto: CreateTransactionDto) {
     const {
@@ -26,32 +31,37 @@ export class TransactionsRepository {
       merchantName,
       ocrResultId,
     } = dto;
-    const result = await this.pool.query(
-      `INSERT INTO "transaction".transactions 
-        (user_id, type, amount, category_id, note, transaction_date, source, image_url, merchant_name, ocr_result_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [
-        userId,
+    const { data, error } = await this.supabase
+      .from("transactions")
+      .insert({
+        user_id: userId,
         type,
         amount,
-        categoryId,
+        category_id: categoryId,
         note,
-        transactionDate,
+        transaction_date: transactionDate,
         source,
-        imageUrl,
-        merchantName,
-        ocrResultId,
-      ],
-    );
-    return result.rows[0];
+        image_url: imageUrl,
+        merchant_name: merchantName,
+        ocr_result_id: ocrResultId,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
   }
 
   async findById(id: string, userId: string) {
-    const result = await this.pool.query(
-      'SELECT * FROM "transaction".transactions WHERE id = $1 AND user_id = $2',
-      [id, userId],
-    );
-    return result.rows[0];
+    const { data, error } = await this.supabase
+      .from("transactions")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data;
   }
 
   async findAll(userId: string, queryDto: GetTransactionsQueryDto) {
@@ -67,154 +77,181 @@ export class TransactionsRepository {
       sortOrder,
     } = queryDto;
 
-    let query = `SELECT t.*, c.name as category_name, c.icon as category_icon FROM "transaction".transactions t
-                 LEFT JOIN "transaction".categories c ON t.category_id = c.id
-                 WHERE t.user_id = $1`;
-    const params: any[] = [userId];
-    let paramIndex = 2;
+    // --- Count query ---
+    let countQuery = this.supabase
+      .from("transactions")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
 
-    if (type) {
-      query += ` AND t.type = $${paramIndex++}`;
-      params.push(type);
-    }
-    if (categoryId) {
-      query += ` AND t.category_id = $${paramIndex++}`;
-      params.push(categoryId);
-    }
-    if (fromDate) {
-      query += ` AND t.transaction_date >= $${paramIndex++}`;
-      params.push(fromDate);
-    }
-    if (toDate) {
-      query += ` AND t.transaction_date <= $${paramIndex++}`;
-      params.push(toDate);
-    }
+    if (type) countQuery = countQuery.eq("type", type);
+    if (categoryId) countQuery = countQuery.eq("category_id", categoryId);
+    if (fromDate) countQuery = countQuery.gte("transaction_date", fromDate);
+    if (toDate) countQuery = countQuery.lte("transaction_date", toDate);
     if (keyword) {
-      query += ` AND (t.note ILIKE $${paramIndex} OR t.merchant_name ILIKE $${paramIndex})`;
-      params.push(`%${keyword}%`);
-      paramIndex++;
+      countQuery = countQuery.or(
+        `note.ilike.%${keyword}%,merchant_name.ilike.%${keyword}%`,
+      );
     }
 
-    const countResult = await this.pool.query(
-      `SELECT COUNT(*) FROM (${query}) as subquery`,
-      params,
-    );
-    const totalItems = parseInt(countResult.rows[0].count, 10);
+    const { count: totalItems, error: countError } = await countQuery;
+    if (countError) throw new Error(countError.message);
 
+    // --- Data query with category join ---
     const validSortBy = ["transaction_date", "amount", "created_at"];
     const safeSortBy = validSortBy.includes(sortBy)
       ? sortBy
       : "transaction_date";
-    const safeSortOrder = sortOrder === "ASC" ? "ASC" : "DESC";
+    const ascending = sortOrder === "ASC";
 
-    query += ` ORDER BY t.${safeSortBy} ${safeSortOrder}, t.created_at DESC`;
-    query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
-    params.push(limit, (page - 1) * limit);
+    const offset = (page - 1) * limit;
 
-    const dataResult = await this.pool.query(query, params);
+    let dataQuery = this.supabase
+      .from("transactions")
+      .select("*, categories!category_id(name, icon)")
+      .eq("user_id", userId)
+      .order(safeSortBy, { ascending })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (type) dataQuery = dataQuery.eq("type", type);
+    if (categoryId) dataQuery = dataQuery.eq("category_id", categoryId);
+    if (fromDate) dataQuery = dataQuery.gte("transaction_date", fromDate);
+    if (toDate) dataQuery = dataQuery.lte("transaction_date", toDate);
+    if (keyword) {
+      dataQuery = dataQuery.or(
+        `note.ilike.%${keyword}%,merchant_name.ilike.%${keyword}%`,
+      );
+    }
+
+    const { data, error: dataError } = await dataQuery;
+    if (dataError) throw new Error(dataError.message);
+
+    // Flatten the nested categories join
+    const rows = (data || []).map((row: any) => {
+      const { categories, ...rest } = row;
+      return {
+        ...rest,
+        category_name: categories?.name || null,
+        category_icon: categories?.icon || null,
+      };
+    });
 
     return {
-      data: dataResult.rows,
+      data: rows,
       meta: {
-        totalItems,
-        itemCount: dataResult.rowCount,
+        totalItems: totalItems || 0,
+        itemCount: rows.length,
         itemsPerPage: limit,
-        totalPages: Math.ceil(totalItems / limit),
+        totalPages: Math.ceil((totalItems || 0) / limit),
         currentPage: page,
       },
     };
   }
 
   async update(id: string, userId: string, dto: UpdateTransactionDto) {
-    const { type, amount, categoryId, note, transactionDate, merchantName } =
-      dto;
-    const result = await this.pool.query(
-      `UPDATE "transaction".transactions SET
-        type = COALESCE($1, type),
-        amount = COALESCE($2, amount),
-        category_id = COALESCE($3, category_id),
-        note = COALESCE($4, note),
-        transaction_date = COALESCE($5, transaction_date),
-        merchant_name = COALESCE($6, merchant_name),
-        updated_at = NOW()
-       WHERE id = $7 AND user_id = $8 RETURNING *`,
-      [
-        type,
-        amount,
-        categoryId,
-        note,
-        transactionDate,
-        merchantName,
-        id,
-        userId,
-      ],
-    );
-    return result.rows[0];
+    const updatePayload: Record<string, any> = {};
+    if (dto.type !== undefined) updatePayload.type = dto.type;
+    if (dto.amount !== undefined) updatePayload.amount = dto.amount;
+    if (dto.categoryId !== undefined)
+      updatePayload.category_id = dto.categoryId;
+    if (dto.note !== undefined) updatePayload.note = dto.note;
+    if (dto.transactionDate !== undefined)
+      updatePayload.transaction_date = dto.transactionDate;
+    if (dto.merchantName !== undefined)
+      updatePayload.merchant_name = dto.merchantName;
+
+    const { data, error } = await this.supabase
+      .from("transactions")
+      .update(updatePayload)
+      .eq("id", id)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
   }
 
   async delete(id: string, userId: string): Promise<boolean> {
-    const result = await this.pool.query(
-      'DELETE FROM "transaction".transactions WHERE id = $1 AND user_id = $2',
-      [id, userId],
-    );
-    return result.rowCount > 0;
+    const { error, count } = await this.supabase
+      .from("transactions")
+      .delete({ count: "exact" })
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (error) throw new Error(error.message);
+    return (count || 0) > 0;
   }
 
+  /**
+   * Returns transactions grouped by date for the last 30 days.
+   * NOTE: GROUP BY + json_agg not supported in Supabase JS client.
+   * Grouping is done in TypeScript.
+   * TODO: Consider a DB RPC/view for better performance on large datasets.
+   */
   async getHistory(userId: string) {
-    const result = await this.pool.query(
-      `SELECT 
-            DATE(transaction_date) as date, 
-            json_agg(
-                json_build_object(
-                    'id', t.id,
-                    'type', t.type,
-                    'amount', t.amount,
-                    'note', t.note,
-                    'merchantName', t.merchant_name,
-                    'categoryName', c.name,
-                    'categoryIcon', c.icon
-                ) ORDER BY t.transaction_date DESC
-            ) as transactions
-         FROM "transaction".transactions t
-         LEFT JOIN "transaction".categories c ON t.category_id = c.id
-         WHERE t.user_id = $1
-         GROUP BY DATE(transaction_date)
-         ORDER BY date DESC
-         LIMIT 30`, // Limit to last 30 days of transactions for performance
-      [userId],
-    );
-    return result.rows;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data, error } = await this.supabase
+      .from("transactions")
+      .select("id, type, amount, note, merchant_name, transaction_date, categories!category_id(name, icon)")
+      .eq("user_id", userId)
+      .gte("transaction_date", thirtyDaysAgo.toISOString())
+      .order("transaction_date", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    // Group by date in JS
+    const grouped: Record<string, any[]> = {};
+    for (const row of data || []) {
+      const date = (row.transaction_date as string).slice(0, 10); // YYYY-MM-DD
+      if (!grouped[date]) grouped[date] = [];
+      const { categories, ...rest } = row as any;
+      grouped[date].push({
+        id: rest.id,
+        type: rest.type,
+        amount: rest.amount,
+        note: rest.note,
+        merchantName: rest.merchant_name,
+        categoryName: categories?.name || null,
+        categoryIcon: categories?.icon || null,
+      });
+    }
+
+    return Object.entries(grouped).map(([date, transactions]) => ({
+      date,
+      transactions,
+    }));
   }
 
   async getSummary(userId: string, queryDto: GetTransactionSummaryQueryDto) {
     const { fromDate, toDate } = queryDto;
-    let query = `
-        SELECT 
-            COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as "totalIncome",
-            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as "totalExpense"
-        FROM "transaction".transactions
-        WHERE user_id = $1
-    `;
-    const params: any[] = [userId];
-    let paramIndex = 2;
 
-    if (fromDate) {
-      query += ` AND transaction_date >= $${paramIndex++}`;
-      params.push(fromDate);
-    }
-    if (toDate) {
-      query += ` AND transaction_date <= $${paramIndex++}`;
-      params.push(toDate);
-    }
+    let query = this.supabase
+      .from("transactions")
+      .select("type, amount")
+      .eq("user_id", userId);
 
-    const result = await this.pool.query(query, params);
-    const { totalIncome, totalExpense } = result.rows[0];
-    const balance = parseFloat(totalIncome) - parseFloat(totalExpense);
+    if (fromDate) query = query.gte("transaction_date", fromDate);
+    if (toDate) query = query.lte("transaction_date", toDate);
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    for (const row of data || []) {
+      const amount = parseFloat(row.amount);
+      if (row.type === "income") totalIncome += amount;
+      else if (row.type === "expense") totalExpense += amount;
+    }
 
     return {
-      totalIncome: parseFloat(totalIncome),
-      totalExpense: parseFloat(totalExpense),
-      balance,
+      totalIncome,
+      totalExpense,
+      balance: totalIncome - totalExpense,
     };
   }
 }

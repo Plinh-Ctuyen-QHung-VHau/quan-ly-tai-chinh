@@ -1,34 +1,44 @@
-import { Injectable, Inject } from "@nestjs/common";
-import { Pool } from "pg";
-import { PG_CONNECTION } from "../database/database.module";
+import { Injectable } from "@nestjs/common";
+import { SupabaseService } from "../supabase/supabase.service";
 import { GetCategoriesQueryDto } from "./dto/get-categories-query.dto";
+
+const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "transaction";
 
 @Injectable()
 export class CategoriesRepository {
-  constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
+
+  private get supabase() {
+    return this.supabaseService.getClient().schema(SCHEMA);
+  }
 
   async findAll(userId: string, queryDto: GetCategoriesQueryDto) {
     const { type } = queryDto;
-    let query =
-      'SELECT id, name, type, icon, created_at, updated_at FROM "transaction".categories WHERE user_id = $1 OR user_id IS NULL';
-    const params: any[] = [userId];
+    let query = this.supabase
+      .from("categories")
+      .select("id, name, type, icon, created_at, updated_at")
+      .or(`user_id.eq.${userId},user_id.is.null`);
 
     if (type) {
-      query += " AND type = $2";
-      params.push(type);
+      query = query.eq("type", type);
     }
 
-    query += " ORDER BY name ASC";
+    query = query.order("name", { ascending: true });
 
-    const result = await this.pool.query(query, params);
-    return result.rows;
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return data;
   }
 
   async findById(id: string, userId: string) {
-    const result = await this.pool.query(
-      'SELECT id, name, type FROM "transaction".categories WHERE id = $1 AND (user_id = $2 OR user_id IS NULL)',
-      [id, userId],
-    );
-    return result.rows[0];
+    const { data, error } = await this.supabase
+      .from("categories")
+      .select("id, name, type")
+      .eq("id", id)
+      .or(`user_id.eq.${userId},user_id.is.null`)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data;
   }
 }

@@ -1,10 +1,9 @@
 import { Module } from "@nestjs/common";
 import { EventPublisher } from "./event.publisher";
-import { DatabaseModule } from "../database/database.module";
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [],
   providers: [EventPublisher],
   exports: [EventPublisher],
 })
-export class EventsModule {}
+export class EventsModule { }

@@ -3,9 +3,9 @@ import * as Joi from "joi";
 
 export const configValidationSchema = Joi.object({
   PORT: Joi.number().default(3003),
-  DATABASE_URL: Joi.string().required(),
   SUPABASE_URL: Joi.string().required(),
   SUPABASE_SERVICE_ROLE_KEY: Joi.string().required(),
+  SUPABASE_DB_SCHEMA: Joi.string().default("ocr"),
   SUPABASE_STORAGE_BUCKET: Joi.string().default("receipts"),
   OCR_ENGINE: Joi.string().valid("tesseract", "mock").default("tesseract"),
   OCR_LANG: Joi.string().default("vie+eng"),
@@ -16,13 +16,11 @@ export const configValidationSchema = Joi.object({
 
 export const configuration = registerAs("app", () => ({
   port: parseInt(process.env.PORT, 10) || 3003,
-  database: {
-    url: process.env.DATABASE_URL,
-  },
   supabase: {
     url: process.env.SUPABASE_URL,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     bucketName: process.env.SUPABASE_STORAGE_BUCKET || "receipts",
+    schema: process.env.SUPABASE_DB_SCHEMA || "ocr",
   },
   ocr: {
     engine: process.env.OCR_ENGINE || "tesseract",
