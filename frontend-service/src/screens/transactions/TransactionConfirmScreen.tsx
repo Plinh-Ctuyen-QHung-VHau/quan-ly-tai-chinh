@@ -26,18 +26,18 @@ export function TransactionConfirmScreen() {
   const clearDraft = useTransactionStore((state) => state.clearDraft);
   const user = useAuthStore((state) => state.user);
 
-  const initialType = (draftOcr?.suggestedType ?? "expense") as TransactionType;
+  const initialType = "expense" as TransactionType;
   const [type, setType] = useState<TransactionType>(initialType);
-  const [amount, setAmount] = useState(String(draftOcr?.suggestedAmount ?? ""));
+  const [amount, setAmount] = useState(String(draftOcr?.total_amount ?? ""));
   const [categoryId, setCategoryId] = useState(
-    draftOcr?.suggestedCategoryId ?? "",
+    draftOcr?.suggested_category_id ?? "",
   );
   const [note, setNote] = useState("");
   const [transactionDate, setTransactionDate] = useState(
-    draftOcr?.suggestedDate ?? new Date().toISOString().slice(0, 10),
+    draftOcr?.transaction_date ?? new Date().toISOString().slice(0, 10),
   );
   const [merchantName, setMerchantName] = useState(
-    draftOcr?.merchantName ?? "",
+    draftOcr?.merchant_name ?? "",
   );
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,8 +69,8 @@ export function TransactionConfirmScreen() {
   }, [type]);
 
   const previewImage = useMemo(
-    () => draftOcr?.imageUrl ?? draftReceiptPath ?? "",
-    [draftOcr?.imageUrl, draftReceiptPath],
+    () => draftOcr?.image_url ?? draftReceiptPath ?? "",
+    [draftOcr?.image_url, draftReceiptPath],
   );
 
   const validImageUrl = useMemo(() => {
@@ -113,11 +113,11 @@ export function TransactionConfirmScreen() {
       await createTransaction({
         amount: Number(amount),
         type,
-        categoryId,
+        category_id: categoryId,
         note: note.trim() || undefined,
-        transactionDate,
-        merchantName: merchantName.trim() || undefined,
-        imageUrl: validImageUrl,
+        transaction_date: transactionDate,
+        merchant_name: merchantName.trim() || undefined,
+        image_url: validImageUrl,
         source: draftSourceType,
       });
       clearDraft();
@@ -137,16 +137,16 @@ export function TransactionConfirmScreen() {
         <Text style={styles.subtitle}>Kiểm tra dữ liệu OCR trước khi lưu.</Text>
         <View style={styles.summaryBox}>
           <Text style={styles.summaryText}>
-            Amount gợi ý: {draftOcr?.suggestedAmount ?? "-"}
+            Amount gợi ý: {draftOcr?.total_amount ?? "-"}
           </Text>
           <Text style={styles.summaryText}>
-            Date gợi ý: {draftOcr?.suggestedDate ?? "-"}
+            Date gợi ý: {draftOcr?.transaction_date ?? "-"}
           </Text>
           <Text style={styles.summaryText}>
-            Type gợi ý: {draftOcr?.suggestedType ?? "-"}
+            Category gợi ý: {draftOcr?.suggested_category_id ?? "-"}
           </Text>
           <Text style={styles.summaryText}>
-            Merchant: {draftOcr?.merchantName ?? "-"}
+            Merchant: {draftOcr?.merchant_name ?? "-"}
           </Text>
           <Text style={styles.summaryText}>Image: {validImageUrl || "-"}</Text>
         </View>

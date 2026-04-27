@@ -19,31 +19,22 @@ export class TransactionsRepository {
     return this.supabaseService.getClient().schema(SCHEMA);
   }
 
-  async create(userId: string, dto: CreateTransactionDto) {
-    const {
-      type,
-      amount,
-      categoryId,
-      note,
-      transactionDate,
-      source,
-      imageUrl,
-      merchantName,
-      ocrResultId,
-    } = dto;
+  async create(user_id: string, dto: CreateTransactionDto) {
     const { data, error } = await this.supabase
       .from("transactions")
       .insert({
-        user_id: userId,
-        type,
-        amount,
-        category_id: categoryId,
-        note,
-        transaction_date: transactionDate,
-        source,
-        image_url: imageUrl,
-        merchant_name: merchantName,
-        ocr_result_id: ocrResultId,
+        user_id: user_id,
+        type: dto.type,
+        amount: dto.amount,
+        category_id: dto.categoryId,
+        note: dto.note,
+        transaction_date: dto.transactionDate,
+        source: dto.source,
+        image_url: dto.imageUrl,
+        merchant_name: dto.merchantName,
+        ocr_result_id: dto.ocrResultId,
+        is_anomaly: dto.isAnomaly,
+        anomaly_score: dto.anomalyScore,
       })
       .select()
       .single();
@@ -52,19 +43,19 @@ export class TransactionsRepository {
     return data;
   }
 
-  async findById(id: string, userId: string) {
+  async findById(id: string, user_id: string) {
     const { data, error } = await this.supabase
       .from("transactions")
       .select("*")
       .eq("id", id)
-      .eq("user_id", userId)
+      .eq("user_id", user_id)
       .maybeSingle();
 
     if (error) throw new Error(error.message);
     return data;
   }
 
-  async findAll(userId: string, queryDto: GetTransactionsQueryDto) {
+  async findAll(user_id: string, queryDto: GetTransactionsQueryDto) {
     const {
       type,
       categoryId,
@@ -81,7 +72,7 @@ export class TransactionsRepository {
     let countQuery = this.supabase
       .from("transactions")
       .select("*", { count: "exact", head: true })
-      .eq("user_id", userId);
+      .eq("user_id", user_id);
 
     if (type) countQuery = countQuery.eq("type", type);
     if (categoryId) countQuery = countQuery.eq("category_id", categoryId);
@@ -108,7 +99,7 @@ export class TransactionsRepository {
     let dataQuery = this.supabase
       .from("transactions")
       .select("*, categories!category_id(name, icon)")
-      .eq("user_id", userId)
+      .eq("user_id", user_id)
       .order(safeSortBy, { ascending })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -148,23 +139,21 @@ export class TransactionsRepository {
     };
   }
 
-  async update(id: string, userId: string, dto: UpdateTransactionDto) {
-    const updatePayload: Record<string, any> = {};
-    if (dto.type !== undefined) updatePayload.type = dto.type;
-    if (dto.amount !== undefined) updatePayload.amount = dto.amount;
-    if (dto.categoryId !== undefined)
-      updatePayload.category_id = dto.categoryId;
-    if (dto.note !== undefined) updatePayload.note = dto.note;
-    if (dto.transactionDate !== undefined)
-      updatePayload.transaction_date = dto.transactionDate;
-    if (dto.merchantName !== undefined)
-      updatePayload.merchant_name = dto.merchantName;
-
+  async update(id: string, user_id: string, dto: UpdateTransactionDto) {
     const { data, error } = await this.supabase
       .from("transactions")
-      .update(updatePayload)
+      .update({
+        type: dto.type,
+        amount: dto.amount,
+        category_id: dto.categoryId,
+        note: dto.note,
+        transaction_date: dto.transactionDate,
+        merchant_name: dto.merchantName,
+        is_anomaly: dto.isAnomaly,
+        anomaly_score: dto.anomalyScore,
+      })
       .eq("id", id)
-      .eq("user_id", userId)
+      .eq("user_id", user_id)
       .select()
       .single();
 
@@ -172,12 +161,12 @@ export class TransactionsRepository {
     return data;
   }
 
-  async delete(id: string, userId: string): Promise<boolean> {
+  async delete(id: string, user_id: string): Promise<boolean> {
     const { error, count } = await this.supabase
       .from("transactions")
       .delete({ count: "exact" })
       .eq("id", id)
-      .eq("user_id", userId);
+      .eq("user_id", user_id);
 
     if (error) throw new Error(error.message);
     return (count || 0) > 0;
@@ -189,7 +178,7 @@ export class TransactionsRepository {
    * Grouping is done in TypeScript.
    * TODO: Consider a DB RPC/view for better performance on large datasets.
    */
-  async getHistory(userId: string) {
+  async getHistory(user_id: string) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -198,7 +187,7 @@ export class TransactionsRepository {
       .select(
         "id, type, amount, note, merchant_name, transaction_date, categories!category_id(name, icon)",
       )
-      .eq("user_id", userId)
+      .eq("user_id", user_id)
       .gte("transaction_date", thirtyDaysAgo.toISOString())
       .order("transaction_date", { ascending: false });
 
@@ -227,13 +216,13 @@ export class TransactionsRepository {
     }));
   }
 
-  async getSummary(userId: string, queryDto: GetTransactionSummaryQueryDto) {
+  async getSummary(user_id: string, queryDto: GetTransactionSummaryQueryDto) {
     const { fromDate, toDate } = queryDto;
 
     let query = this.supabase
       .from("transactions")
       .select("type, amount")
-      .eq("user_id", userId);
+      .eq("user_id", user_id);
 
     if (fromDate) query = query.gte("transaction_date", fromDate);
     if (toDate) query = query.lte("transaction_date", toDate);

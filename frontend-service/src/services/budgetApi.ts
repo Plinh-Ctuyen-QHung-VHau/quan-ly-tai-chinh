@@ -22,9 +22,11 @@ export async function getCurrentBudgetStatus(): Promise<BudgetStatus | null> {
   }
 }
 
-export async function createBudget(
-  payload: Omit<Budget, "id" | "createdAt" | "updatedAt">,
-) {
+export async function createBudget(payload: {
+  budget_amount: number;
+  budget_period: BudgetPeriod;
+  start_date: string;
+}) {
   const response = await apiClient.post(endpoints.budgets.create, payload);
   return handleApiResponse<Budget>(response);
 }

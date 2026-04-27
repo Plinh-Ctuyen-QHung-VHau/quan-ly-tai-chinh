@@ -19,11 +19,13 @@ import {
 import { NotificationSettings } from "../../types/notification";
 
 const defaultSettings: NotificationSettings = {
-  enableAll: true,
-  enableBudgetAlert: true,
-  enableAnomalyAlert: true,
-  enableDailyReminder: false,
-  reminderTime: "08:00",
+  enable_all: true,
+  enable_budget_alert: true,
+  alert_80_sent: false,
+  alert_100_sent: false,
+  enable_anomaly_alert: true,
+  enable_daily_reminder: false,
+  reminder_time: "08:00",
 };
 
 export function NotificationSettingsScreen() {
@@ -76,44 +78,47 @@ export function NotificationSettingsScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Row
-          label="enableAll"
-          value={settings.enableAll}
+          label="Bật tất cả"
+          value={settings.enable_all}
           onChange={(value) =>
-            setSettings((current) => ({ ...current, enableAll: value }))
+            setSettings((current) => ({ ...current, enable_all: value }))
           }
         />
         <Row
-          label="enableBudgetAlert"
-          value={settings.enableBudgetAlert}
-          onChange={(value) =>
-            setSettings((current) => ({ ...current, enableBudgetAlert: value }))
-          }
-        />
-        <Row
-          label="enableAnomalyAlert"
-          value={settings.enableAnomalyAlert}
+          label="Cảnh báo ngân sách"
+          value={settings.enable_budget_alert}
           onChange={(value) =>
             setSettings((current) => ({
               ...current,
-              enableAnomalyAlert: value,
+              enable_budget_alert: value,
             }))
           }
         />
         <Row
-          label="enableDailyReminder"
-          value={settings.enableDailyReminder}
+          label="Cảnh báo bất thường"
+          value={settings.enable_anomaly_alert}
           onChange={(value) =>
             setSettings((current) => ({
               ...current,
-              enableDailyReminder: value,
+              enable_anomaly_alert: value,
+            }))
+          }
+        />
+        <Row
+          label="Nhắc nhở hàng ngày"
+          value={settings.enable_daily_reminder}
+          onChange={(value) =>
+            setSettings((current) => ({
+              ...current,
+              enable_daily_reminder: value,
             }))
           }
         />
         <AppInput
-          label="reminderTime"
-          value={settings.reminderTime}
+          label="Thời gian nhắc nhở"
+          value={settings.reminder_time}
           onChangeText={(value) =>
-            setSettings((current) => ({ ...current, reminderTime: value }))
+            setSettings((current) => ({ ...current, reminder_time: value }))
           }
           placeholder="08:00"
         />

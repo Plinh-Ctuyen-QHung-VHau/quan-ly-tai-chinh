@@ -5,30 +5,30 @@ export interface Transaction {
   id: string;
   amount: number;
   type: TransactionType;
-  categoryId: string;
+  category_id: string;
   categoryName?: string | null;
   note?: string | null;
-  transactionDate: string;
-  merchantName?: string | null;
-  imageUrl?: string | null;
-  isAnomaly?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  transaction_date: string;
+  merchant_name?: string | null;
+  image_url?: string | null;
+  is_anomaly?: boolean;
+  created_at?: string;
+  updated_at?: string;
   source?: TransactionSource | null;
 }
 
 export interface TransactionSummary {
-  totalIncome: number;
-  totalExpense: number;
+  total_income: number;
+  total_expense: number;
   balance: number;
   currency?: string;
 }
 
 export interface TransactionFilters {
   type?: TransactionType;
-  categoryId?: string;
-  fromDate?: string;
-  toDate?: string;
+  category_id?: string;
+  from_date?: string;
+  to_date?: string;
   page?: number;
   limit?: number;
 }
@@ -41,10 +41,10 @@ export interface TransactionListResponse {
 export interface TransactionDraft {
   amount: number;
   type: TransactionType;
-  categoryId: string;
+  category_id: string;
   note?: string;
-  transactionDate: string;
-  merchantName?: string;
-  imageUrl?: string;
+  transaction_date: string;
+  merchant_name?: string;
+  image_url?: string;
   source: TransactionSource;
 }

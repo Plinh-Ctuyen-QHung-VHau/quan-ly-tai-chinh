@@ -15,7 +15,9 @@ export class SupabaseAuthGuard implements CanActivate {
 
   constructor(private configService: ConfigService) {
     const supabaseUrl = this.configService.get<string>("supabase.url");
-    const supabaseKey = this.configService.get<string>("supabase.serviceRoleKey");
+    const supabaseKey = this.configService.get<string>(
+      "supabase.serviceRoleKey",
+    );
     this.supabase = createClient(supabaseUrl, supabaseKey, {
       auth: {
         persistSession: false,
@@ -36,24 +38,28 @@ export class SupabaseAuthGuard implements CanActivate {
     }
 
     try {
-      const { data: { user }, error } = await this.supabase.auth.getUser(token);
+      const {
+        data: { user },
+        error,
+      } = await this.supabase.auth.getUser(token);
 
       if (error || !user) {
         throw new UnauthorizedException({
-          message: "JWT Error: " + (error?.message || "Invalid or expired token"),
+          message:
+            "JWT Error: " + (error?.message || "Invalid or expired token"),
           code: ERROR_CODES.UNAUTHORIZED,
         });
       }
 
       // Attach user info to the request object
       request["user"] = {
-        userId: user.id,
+        user_id: user.id,
         email: user.email,
         roles: user.app_metadata?.roles || [],
       };
-      
+
       // Also add convenience fields as requested
-      request["userId"] = user.id;
+      request["user_id"] = user.id;
 
       return true;
     } catch (err: any) {

@@ -6,5 +6,5 @@ export interface Category {
   type: TransactionType;
   icon?: string | null;
   color?: string | null;
-  isDefault?: boolean;
+  is_default?: boolean;
 }

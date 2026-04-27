@@ -38,10 +38,10 @@ export class TransactionsService {
     this.queryDuration = TRANSACTION_METRICS.queryDuration;
   }
 
-  async create(userId: string, dto: CreateTransactionDto) {
+  async create(user_id: string, dto: CreateTransactionDto) {
     const category = await this.categoriesRepository.findById(
       dto.categoryId,
-      userId,
+      user_id,
     );
     if (!category) {
       throw new AppError("Category not found", ERROR_CODES.VALIDATION_ERROR, {
@@ -56,23 +56,23 @@ export class TransactionsService {
       );
     }
 
-    const transaction = await this.transactionsRepository.create(userId, dto);
+    const transaction = await this.transactionsRepository.create(user_id, dto);
     this.transactionsCreated.inc({ type: dto.type });
     // TODO: Publish 'transaction.created' event
     return transaction;
   }
 
-  async findAll(userId: string, queryDto: GetTransactionsQueryDto) {
+  async findAll(user_id: string, queryDto: GetTransactionsQueryDto) {
     const end = this.queryDuration.startTimer();
-    const result = await this.transactionsRepository.findAll(userId, queryDto);
+    const result = await this.transactionsRepository.findAll(user_id, queryDto);
     end({ method: "findAll" });
     this.transactionsRead.inc(result.data.length);
     return result;
   }
 
-  async findOne(id: string, userId: string) {
+  async findOne(id: string, user_id: string) {
     const end = this.queryDuration.startTimer();
-    const transaction = await this.transactionsRepository.findById(id, userId);
+    const transaction = await this.transactionsRepository.findById(id, user_id);
     if (!transaction) {
       throw new AppError("Transaction not found", ERROR_CODES.NOT_FOUND);
     }
@@ -81,10 +81,10 @@ export class TransactionsService {
     return transaction;
   }
 
-  async update(id: string, userId: string, dto: UpdateTransactionDto) {
+  async update(id: string, user_id: string, dto: UpdateTransactionDto) {
     const existingTransaction = await this.transactionsRepository.findById(
       id,
-      userId,
+      user_id,
     );
     if (!existingTransaction) {
       throw new AppError("Transaction not found", ERROR_CODES.NOT_FOUND);
@@ -93,7 +93,7 @@ export class TransactionsService {
     if (dto.categoryId) {
       const category = await this.categoriesRepository.findById(
         dto.categoryId,
-        userId,
+        user_id,
       );
       if (!category) {
         throw new AppError("Category not found", ERROR_CODES.VALIDATION_ERROR, {
@@ -112,7 +112,7 @@ export class TransactionsService {
 
     const updatedTransaction = await this.transactionsRepository.update(
       id,
-      userId,
+      user_id,
       dto,
     );
     this.transactionsUpdated.inc({ type: updatedTransaction.type });
@@ -120,13 +120,13 @@ export class TransactionsService {
     return updatedTransaction;
   }
 
-  async remove(id: string, userId: string) {
-    const transaction = await this.transactionsRepository.findById(id, userId);
+  async remove(id: string, user_id: string) {
+    const transaction = await this.transactionsRepository.findById(id, user_id);
     if (!transaction) {
       throw new AppError("Transaction not found", ERROR_CODES.NOT_FOUND);
     }
 
-    const success = await this.transactionsRepository.delete(id, userId);
+    const success = await this.transactionsRepository.delete(id, user_id);
     if (success) {
       this.transactionsDeleted.inc({ type: transaction.type });
       // TODO: Publish 'transaction.deleted' event
@@ -134,17 +134,17 @@ export class TransactionsService {
     return { success };
   }
 
-  async getHistory(userId: string) {
+  async getHistory(user_id: string) {
     const end = this.queryDuration.startTimer();
-    const history = await this.transactionsRepository.getHistory(userId);
+    const history = await this.transactionsRepository.getHistory(user_id);
     end({ method: "getHistory" });
     return history;
   }
 
-  async getSummary(userId: string, queryDto: GetTransactionSummaryQueryDto) {
+  async getSummary(user_id: string, queryDto: GetTransactionSummaryQueryDto) {
     const end = this.queryDuration.startTimer();
     const summary = await this.transactionsRepository.getSummary(
-      userId,
+      user_id,
       queryDto,
     );
     end({ method: "getSummary" });

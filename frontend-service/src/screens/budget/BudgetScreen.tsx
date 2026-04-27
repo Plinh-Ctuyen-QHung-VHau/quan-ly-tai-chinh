@@ -87,25 +87,25 @@ export function BudgetScreen() {
             <View style={styles.row}>
               <Text style={styles.label}>Budget</Text>
               <Text style={styles.value}>
-                {formatCurrency(currentStatus.budgetAmount)}
+                {formatCurrency(currentStatus.budget_amount)}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Đã chi</Text>
               <Text style={styles.valueExpense}>
-                {formatCurrency(currentStatus.spentAmount)}
+                {formatCurrency(currentStatus.spent_amount)}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Còn lại</Text>
               <Text style={styles.valueIncome}>
-                {formatCurrency(currentStatus.remainingAmount)}
+                {formatCurrency(currentStatus.remaining_amount)}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Đã dùng</Text>
               <Text style={styles.value}>
-                {`${Math.round(currentStatus.percentUsed)}%`}
+                {`${Math.round(currentStatus.percent_used)}%`}
               </Text>
             </View>
             <View style={styles.row}>

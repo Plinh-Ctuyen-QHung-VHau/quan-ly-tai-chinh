@@ -4,16 +4,16 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 
-export const GetUserId = createParamDecorator(
+export const Getuser_id = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): string => {
     const request = ctx.switchToHttp().getRequest();
-    const userId = request.headers["x-user-id"];
-    if (!userId) {
+    const user_id = request.headers["x-user-id"];
+    if (!user_id) {
       // This should not happen if the API Gateway is configured correctly
       throw new InternalServerErrorException(
         "User ID not found in request headers",
       );
     }
-    return userId;
+    return user_id;
   },
 );

@@ -1,45 +1,62 @@
 import { Injectable } from "@nestjs/common";
 import { SupabaseService } from "../supabase/supabase.service";
 import { FindNotificationsDto } from "./dto/find-notifications.dto";
+import { UpdateNotificationSettingsDto } from "./dto/update-notification-settings.dto";
 
 const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "budget";
 
 export interface Notification {
   id: string;
-  userId: string;
-  type: "budget_alert" | "daily_reminder" | "system_update";
+  user_id: string;
   title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: Date;
+  content: string;
+  type: "reminder" | "budget_alert" | "anomaly_alert" | "financial_tip";
+  related_entity_type: string | null;
+  related_entity_id: string | null;
+  is_read: boolean;
+  created_at: Date;
 }
 
 export interface NotificationSettings {
-  userId: string;
-  enableAll: boolean;
-  enableBudgetAlert: boolean;
-  enableDailyReminder: boolean;
+  id: string;
+  user_id: string;
+  enable_all: boolean;
+  enable_budget_alert: boolean;
+  enable_anomaly_alert: boolean;
+  enable_daily_reminder: boolean;
+  reminder_time: string; // time
+  created_at: Date;
+  updated_at: Date;
 }
 
 @Injectable()
 export class NotificationsRepository {
-  constructor(private readonly supabaseService: SupabaseService) { }
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   private get supabase() {
     return this.supabaseService.getClient().schema(SCHEMA);
   }
 
   async create(
-    notification: Omit<Notification, "id" | "isRead" | "createdAt">,
+    notification: Omit<Notification, "id" | "is_read" | "created_at">,
   ): Promise<Notification> {
-    const { userId, type, title, message } = notification;
+    const {
+      user_id,
+      type,
+      title,
+      content,
+      related_entity_id,
+      related_entity_type,
+    } = notification;
     const { data, error } = await this.supabase
       .from("notifications")
       .insert({
-        user_id: userId,
+        user_id,
         type,
         title,
-        message,
+        content,
+        related_entity_id,
+        related_entity_type,
       })
       .select()
       .single();
@@ -49,7 +66,7 @@ export class NotificationsRepository {
   }
 
   async find(
-    userId: string,
+    user_id: string,
     findDto: FindNotificationsDto,
   ): Promise<{ notifications: Notification[]; total: number }> {
     const {
@@ -65,7 +82,7 @@ export class NotificationsRepository {
     let countQuery = this.supabase
       .from("notifications")
       .select("*", { count: "exact", head: true })
-      .eq("user_id", userId);
+      .eq("user_id", user_id);
 
     if (isRead !== undefined) {
       countQuery = countQuery.eq("is_read", isRead);
@@ -78,7 +95,7 @@ export class NotificationsRepository {
     let dataQuery = this.supabase
       .from("notifications")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", user_id)
       .order(sortBy, { ascending: sortOrder === "ASC" })
       .range(offset, offset + limit - 1);
 
@@ -95,24 +112,24 @@ export class NotificationsRepository {
     };
   }
 
-  async findById(id: string, userId: string): Promise<Notification | null> {
+  async findById(id: string, user_id: string): Promise<Notification | null> {
     const { data, error } = await this.supabase
       .from("notifications")
       .select("*")
       .eq("id", id)
-      .eq("user_id", userId)
+      .eq("user_id", user_id)
       .maybeSingle();
 
     if (error) throw new Error(error.message);
     return data ? this.mapToNotification(data) : null;
   }
 
-  async markAsRead(id: string, userId: string): Promise<Notification | null> {
+  async markAsRead(id: string, user_id: string): Promise<Notification | null> {
     const { data, error } = await this.supabase
       .from("notifications")
-      .update({ is_read: true })
+      .update({ is_read: true, updated_at: new Date() })
       .eq("id", id)
-      .eq("user_id", userId)
+      .eq("user_id", user_id)
       .select()
       .single();
 
@@ -120,22 +137,22 @@ export class NotificationsRepository {
     return data ? this.mapToNotification(data) : null;
   }
 
-  async markAllAsRead(userId: string): Promise<number> {
+  async markAllAsRead(user_id: string): Promise<number> {
     const { count, error } = await this.supabase
       .from("notifications")
-      .update({ is_read: true }, { count: "exact" })
-      .eq("user_id", userId)
+      .update({ is_read: true, updated_at: new Date() }, { count: "exact" })
+      .eq("user_id", user_id)
       .eq("is_read", false);
 
     if (error) throw new Error(error.message);
     return count || 0;
   }
 
-  async getSettings(userId: string): Promise<NotificationSettings | null> {
+  async getSettings(user_id: string): Promise<NotificationSettings | null> {
     const { data, error } = await this.supabase
       .from("notification_settings")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", user_id)
       .maybeSingle();
 
     if (error) throw new Error(error.message);
@@ -143,19 +160,28 @@ export class NotificationsRepository {
   }
 
   async updateSettings(
-    userId: string,
-    settings: Partial<NotificationSettings>,
+    user_id: string,
+    settings: UpdateNotificationSettingsDto,
   ): Promise<NotificationSettings> {
-    const { enableAll, enableBudgetAlert, enableDailyReminder } = settings;
+    const {
+      enable_all,
+      enable_budget_alert,
+      enable_anomaly_alert,
+      enable_daily_reminder,
+      reminderTime,
+    } = settings;
 
     const { data, error } = await this.supabase
       .from("notification_settings")
       .upsert(
         {
-          user_id: userId,
-          enable_all: enableAll,
-          enable_budget_alert: enableBudgetAlert,
-          enable_daily_reminder: enableDailyReminder,
+          user_id: user_id,
+          enable_all: enable_all,
+          enable_budget_alert: enable_budget_alert,
+          enable_anomaly_alert: enable_anomaly_alert,
+          enable_daily_reminder: enable_daily_reminder,
+          reminder_time: reminderTime,
+          updated_at: new Date(),
         },
         { onConflict: "user_id" },
       )
@@ -167,23 +193,32 @@ export class NotificationsRepository {
   }
 
   private mapToNotification(row: any): Notification {
+    if (!row) return null;
     return {
       id: row.id,
-      userId: row.user_id,
+      user_id: row.user_id,
       type: row.type,
       title: row.title,
-      message: row.message,
-      isRead: row.is_read,
-      createdAt: row.created_at,
+      content: row.content,
+      related_entity_type: row.related_entity_type,
+      related_entity_id: row.related_entity_id,
+      is_read: row.is_read,
+      created_at: row.created_at,
     };
   }
 
   private mapToSettings(row: any): NotificationSettings {
+    if (!row) return null;
     return {
-      userId: row.user_id,
-      enableAll: row.enable_all,
-      enableBudgetAlert: row.enable_budget_alert,
-      enableDailyReminder: row.enable_daily_reminder,
+      id: row.id,
+      user_id: row.user_id,
+      enable_all: row.enable_all,
+      enable_budget_alert: row.enable_budget_alert,
+      enable_anomaly_alert: row.enable_anomaly_alert,
+      enable_daily_reminder: row.enable_daily_reminder,
+      reminder_time: row.reminder_time,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
     };
   }
 }

@@ -18,14 +18,17 @@ export class BudgetsService {
     private readonly metrics: AppMetrics,
   ) {}
 
-  async create(userId: string, createBudgetDto: CreateBudgetDto) {
-    const budget = await this.budgetsRepository.create(userId, createBudgetDto);
+  async create(user_id: string, createBudgetDto: CreateBudgetDto) {
+    const budget = await this.budgetsRepository.create(
+      user_id,
+      createBudgetDto,
+    );
     this.metrics.budgetsCreatedTotal.inc();
     return budget;
   }
 
-  async findCurrent(userId: string) {
-    const budget = await this.budgetsRepository.findCurrentActive(userId);
+  async findCurrent(user_id: string) {
+    const budget = await this.budgetsRepository.findCurrentActive(user_id);
     if (!budget) {
       throw new NotFoundException(
         "No active budget found for the current period.",
@@ -34,30 +37,30 @@ export class BudgetsService {
     return budget;
   }
 
-  async getCurrentStatus(userId: string) {
-    const budget = await this.findCurrent(userId);
+  async getCurrentStatus(user_id: string) {
+    const budget = await this.findCurrent(user_id);
 
     const summary = await this.transactionClient.getTransactionSummary(
-      userId,
-      budget.startDate.toISOString(),
-      budget.endDate.toISOString(),
+      user_id,
+      budget.start_date.toISOString(),
+      budget.end_date.toISOString(),
     );
 
     const spentAmount = summary.totalSpent || 0;
-    const budgetAmount = budget.budgetAmount;
-    const remainingAmount = budgetAmount - spentAmount;
+    const budget_amount = budget.budget_amount;
+    const remainingAmount = budget_amount - spentAmount;
     const percentUsed =
-      budgetAmount > 0 ? (spentAmount / budgetAmount) * 100 : 0;
+      budget_amount > 0 ? (spentAmount / budget_amount) * 100 : 0;
 
     const status = {
       budgetId: budget.id,
-      budgetAmount,
+      budget_amount,
       spentAmount,
       remainingAmount,
       percentUsed,
       status: budget.status,
-      startDate: budget.startDate,
-      endDate: budget.endDate,
+      start_date: budget.start_date,
+      end_date: budget.end_date,
     };
 
     // Check and trigger alerts
@@ -66,10 +69,10 @@ export class BudgetsService {
     return status;
   }
 
-  async update(id: string, userId: string, updateBudgetDto: UpdateBudgetDto) {
+  async update(id: string, user_id: string, updateBudgetDto: UpdateBudgetDto) {
     const budget = await this.budgetsRepository.update(
       id,
-      userId,
+      user_id,
       updateBudgetDto,
     );
     if (!budget) {
@@ -79,8 +82,8 @@ export class BudgetsService {
     return budget;
   }
 
-  async remove(id: string, userId: string) {
-    const success = await this.budgetsRepository.softDelete(id, userId);
+  async remove(id: string, user_id: string) {
+    const success = await this.budgetsRepository.softDelete(id, user_id);
     if (!success) {
       throw new NotFoundException(`Budget with ID ${id} not found.`);
     }
@@ -92,7 +95,7 @@ export class BudgetsService {
     // 100% threshold
     if (status.percentUsed >= 100 && !budget.alert100Sent) {
       await this.notificationsService.createBudgetAlert(
-        budget.userId,
+        budget.user_id,
         budget,
         status.spentAmount,
         100,
@@ -101,7 +104,7 @@ export class BudgetsService {
       await this.budgetsRepository.updateStatus(budget.id, "exceeded");
       await this.eventPublisher.publish("budget.exceeded", {
         budgetId: budget.id,
-        userId: budget.userId,
+        user_id: budget.user_id,
       });
       this.metrics.budgetExceededTotal.inc();
       this.metrics.budgetThresholdReachedTotal.inc({ threshold: "100" });
@@ -109,7 +112,7 @@ export class BudgetsService {
     // 80% threshold
     else if (status.percentUsed >= 80 && !budget.alert80Sent) {
       await this.notificationsService.createBudgetAlert(
-        budget.userId,
+        budget.user_id,
         budget,
         status.spentAmount,
         80,
@@ -117,7 +120,7 @@ export class BudgetsService {
       await this.budgetsRepository.updateAlertSent(budget.id, "80");
       await this.eventPublisher.publish("budget.threshold.reached", {
         budgetId: budget.id,
-        userId: budget.userId,
+        user_id: budget.user_id,
         threshold: 80,
       });
       this.metrics.budgetThresholdReachedTotal.inc({ threshold: "80" });

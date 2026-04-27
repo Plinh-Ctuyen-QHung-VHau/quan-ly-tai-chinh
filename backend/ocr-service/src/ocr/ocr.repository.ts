@@ -13,12 +13,12 @@ export class OcrRepository {
     return this.supabaseService.getClient().schema(SCHEMA);
   }
 
-  async createRequest(userId: string, dto: ScanOcrDto) {
+  async createRequest(user_id: string, dto: ScanOcrDto) {
     const { imageUrl, sourceType } = dto;
     const { data, error } = await this.supabase
       .from("ocr_requests")
       .insert({
-        user_id: userId,
+        user_id: user_id,
         image_url: imageUrl,
         source_type: sourceType,
         status: "pending",
@@ -30,12 +30,12 @@ export class OcrRepository {
     return data;
   }
 
-  async findRequestById(id: string, userId: string) {
+  async findRequestById(id: string, user_id: string) {
     const { data, error } = await this.supabase
       .from("ocr_requests")
       .select("*")
       .eq("id", id)
-      .eq("user_id", userId)
+      .eq("user_id", user_id)
       .maybeSingle();
 
     if (error) throw new Error(error.message);
@@ -47,12 +47,23 @@ export class OcrRepository {
     status: "processed" | "failed",
     failureReason?: string,
   ) {
+    const updatePayload: {
+      status: "processed" | "failed";
+      failure_reason?: string;
+      updated_at: string;
+    } = {
+      status,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (failureReason) {
+      // Assuming failure_reason is for logging or another purpose, not a DB column
+      // If it were a column, it would be: updatePayload.failure_reason = failureReason;
+    }
+
     const { error } = await this.supabase
       .from("ocr_requests")
-      .update({
-        status,
-        failure_reason: failureReason || null,
-      })
+      .update(updatePayload)
       .eq("id", id);
 
     if (error) throw new Error(error.message);
@@ -60,34 +71,28 @@ export class OcrRepository {
 
   async createResult(requestId: string, parsedResult: ParsedOcrResult) {
     const {
+      extractedText,
       suggestedAmount,
       suggestedDate,
       suggestedType,
-      suggestedCategory,
+      suggestedCategoryId,
+      merchantName,
+      confidenceScore,
       parsedFieldsJson,
     } = parsedResult;
-
-    const parsedFields =
-      parsedFieldsJson && typeof parsedFieldsJson === "object"
-        ? {
-            ...parsedFieldsJson,
-            suggestedCategory: suggestedCategory ?? null,
-          }
-        : {
-            suggestedCategory: suggestedCategory ?? null,
-          };
 
     const { data, error } = await this.supabase
       .from("ocr_results")
       .insert({
         request_id: requestId,
-        extracted_text: null,
-        suggested_amount: suggestedAmount ?? null,
-        suggested_date: suggestedDate ?? null,
-        suggested_type: suggestedType ?? null,
-        suggested_category_id: null,
-        confidence_score: null,
-        parsed_fields_json: parsedFields,
+        extracted_text: extractedText,
+        suggested_amount: suggestedAmount,
+        suggested_date: suggestedDate,
+        suggested_type: suggestedType,
+        suggested_category_id: suggestedCategoryId,
+        merchant_name: merchantName,
+        confidence_score: confidenceScore,
+        parsed_fields_json: parsedFieldsJson,
       })
       .select()
       .single();
@@ -99,7 +104,7 @@ export class OcrRepository {
    * Find result by ID, ensuring it belongs to the given user via ocr_requests join.
    * Uses 2-query approach since Supabase nested selects may not work for reverse joins.
    */
-  async findResultById(id: string, userId: string) {
+  async findResultById(id: string, user_id: string) {
     // First verify the result exists
     const { data: result, error: resultError } = await this.supabase
       .from("ocr_results")
@@ -115,7 +120,7 @@ export class OcrRepository {
       .from("ocr_requests")
       .select("id")
       .eq("id", result.request_id)
-      .eq("user_id", userId)
+      .eq("user_id", user_id)
       .maybeSingle();
 
     if (requestError) throw new Error(requestError.message);

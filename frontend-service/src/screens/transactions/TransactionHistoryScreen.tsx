@@ -49,9 +49,9 @@ export function TransactionHistoryScreen() {
         page,
         limit: Number(limit) || 10,
         type,
-        categoryId: categoryId || undefined,
-        fromDate: fromDate || undefined,
-        toDate: toDate || undefined,
+        category_id: categoryId || undefined,
+        from_date: fromDate || undefined,
+        to_date: toDate || undefined,
       };
       const result = await getTransactions(filters);
       setTransactions(result.items);

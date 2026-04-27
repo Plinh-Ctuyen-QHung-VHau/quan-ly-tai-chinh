@@ -2,22 +2,22 @@ export type BudgetPeriod = "weekly" | "monthly";
 
 export interface Budget {
   id: string;
-  budgetAmount: number;
-  budgetPeriod: BudgetPeriod;
-  startDate: string;
-  endDate?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
+  budget_amount: number;
+  budget_period: BudgetPeriod;
+  start_date: string;
+  end_date?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface BudgetStatus {
   id?: string;
-  budgetAmount: number;
-  spentAmount: number;
-  remainingAmount: number;
-  percentUsed: number;
+  budget_amount: number;
+  spent_amount: number;
+  remaining_amount: number;
+  percent_used: number;
   status: "healthy" | "warning" | "danger" | "no-budget";
-  budgetPeriod?: BudgetPeriod | null;
-  startDate?: string | null;
-  endDate?: string | null;
+  budget_period?: BudgetPeriod | null;
+  start_date?: string | null;
+  end_date?: string | null;
 }

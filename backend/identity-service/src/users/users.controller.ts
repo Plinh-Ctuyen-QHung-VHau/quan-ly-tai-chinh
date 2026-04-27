@@ -7,7 +7,7 @@ import {
   ValidationPipe,
 } from "@nestjs/common";
 import { UsersService } from "./users.service";
-import { GetUserId } from "../common/decorators/get-user-id.decorator";
+import { Getuser_id } from "../common/decorators/get-user-id.decorator";
 import { UpdateProfileDto, UpdateUserSettingsDto } from "./dto/update-user.dto";
 
 @Controller("users")
@@ -15,27 +15,27 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get("me")
-  getProfile(@GetUserId() userId: string) {
-    return this.usersService.getProfile(userId);
+  getProfile(@Getuser_id() user_id: string) {
+    return this.usersService.getProfile(user_id);
   }
 
   @Put("me")
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
-  updateProfile(@GetUserId() userId: string, @Body() dto: UpdateProfileDto) {
-    return this.usersService.updateProfile(userId, dto);
+  updateProfile(@Getuser_id() user_id: string, @Body() dto: UpdateProfileDto) {
+    return this.usersService.updateProfile(user_id, dto);
   }
 
   @Get("settings")
-  getSettings(@GetUserId() userId: string) {
-    return this.usersService.getSettings(userId);
+  getSettings(@Getuser_id() user_id: string) {
+    return this.usersService.getSettings(user_id);
   }
 
   @Put("settings")
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   updateSettings(
-    @GetUserId() userId: string,
+    @Getuser_id() user_id: string,
     @Body() dto: UpdateUserSettingsDto,
   ) {
-    return this.usersService.updateSettings(userId, dto);
+    return this.usersService.updateSettings(user_id, dto);
   }
 }

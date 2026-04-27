@@ -6,22 +6,27 @@ import {
   IsOptional,
   Min,
 } from "class-validator";
+import { Expose } from "class-transformer";
 
 export class CreateBudgetDto {
   @IsNumber()
   @Min(0.01)
   @IsNotEmpty()
-  budgetAmount: number;
+  @Expose({ name: "budget_amount" })
+  budget_amount: number;
 
   @IsIn(["weekly", "monthly"])
   @IsNotEmpty()
+  @Expose({ name: "budget_period" })
   budgetPeriod: "weekly" | "monthly";
 
   @IsDateString()
   @IsNotEmpty()
-  startDate: string;
+  @Expose({ name: "start_date" })
+  start_date: string;
 
   @IsDateString()
   @IsOptional()
-  endDate?: string;
+  @Expose({ name: "end_date" })
+  end_date?: string;
 }

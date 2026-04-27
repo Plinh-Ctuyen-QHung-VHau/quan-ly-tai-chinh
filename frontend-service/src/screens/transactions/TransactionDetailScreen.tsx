@@ -87,7 +87,7 @@ export function TransactionDetailScreen() {
         <View style={styles.row}>
           <Text style={styles.label}>Danh mục</Text>
           <Text style={styles.value}>
-            {transaction.categoryName ?? transaction.categoryId}
+            {transaction.categoryName ?? transaction.category_id}
           </Text>
         </View>
         <View style={styles.row}>
@@ -97,26 +97,26 @@ export function TransactionDetailScreen() {
         <View style={styles.row}>
           <Text style={styles.label}>Ngày giao dịch</Text>
           <Text style={styles.value}>
-            {formatDate(transaction.transactionDate)}
+            {formatDate(transaction.transaction_date)}
           </Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>Merchant</Text>
-          <Text style={styles.value}>{transaction.merchantName ?? "-"}</Text>
+          <Text style={styles.value}>{transaction.merchant_name ?? "-"}</Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>Bất thường</Text>
           <Text style={styles.value}>
-            {transaction.isAnomaly ? "Có" : "Không"}
+            {transaction.is_anomaly ? "Có" : "Không"}
           </Text>
         </View>
-        {transaction.imageUrl ? (
-          <Text style={styles.imagePath}>{transaction.imageUrl}</Text>
+        {transaction.image_url ? (
+          <Text style={styles.imagePath}>{transaction.image_url}</Text>
         ) : null}
       </AppCard>
 
-      {transaction.imageUrl && transaction.imageUrl.startsWith("http") ? (
-        <Image source={{ uri: transaction.imageUrl }} style={styles.image} />
+      {transaction.image_url && transaction.image_url.startsWith("http") ? (
+        <Image source={{ uri: transaction.image_url }} style={styles.image} />
       ) : null}
 
       <View style={styles.actions}>

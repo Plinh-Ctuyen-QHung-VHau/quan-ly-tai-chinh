@@ -12,6 +12,8 @@ export function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [fullName, setFullName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [username, setUsername] = useState("");
+  const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -22,8 +24,10 @@ export function ProfileScreen() {
     try {
       const result = await getMyProfile();
       setProfile(result);
-      setFullName(result.fullName ?? "");
-      setAvatarUrl(result.avatarUrl ?? "");
+      setFullName(result.full_name ?? "");
+      setAvatarUrl(result.avatar_url ?? "");
+      setUsername(result.username ?? "");
+      setWebsite(result.website ?? "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải hồ sơ.");
     } finally {
@@ -41,8 +45,10 @@ export function ProfileScreen() {
     setSaving(true);
     try {
       const result = await updateMyProfile({
-        fullName: fullName.trim(),
-        avatarUrl: avatarUrl.trim() || null,
+        full_name: fullName.trim(),
+        avatar_url: avatarUrl.trim() || undefined,
+        username: username.trim() || undefined,
+        website: website.trim() || undefined,
       });
       setProfile(result);
       Alert.alert("Đã lưu", "Hồ sơ đã được cập nhật.");
@@ -61,15 +67,27 @@ export function ProfileScreen() {
         <Text style={styles.title}>Hồ sơ người dùng</Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <AppInput
-          label="fullName"
+          label="Họ và tên"
           value={fullName}
           onChangeText={setFullName}
           placeholder="Họ và tên"
         />
         <AppInput
-          label="avatarUrl"
+          label="Avatar URL"
           value={avatarUrl}
           onChangeText={setAvatarUrl}
+          placeholder="https://..."
+        />
+        <AppInput
+          label="Username"
+          value={username}
+          onChangeText={setUsername}
+          placeholder="Username"
+        />
+        <AppInput
+          label="Website"
+          value={website}
+          onChangeText={setWebsite}
           placeholder="https://..."
         />
         <AppButton

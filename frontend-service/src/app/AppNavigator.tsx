@@ -81,15 +81,15 @@ export function AppNavigator() {
   }, []);
 
   useEffect(() => {
-    const userId = session?.user.id;
+    const user_id = session?.user.id;
     const notificationStore = useNotificationStore.getState();
 
-    if (!userId) {
+    if (!user_id) {
       void notificationStore.stopRealtime();
       return;
     }
 
-    void notificationStore.startRealtime(userId);
+    void notificationStore.startRealtime(user_id);
     return () => {
       void notificationStore.stopRealtime();
     };

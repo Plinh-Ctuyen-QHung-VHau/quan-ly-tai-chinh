@@ -23,24 +23,24 @@ export function BudgetFormScreen() {
   const mode = (route.params?.mode ?? "create") as "create" | "edit";
   const budget = route.params?.budget as Budget | undefined;
 
-  const [budgetAmount, setBudgetAmount] = useState(
-    String(budget?.budgetAmount ?? ""),
+  const [budget_amount, setbudget_amount] = useState(
+    String(budget?.budget_amount ?? ""),
   );
   const [budgetPeriod, setBudgetPeriod] = useState<BudgetPeriod>(
-    budget?.budgetPeriod ?? "monthly",
+    budget?.budget_period ?? "monthly",
   );
-  const [startDate, setStartDate] = useState(
-    budget?.startDate ?? new Date().toISOString().slice(0, 10),
+  const [start_date, setstart_date] = useState(
+    budget?.start_date ?? new Date().toISOString().slice(0, 10),
   );
-  const [endDate, setEndDate] = useState(budget?.endDate ?? "");
+  const [end_date, setend_date] = useState(budget?.end_date ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSave = async () => {
     setError("");
 
-    if (!isPositiveAmount(budgetAmount)) {
-      setError("budgetAmount phải lớn hơn 0.");
+    if (!isPositiveAmount(budget_amount)) {
+      setError("budget_amount phải lớn hơn 0.");
       return;
     }
 
@@ -52,10 +52,10 @@ export function BudgetFormScreen() {
     setLoading(true);
     try {
       const payload = {
-        budgetAmount: Number(budgetAmount),
-        budgetPeriod,
-        startDate,
-        endDate: endDate || null,
+        budget_amount: Number(budget_amount),
+        budget_period: budgetPeriod,
+        start_date: start_date,
+        end_date: end_date || undefined,
       };
 
       if (mode === "edit" && budget?.id) {
@@ -83,9 +83,9 @@ export function BudgetFormScreen() {
           {mode === "edit" ? "Sửa budget" : "Tạo budget"}
         </Text>
         <AppInput
-          label="budgetAmount"
-          value={budgetAmount}
-          onChangeText={setBudgetAmount}
+          label="budget_amount"
+          value={budget_amount}
+          onChangeText={setbudget_amount}
           keyboardType="numeric"
         />
         <AppInput
@@ -95,15 +95,15 @@ export function BudgetFormScreen() {
           placeholder="weekly hoặc monthly"
         />
         <AppInput
-          label="startDate"
-          value={startDate}
-          onChangeText={setStartDate}
+          label="start_date"
+          value={start_date}
+          onChangeText={setstart_date}
           placeholder="YYYY-MM-DD"
         />
         <AppInput
-          label="endDate"
-          value={endDate}
-          onChangeText={setEndDate}
+          label="end_date"
+          value={end_date}
+          onChangeText={setend_date}
           placeholder="YYYY-MM-DD"
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}

@@ -101,13 +101,13 @@ export function HomeScreen() {
         <View style={styles.statRow}>
           <Text style={styles.statLabel}>Tổng thu</Text>
           <Text style={styles.statValueIncome}>
-            {formatCurrency(summary?.totalIncome ?? 0)}
+            {formatCurrency(summary?.total_income ?? 0)}
           </Text>
         </View>
         <View style={styles.statRow}>
           <Text style={styles.statLabel}>Tổng chi</Text>
           <Text style={styles.statValueExpense}>
-            {formatCurrency(summary?.totalExpense ?? 0)}
+            {formatCurrency(summary?.total_expense ?? 0)}
           </Text>
         </View>
         <View style={styles.statRow}>
@@ -139,19 +139,19 @@ export function HomeScreen() {
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Ngân sách</Text>
               <Text style={styles.statValue}>
-                {formatCurrency(budgetStatus?.budgetAmount ?? 0)}
+                {formatCurrency(budgetStatus?.budget_amount ?? 0)}
               </Text>
             </View>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Đã chi</Text>
               <Text style={styles.statValueExpense}>
-                {formatCurrency(budgetStatus?.spentAmount ?? 0)}
+                {formatCurrency(budgetStatus?.spent_amount ?? 0)}
               </Text>
             </View>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Còn lại</Text>
               <Text style={styles.statValueIncome}>
-                {formatCurrency(budgetStatus?.remainingAmount ?? 0)}
+                {formatCurrency(budgetStatus?.remaining_amount ?? 0)}
               </Text>
             </View>
             <View style={styles.statRow}>

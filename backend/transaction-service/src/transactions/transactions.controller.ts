@@ -20,7 +20,7 @@ import {
   GetTransactionsQueryDto,
   GetTransactionSummaryQueryDto,
 } from "./dto/get-transactions-query.dto";
-import { GetUserId } from "../common/decorators/get-user-id.decorator";
+import { Getuser_id } from "../common/decorators/get-user-id.decorator";
 
 @Controller("transactions")
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
@@ -29,49 +29,55 @@ export class TransactionsController {
 
   @Post()
   create(
-    @GetUserId() userId: string,
+    @Getuser_id() user_id: string,
     @Body() createTransactionDto: CreateTransactionDto,
   ) {
-    return this.transactionsService.create(userId, createTransactionDto);
+    return this.transactionsService.create(user_id, createTransactionDto);
   }
 
   @Get()
   findAll(
-    @GetUserId() userId: string,
+    @Getuser_id() user_id: string,
     @Query() queryDto: GetTransactionsQueryDto,
   ) {
-    return this.transactionsService.findAll(userId, queryDto);
+    return this.transactionsService.findAll(user_id, queryDto);
   }
 
   @Get("summary")
   getSummary(
-    @GetUserId() userId: string,
+    @Getuser_id() user_id: string,
     @Query() queryDto: GetTransactionSummaryQueryDto,
   ) {
-    return this.transactionsService.getSummary(userId, queryDto);
+    return this.transactionsService.getSummary(user_id, queryDto);
   }
 
   @Get("history")
-  getHistory(@GetUserId() userId: string) {
-    return this.transactionsService.getHistory(userId);
+  getHistory(@Getuser_id() user_id: string) {
+    return this.transactionsService.getHistory(user_id);
   }
 
   @Get(":id")
-  findOne(@GetUserId() userId: string, @Param("id", ParseUUIDPipe) id: string) {
-    return this.transactionsService.findOne(id, userId);
+  findOne(
+    @Getuser_id() user_id: string,
+    @Param("id", ParseUUIDPipe) id: string,
+  ) {
+    return this.transactionsService.findOne(id, user_id);
   }
 
   @Put(":id")
   update(
-    @GetUserId() userId: string,
+    @Getuser_id() user_id: string,
     @Param("id", ParseUUIDPipe) id: string,
     @Body() updateTransactionDto: UpdateTransactionDto,
   ) {
-    return this.transactionsService.update(id, userId, updateTransactionDto);
+    return this.transactionsService.update(id, user_id, updateTransactionDto);
   }
 
   @Delete(":id")
-  remove(@GetUserId() userId: string, @Param("id", ParseUUIDPipe) id: string) {
-    return this.transactionsService.remove(id, userId);
+  remove(
+    @Getuser_id() user_id: string,
+    @Param("id", ParseUUIDPipe) id: string,
+  ) {
+    return this.transactionsService.remove(id, user_id);
   }
 }

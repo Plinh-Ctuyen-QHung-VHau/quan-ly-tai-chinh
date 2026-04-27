@@ -20,7 +20,7 @@ function getExtension(contentType: string) {
   return "jpg";
 }
 
-export async function uploadReceiptImage(uri: string, userId: string) {
+export async function uploadReceiptImage(uri: string, user_id: string) {
   const fileInfo = await FileSystem.getInfoAsync(uri);
 
   if (!fileInfo.exists) {
@@ -33,7 +33,7 @@ export async function uploadReceiptImage(uri: string, userId: string) {
 
   const contentType = getContentType(uri);
   const ext = getExtension(contentType);
-  const storagePath = `${userId}/${Date.now()}_receipt.${ext}`;
+  const storagePath = `${user_id}/${Date.now()}_receipt.${ext}`;
 
   const base64 = await FileSystem.readAsStringAsync(uri, {
     encoding: FileSystem.EncodingType.Base64,

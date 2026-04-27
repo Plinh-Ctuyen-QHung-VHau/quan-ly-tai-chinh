@@ -6,7 +6,7 @@ This service is the single entry point for all client requests.
 
 - Route requests to the appropriate downstream service.
 - Authenticate incoming requests by verifying Supabase JWTs.
-- Forward user context (userId, roles) to downstream services.
+- Forward user context (user_id, roles) to downstream services.
 - Provide health check and metrics endpoints.
 
 ## Running the service

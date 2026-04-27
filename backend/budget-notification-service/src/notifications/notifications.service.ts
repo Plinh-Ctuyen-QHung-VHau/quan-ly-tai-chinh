@@ -16,38 +16,38 @@ export class NotificationsService {
   ) {}
 
   async createBudgetAlert(
-    userId: string,
-    budget: { budgetAmount: number; budgetPeriod: "weekly" | "monthly" },
+    user_id: string,
+    budget: { budget_amount: number; budgetPeriod: "weekly" | "monthly" },
     spent: number,
     threshold: 80 | 100,
   ) {
-    const settings = await this.getSettings(userId);
-    if (!settings.enableAll || !settings.enableBudgetAlert) {
+    const settings = await this.getSettings(user_id);
+    if (!settings.enable_all || !settings.enable_budget_alert) {
       return; // Do not create notification if disabled
     }
 
     const title = `Budget Alert: ${threshold}% Threshold Reached`;
-    const message = `You have spent ${spent} of your ${budget.budgetPeriod} budget of ${budget.budgetAmount}. That's over ${threshold}%!`;
+    const content = `You have spent ${spent} of your ${budget.budgetPeriod} budget of ${budget.budget_amount}. That's over ${threshold}%!`;
 
     const notification = await this.notificationsRepository.create({
-      userId,
+      user_id,
       type: "budget_alert",
       title,
-      message,
+      content,
     });
 
     this.metrics.notificationsCreatedTotal.inc({ type: "budget_alert" });
     return notification;
   }
 
-  async find(userId: string, findDto: FindNotificationsDto) {
-    return this.notificationsRepository.find(userId, findDto);
+  async find(user_id: string, findDto: FindNotificationsDto) {
+    return this.notificationsRepository.find(user_id, findDto);
   }
 
-  async findById(id: string, userId: string) {
+  async findById(id: string, user_id: string) {
     const notification = await this.notificationsRepository.findById(
       id,
-      userId,
+      user_id,
     );
     if (!notification) {
       throw new NotFoundException("Notification not found.");
@@ -55,10 +55,10 @@ export class NotificationsService {
     return notification;
   }
 
-  async markAsRead(id: string, userId: string) {
+  async markAsRead(id: string, user_id: string) {
     const notification = await this.notificationsRepository.markAsRead(
       id,
-      userId,
+      user_id,
     );
     if (!notification) {
       throw new NotFoundException("Notification not found.");
@@ -67,29 +67,30 @@ export class NotificationsService {
     return notification;
   }
 
-  async markAllAsRead(userId: string) {
-    const count = await this.notificationsRepository.markAllAsRead(userId);
+  async markAllAsRead(user_id: string) {
+    const count = await this.notificationsRepository.markAllAsRead(user_id);
     this.metrics.notificationsReadTotal.inc(count);
     return { markedAsReadCount: count };
   }
 
-  async getSettings(userId: string): Promise<NotificationSettings> {
-    let settings = await this.notificationsRepository.getSettings(userId);
+  async getSettings(user_id: string): Promise<NotificationSettings> {
+    let settings = await this.notificationsRepository.getSettings(user_id);
     if (!settings) {
       // Create default settings if they don't exist
-      settings = await this.notificationsRepository.updateSettings(userId, {
-        enableAll: true,
-        enableBudgetAlert: true,
-        enableDailyReminder: true,
+      settings = await this.notificationsRepository.updateSettings(user_id, {
+        enable_all: true,
+        enable_budget_alert: true,
+        enable_anomaly_alert: true,
+        enable_daily_reminder: true,
       });
     }
     return settings;
   }
 
   async updateSettings(
-    userId: string,
+    user_id: string,
     updateDto: UpdateNotificationSettingsDto,
   ) {
-    return this.notificationsRepository.updateSettings(userId, updateDto);
+    return this.notificationsRepository.updateSettings(user_id, updateDto);
   }
 }

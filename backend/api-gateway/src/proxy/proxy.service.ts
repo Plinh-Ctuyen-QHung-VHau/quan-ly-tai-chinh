@@ -14,12 +14,18 @@ export class ProxyService {
     private readonly httpService: HttpService,
   ) {
     this.serviceUrls = {
-      "/api/api/users": this.configService.get<string>("services.identity") + "/users",
-      "/api/api/transactions": this.configService.get<string>("services.transaction") + "/transactions",
-      "/api/api/categories": this.configService.get<string>("services.transaction") + "/categories",
+      "/api/api/users":
+        this.configService.get<string>("services.identity") + "/users",
+      "/api/api/transactions":
+        this.configService.get<string>("services.transaction") +
+        "/transactions",
+      "/api/api/categories":
+        this.configService.get<string>("services.transaction") + "/categories",
       "/api/api/ocr": this.configService.get<string>("services.ocr") + "/ocr",
-      "/api/api/budgets": this.configService.get<string>("services.budget") + "/budgets",
-      "/api/api/notifications": this.configService.get<string>("services.budget") + "/notifications",
+      "/api/api/budgets":
+        this.configService.get<string>("services.budget") + "/budgets",
+      "/api/api/notifications":
+        this.configService.get<string>("services.budget") + "/notifications",
     };
   }
 
@@ -51,7 +57,7 @@ export class ProxyService {
       data: body,
       headers: {
         "Content-Type": headers["content-type"] || "application/json",
-        "x-user-id": user?.userId,
+        "x-user-id": user?.user_id,
         "x-user-email": user?.email,
       },
     };

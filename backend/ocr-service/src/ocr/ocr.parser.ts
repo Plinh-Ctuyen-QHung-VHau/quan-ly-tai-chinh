@@ -1,10 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
 export interface ParsedOcrResult {
+  extractedText: string;
   suggestedAmount: number | null;
   suggestedDate: Date | null;
-  suggestedType: "income" | "expense";
-  suggestedCategory: string | null;
+  suggestedType: "income" | "expense" | null;
+  suggestedCategoryId: string | null; // This will be null as we only get text
+  merchantName: string | null;
+  confidenceScore: number | null;
   parsedFieldsJson: Record<string, any>;
 }
 
@@ -56,20 +59,25 @@ export class OcrParser {
     );
     const suggestedDate = detectedDates.length > 0 ? detectedDates[0] : null;
     const suggestedType = this.findType(normalizedText);
-    const suggestedCategory = this.findCategory(normalizedText);
+    const suggestedCategoryText = this.findCategory(normalizedText); // This is a string
+    const merchantName = this.findMerchant(normalizedText, lines);
 
     return {
+      extractedText: rawText,
       suggestedAmount,
       suggestedDate,
       suggestedType,
-      suggestedCategory,
+      suggestedCategoryId: null, // We don't have the ID here
+      merchantName,
+      confidenceScore: null, // Confidence score is not determined here
       parsedFieldsJson: {
         rawText,
         normalizedText,
         detectedAmounts,
         detectedDates,
         suggestedType,
-        suggestedCategory,
+        suggestedCategory: suggestedCategoryText, // Store the text version
+        merchantName,
         ocrEngine,
         ocrLanguage,
       },
@@ -100,23 +108,23 @@ export class OcrParser {
     text: string,
     amounts: number[],
   ): number | null {
-    const keywords = [
-      "tổng cộng",
-      "tổng tiền",
-      "thanh toán",
-      "thành tiền",
-      "total",
-      "amount",
-      "payment",
-    ];
+    if (amounts.length === 0) return null;
 
-    for (const keyword of keywords) {
-      const keywordIndex = text.indexOf(keyword);
-      if (keywordIndex > -1) {
-        return amounts[0] || null;
+    const totalKeywords = ["total", "thành tiền", "tổng cộng", "payment"];
+    const textLines = text.split("\n");
+
+    for (const line of textLines) {
+      const lowerLine = line.toLowerCase();
+      if (totalKeywords.some((keyword) => lowerLine.includes(keyword))) {
+        const lineAmounts = this.findAmounts(lowerLine);
+        if (lineAmounts.length > 0) {
+          return Math.max(...lineAmounts);
+        }
       }
     }
-    return amounts.length > 0 ? amounts[0] : null;
+
+    // If no total keyword found, return the largest amount found
+    return Math.max(...amounts);
   }
 
   private findDates(text: string): Date[] {
@@ -142,28 +150,69 @@ export class OcrParser {
       .filter((date) => date && !isNaN(date.getTime())) as Date[];
   }
 
-  private findType(text: string): "income" | "expense" {
-    const incomeKeywords = [
-      "lương",
-      "salary",
-      "payroll",
-      "thưởng",
-      "bonus",
-      "thu nhập",
-    ];
-    if (incomeKeywords.some((kw) => text.includes(kw))) {
-      return "income";
+  private findType(text: string): "income" | "expense" | null {
+    if (
+      text.includes("hóa đơn") ||
+      text.includes("bill") ||
+      text.includes("invoice")
+    ) {
+      return "expense";
     }
+    // Default to expense for receipts, can be refined
     return "expense";
   }
 
   private findCategory(text: string): string | null {
-    for (const category in this.categoryKeywords) {
-      const keywords = this.categoryKeywords[category];
-      if (keywords.some((kw) => text.includes(kw))) {
+    for (const [category, keywords] of Object.entries(this.categoryKeywords)) {
+      if (keywords.some((keyword) => text.includes(keyword))) {
         return category;
       }
     }
+    return null;
+  }
+
+  private findMerchant(text: string, lines: string[]): string | null {
+    // Priority 1: Look for specific merchant keywords
+    const merchantKeywords: { [key: string]: string[] } = {
+      Grab: ["grab"],
+      Be: ["be"],
+      Petrolimex: ["petrolimex"],
+      "Highlands Coffee": ["highlands coffee"],
+      Starbucks: ["starbucks"],
+      "Phúc Long": ["phúc long", "phuc long"],
+      WinMart: ["winmart", "winmart+"],
+      "Co.opmart": ["co.opmart", "coopmart"],
+      "Circle K": ["circle k"],
+      GS25: ["gs25"],
+      Tiki: ["tiki"],
+      Shopee: ["shopee"],
+      Lazada: ["lazada"],
+      EVN: ["evn", "điện lực"],
+    };
+
+    for (const [merchant, keywords] of Object.entries(merchantKeywords)) {
+      if (keywords.some((keyword) => text.includes(keyword))) {
+        return merchant;
+      }
+    }
+
+    // Priority 2: The first non-empty line is often the merchant name
+    if (lines.length > 0) {
+      const firstLine = lines[0].trim();
+      // Avoid lines that are just dates, addresses, or generic terms
+      if (
+        !/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/.test(firstLine) &&
+        !/địa chỉ|address/i.test(firstLine) &&
+        firstLine.length > 3 &&
+        firstLine.length < 50
+      ) {
+        return firstLine
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+      }
+    }
+
     return null;
   }
 }

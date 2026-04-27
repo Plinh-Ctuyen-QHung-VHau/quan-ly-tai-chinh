@@ -1,1 +1,3 @@
-export declare const GetUserId: (...dataOrPipes: unknown[]) => ParameterDecorator;
+export declare const Getuser_id: (
+  ...dataOrPipes: unknown[]
+) => ParameterDecorator;

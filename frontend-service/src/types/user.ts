@@ -1,16 +1,20 @@
 export interface UserProfile {
   id: string;
-  fullName: string;
-  avatarUrl?: string | null;
+  full_name: string;
+  avatar_url?: string | null;
+  username?: string | null;
+  website?: string | null;
   email?: string | null;
   phone?: string | null;
 }
 
 export interface UserSettings {
   id?: string;
-  userId?: string;
-  enablePushNotifications: boolean;
-  preferredLanguage: string;
-  theme: "light" | "dark" | "system";
-  updatedAt?: string;
+  user_id?: string;
+  timezone: string;
+  language: string;
+  theme: "light" | "dark";
+  currency: string;
+  created_at?: string;
+  updated_at?: string;
 }

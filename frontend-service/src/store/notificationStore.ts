@@ -9,7 +9,7 @@ interface NotificationState {
   setNotifications: (items: Notification[]) => void;
   prependNotification: (item: Notification) => void;
   updateNotificationReadState: (id: string, readAt?: string | null) => void;
-  startRealtime: (userId: string) => Promise<void>;
+  startRealtime: (user_id: string) => Promise<void>;
   stopRealtime: () => Promise<void>;
 }
 
@@ -29,7 +29,7 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
         item.id === id ? { ...item, readAt } : item,
       ),
     })),
-  startRealtime: async (userId: string) => {
+  startRealtime: async (user_id: string) => {
     if (get().realtimeChannelActive) {
       return;
     }
@@ -42,7 +42,7 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
           event: "INSERT",
           schema: "public",
           table: "notifications",
-          filter: `user_id=eq.${userId}`,
+          filter: `user_id=eq.${user_id}`,
         },
         (payload: { new: unknown }) => {
           const record = payload.new as Notification;

@@ -16,16 +16,16 @@ export class TransactionClient {
   ) {}
 
   async getTransactionSummary(
-    userId: string,
-    startDate: string,
-    endDate: string,
+    user_id: string,
+    start_date: string,
+    end_date: string,
   ): Promise<TransactionSummary> {
     const url = `${this.appConfig.transactionServiceUrl}/transactions/summary`;
     try {
       const response = await firstValueFrom(
         this.httpService.get(url, {
-          headers: { "x-user-id": userId },
-          params: { startDate, endDate },
+          headers: { "x-user-id": user_id },
+          params: { start_date, end_date },
         }),
       );
       // Assuming the actual summary is in response.data.data

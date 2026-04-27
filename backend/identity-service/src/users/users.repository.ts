@@ -8,17 +8,19 @@ const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "identity";
 
 @Injectable()
 export class UsersRepository {
-  constructor(private readonly supabaseService: SupabaseService) { }
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   private get supabase() {
     return this.supabaseService.getClient().schema(SCHEMA);
   }
 
-  async findProfileById(userId: string) {
+  async findProfileById(user_id: string) {
     const { data, error } = await this.supabase
       .from("profiles")
-      .select("id, full_name, avatar_url, created_at, updated_at")
-      .eq("id", userId)
+      .select(
+        "id, full_name, avatar_url, username, website, created_at, updated_at",
+      )
+      .eq("id", user_id)
       .maybeSingle();
 
     if (error) {
@@ -27,15 +29,17 @@ export class UsersRepository {
     return data;
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto) {
-    const updatePayload: Record<string, any> = {};
-    if (dto.fullName !== undefined) updatePayload.full_name = dto.fullName;
-    if (dto.avatarUrl !== undefined) updatePayload.avatar_url = dto.avatarUrl;
-
+  async updateProfile(user_id: string, dto: UpdateProfileDto) {
     const { data, error } = await this.supabase
       .from("profiles")
-      .update(updatePayload)
-      .eq("id", userId)
+      .update({
+        full_name: dto.fullName,
+        avatar_url: dto.avatarUrl,
+        username: dto.username,
+        website: dto.website,
+        updated_at: new Date(),
+      })
+      .eq("id", user_id)
       .select()
       .single();
 
@@ -45,52 +49,53 @@ export class UsersRepository {
     return data;
   }
 
-  async findSettingsByUserId(userId: string) {
+  async findSettingsByuser_id(user_id: string) {
     const { data, error } = await this.supabase
       .from("user_settings")
-      .select("id, user_id, timezone, language, theme, created_at, updated_at")
-      .eq("user_id", userId)
+      .select(
+        "id, user_id, timezone, language, theme, currency, created_at, updated_at",
+      )
+      .eq("user_id", user_id)
       .maybeSingle();
 
     if (error) {
       throw new AppError(error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
     }
     if (!data) {
-      return this.createDefaultSettings(userId);
+      return this.createDefaultSettings(user_id);
     }
     return data;
   }
 
-  async updateSettings(userId: string, dto: UpdateUserSettingsDto) {
-    const updatePayload: Record<string, any> = {};
-    if (dto.timezone !== undefined) updatePayload.timezone = dto.timezone;
-    if (dto.language !== undefined) updatePayload.language = dto.language;
-    if (dto.theme !== undefined) updatePayload.theme = dto.theme;
-
+  async updateSettings(user_id: string, dto: UpdateUserSettingsDto) {
     const { data, error } = await this.supabase
       .from("user_settings")
-      .update(updatePayload)
-      .eq("user_id", userId)
+      .update({
+        timezone: dto.timezone,
+        language: dto.language,
+        theme: dto.theme,
+        currency: dto.currency,
+        updated_at: new Date(),
+      })
+      .eq("user_id", user_id)
       .select()
       .single();
 
     if (error) {
-      throw new AppError(
-        "Settings not found for user",
-        ERROR_CODES.NOT_FOUND,
-      );
+      throw new AppError("Settings not found for user", ERROR_CODES.NOT_FOUND);
     }
     return data;
   }
 
-  private async createDefaultSettings(userId: string) {
+  private async createDefaultSettings(user_id: string) {
     const { data, error } = await this.supabase
       .from("user_settings")
       .insert({
-        user_id: userId,
+        user_id: user_id,
         timezone: "UTC",
         language: "vi",
         theme: "light",
+        currency: "VND",
       })
       .select()
       .single();

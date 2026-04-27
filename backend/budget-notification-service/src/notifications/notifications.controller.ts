@@ -12,7 +12,7 @@ import {
   UseFilters,
 } from "@nestjs/common";
 import { NotificationsService } from "./notifications.service";
-import { GetUserId } from "../common/decorators/get-user-id.decorator";
+import { Getuser_id } from "../common/decorators/get-user-id.decorator";
 import { FindNotificationsDto } from "./dto/find-notifications.dto";
 import { UpdateNotificationSettingsDto } from "./dto/update-notification-settings.dto";
 import { AllExceptionsFilter } from "../common/filters/all-exceptions.filter";
@@ -25,35 +25,35 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
-  findAll(@GetUserId() userId: string, @Query() query: FindNotificationsDto) {
-    return this.notificationsService.find(userId, query);
+  findAll(@Getuser_id() user_id: string, @Query() query: FindNotificationsDto) {
+    return this.notificationsService.find(user_id, query);
   }
 
   @Get("settings")
-  getSettings(@GetUserId() userId: string) {
-    return this.notificationsService.getSettings(userId);
+  getSettings(@Getuser_id() user_id: string) {
+    return this.notificationsService.getSettings(user_id);
   }
 
   @Put("settings")
   updateSettings(
-    @GetUserId() userId: string,
+    @Getuser_id() user_id: string,
     @Body() updateDto: UpdateNotificationSettingsDto,
   ) {
-    return this.notificationsService.updateSettings(userId, updateDto);
+    return this.notificationsService.updateSettings(user_id, updateDto);
   }
 
   @Put("read-all")
-  markAllAsRead(@GetUserId() userId: string) {
-    return this.notificationsService.markAllAsRead(userId);
+  markAllAsRead(@Getuser_id() user_id: string) {
+    return this.notificationsService.markAllAsRead(user_id);
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string, @GetUserId() userId: string) {
-    return this.notificationsService.findById(id, userId);
+  findOne(@Param("id") id: string, @Getuser_id() user_id: string) {
+    return this.notificationsService.findById(id, user_id);
   }
 
   @Put(":id/read")
-  markAsRead(@Param("id") id: string, @GetUserId() userId: string) {
-    return this.notificationsService.markAsRead(id, userId);
+  markAsRead(@Param("id") id: string, @Getuser_id() user_id: string) {
+    return this.notificationsService.markAsRead(id, user_id);
   }
 }

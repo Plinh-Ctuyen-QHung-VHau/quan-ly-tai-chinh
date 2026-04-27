@@ -8,27 +8,27 @@ import { ERROR_CODES } from "@shared/errors/errorCodes";
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
-  async getProfile(userId: string) {
-    const profile = await this.usersRepository.findProfileById(userId);
+  async getProfile(user_id: string) {
+    const profile = await this.usersRepository.findProfileById(user_id);
     if (!profile) {
       throw new AppError("User profile not found", ERROR_CODES.NOT_FOUND);
     }
     return profile;
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto) {
-    return this.usersRepository.updateProfile(userId, dto);
+  async updateProfile(user_id: string, dto: UpdateProfileDto) {
+    return this.usersRepository.updateProfile(user_id, dto);
   }
 
-  async getSettings(userId: string) {
-    const settings = await this.usersRepository.findSettingsByUserId(userId);
+  async getSettings(user_id: string) {
+    const settings = await this.usersRepository.findSettingsByuser_id(user_id);
     if (!settings) {
       throw new AppError("User settings not found", ERROR_CODES.NOT_FOUND);
     }
     return settings;
   }
 
-  async updateSettings(userId: string, dto: UpdateUserSettingsDto) {
-    return this.usersRepository.updateSettings(userId, dto);
+  async updateSettings(user_id: string, dto: UpdateUserSettingsDto) {
+    return this.usersRepository.updateSettings(user_id, dto);
   }
 }

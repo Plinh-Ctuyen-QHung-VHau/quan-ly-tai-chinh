@@ -30,10 +30,10 @@ export function TransactionItem({
             {transaction.categoryName ?? "Danh mục"}
           </Text>
           <Text style={styles.meta}>
-            {formatDate(transaction.transactionDate)}
+            {formatDate(transaction.transaction_date)}
           </Text>
-          {transaction.merchantName ? (
-            <Text style={styles.meta}>{transaction.merchantName}</Text>
+          {transaction.merchant_name ? (
+            <Text style={styles.meta}>{transaction.merchant_name}</Text>
           ) : null}
         </View>
         <View style={styles.amountWrap}>

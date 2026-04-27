@@ -7,7 +7,9 @@ import {
   IsEnum,
   Min,
   IsUrl,
+  IsBoolean,
 } from "class-validator";
+import { Expose } from "class-transformer";
 
 export enum TransactionType {
   INCOME = "income",
@@ -17,6 +19,7 @@ export enum TransactionType {
 export enum TransactionSource {
   CAMERA = "camera",
   GALLERY = "gallery",
+  OCR = "ocr",
 }
 
 export class CreateTransactionDto {
@@ -28,6 +31,7 @@ export class CreateTransactionDto {
   amount: number;
 
   @IsUUID()
+  @Expose({ name: "category_id" })
   categoryId: string;
 
   @IsOptional()
@@ -35,6 +39,7 @@ export class CreateTransactionDto {
   note?: string;
 
   @IsDateString()
+  @Expose({ name: "transaction_date" })
   transactionDate: string;
 
   @IsEnum(TransactionSource)
@@ -42,15 +47,28 @@ export class CreateTransactionDto {
 
   @IsOptional()
   @IsUrl()
+  @Expose({ name: "image_url" })
   imageUrl?: string;
 
   @IsOptional()
   @IsString()
+  @Expose({ name: "merchant_name" })
   merchantName?: string;
 
   @IsOptional()
   @IsUUID()
+  @Expose({ name: "ocr_result_id" })
   ocrResultId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  @Expose({ name: "is_anomaly" })
+  isAnomaly?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Expose({ name: "anomaly_score" })
+  anomalyScore?: number;
 }
 
 export class UpdateTransactionDto {
@@ -65,6 +83,7 @@ export class UpdateTransactionDto {
 
   @IsOptional()
   @IsUUID()
+  @Expose({ name: "category_id" })
   categoryId?: string;
 
   @IsOptional()
@@ -73,9 +92,21 @@ export class UpdateTransactionDto {
 
   @IsOptional()
   @IsDateString()
+  @Expose({ name: "transaction_date" })
   transactionDate?: string;
 
   @IsOptional()
   @IsString()
+  @Expose({ name: "merchant_name" })
   merchantName?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  @Expose({ name: "is_anomaly" })
+  isAnomaly?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Expose({ name: "anomaly_score" })
+  anomalyScore?: number;
 }

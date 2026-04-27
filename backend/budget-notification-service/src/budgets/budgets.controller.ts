@@ -15,7 +15,7 @@ import {
 import { BudgetsService } from "./budgets.service";
 import { CreateBudgetDto } from "./dto/create-budget.dto";
 import { UpdateBudgetDto } from "./dto/update-budget.dto";
-import { GetUserId } from "../common/decorators/get-user-id.decorator";
+import { Getuser_id } from "../common/decorators/get-user-id.decorator";
 import { AllExceptionsFilter } from "../common/filters/all-exceptions.filter";
 import { TransformInterceptor } from "../common/interceptors/transform.interceptor";
 
@@ -27,33 +27,33 @@ export class BudgetsController {
 
   @Post()
   create(
-    @GetUserId() userId: string,
+    @Getuser_id() user_id: string,
     @Body() createBudgetDto: CreateBudgetDto,
   ) {
-    return this.budgetsService.create(userId, createBudgetDto);
+    return this.budgetsService.create(user_id, createBudgetDto);
   }
 
   @Get("current")
-  findCurrent(@GetUserId() userId: string) {
-    return this.budgetsService.findCurrent(userId);
+  findCurrent(@Getuser_id() user_id: string) {
+    return this.budgetsService.findCurrent(user_id);
   }
 
   @Get("current/status")
-  getCurrentStatus(@GetUserId() userId: string) {
-    return this.budgetsService.getCurrentStatus(userId);
+  getCurrentStatus(@Getuser_id() user_id: string) {
+    return this.budgetsService.getCurrentStatus(user_id);
   }
 
   @Put(":id")
   update(
     @Param("id") id: string,
-    @GetUserId() userId: string,
+    @Getuser_id() user_id: string,
     @Body() updateBudgetDto: UpdateBudgetDto,
   ) {
-    return this.budgetsService.update(id, userId, updateBudgetDto);
+    return this.budgetsService.update(id, user_id, updateBudgetDto);
   }
 
   @Delete(":id")
-  remove(@Param("id") id: string, @GetUserId() userId: string) {
-    return this.budgetsService.remove(id, userId);
+  remove(@Param("id") id: string, @Getuser_id() user_id: string) {
+    return this.budgetsService.remove(id, user_id);
   }
 }

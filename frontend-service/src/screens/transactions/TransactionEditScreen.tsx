@@ -43,10 +43,10 @@ export function TransactionEditScreen() {
       setTransaction(result);
       setType(result.type);
       setAmount(String(result.amount));
-      setCategoryId(result.categoryId);
+      setCategoryId(result.category_id);
       setNote(result.note ?? "");
-      setTransactionDate(result.transactionDate);
-      setMerchantName(result.merchantName ?? "");
+      setTransactionDate(result.transaction_date);
+      setMerchantName(result.merchant_name ?? "");
     } finally {
       setLoading(false);
     }
@@ -93,10 +93,10 @@ export function TransactionEditScreen() {
       await updateTransaction(transactionId, {
         amount: Number(amount),
         type,
-        categoryId,
+        category_id: categoryId,
         note: note.trim() || undefined,
-        transactionDate,
-        merchantName: merchantName.trim() || undefined,
+        transaction_date: transactionDate,
+        merchant_name: merchantName.trim() || undefined,
       });
       Alert.alert("Đã cập nhật", "Giao dịch đã được sửa thành công.");
       navigation.goBack();

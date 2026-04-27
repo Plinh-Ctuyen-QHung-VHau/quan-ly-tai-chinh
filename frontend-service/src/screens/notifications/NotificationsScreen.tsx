@@ -86,14 +86,14 @@ export function NotificationsScreen() {
         notifications.map((notification) => (
           <AppCard
             key={notification.id}
-            style={notification.readAt ? styles.readCard : styles.unreadCard}
+            style={notification.read_at ? styles.readCard : styles.unreadCard}
           >
             <Text style={styles.notificationTitle}>{notification.title}</Text>
             <Text style={styles.notificationBody}>{notification.message}</Text>
             <Text style={styles.meta}>
-              {formatDate(notification.createdAt)}
+              {formatDate(notification.created_at)}
             </Text>
-            {!notification.readAt ? (
+            {!notification.read_at ? (
               <AppButton
                 title="Đánh dấu đã đọc"
                 variant="secondary"

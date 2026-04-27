@@ -2,7 +2,10 @@ import { Injectable, Inject, Logger } from "@nestjs/common";
 import { ConfigType } from "@nestjs/config";
 import { AppError } from "@shared/errors/AppError";
 import { StorageReader } from "../storage/storage.reader";
-import { OCR_ENGINE_ADAPTER, OcrEngineAdapter } from "./adapters/ocr-engine.adapter";
+import {
+  OCR_ENGINE_ADAPTER,
+  OcrEngineAdapter,
+} from "./adapters/ocr-engine.adapter";
 import { ScanOcrDto } from "./dto/ocr.dto";
 import { OcrParser } from "./ocr.parser";
 import { OcrRepository } from "./ocr.repository";
@@ -26,15 +29,18 @@ export class OcrService {
     private readonly imagePreprocessor: ImagePreprocessorService,
     @Inject(configuration.KEY)
     private readonly appConfig: ConfigType<typeof configuration>,
-  ) { }
+  ) {}
 
-  async scan(userId: string, scanOcrDto: ScanOcrDto) {
+  async scan(user_id: string, scanOcrDto: ScanOcrDto) {
     this.metrics.ocrRequestsTotal.inc();
     const startTime = Date.now();
 
     const { imageUrl, sourceType } = scanOcrDto;
 
-    const ocrRequest = await this.ocrRepository.createRequest(userId, scanOcrDto);
+    const ocrRequest = await this.ocrRepository.createRequest(
+      user_id,
+      scanOcrDto,
+    );
 
     try {
       const ocrPromise = this.performOcr(imageUrl);
@@ -83,7 +89,11 @@ export class OcrService {
         this.metrics.ocrEngineErrorsTotal.inc();
       }
 
-      await this.ocrRepository.updateRequestStatus(ocrRequest.id, "failed", error.message);
+      await this.ocrRepository.updateRequestStatus(
+        ocrRequest.id,
+        "failed",
+        error.message,
+      );
 
       this.metrics.ocrFailuresTotal.inc();
       const duration = (Date.now() - startTime) / 1000;
@@ -125,24 +135,24 @@ export class OcrService {
     };
   }
 
-  async getResult(id: string, userId: string) {
-    const result = await this.ocrRepository.findResultById(id, userId);
+  async getResult(id: string, user_id: string) {
+    const result = await this.ocrRepository.findResultById(id, user_id);
     if (!result) {
       throw new AppError("NOT_FOUND", `OCR result with ID ${id} not found.`);
     }
     return result;
   }
 
-  async retry(id: string, userId: string) {
+  async retry(id: string, user_id: string) {
     const originalRequest = await this.ocrRepository.findRequestById(
       id,
-      userId,
+      user_id,
     );
     if (!originalRequest) {
       throw new AppError("NOT_FOUND", `OCR request with ID ${id} not found.`);
     }
 
-    return this.scan(userId, {
+    return this.scan(user_id, {
       imageUrl: originalRequest.image_url,
       sourceType: originalRequest.source_type,
     });

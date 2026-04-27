@@ -1,5 +1,5 @@
 export interface UserContext {
-  userId: string;
+  user_id: string;
   email: string;
   roles: string[];
 }
