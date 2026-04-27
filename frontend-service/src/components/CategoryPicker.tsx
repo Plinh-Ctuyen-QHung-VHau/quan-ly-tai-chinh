@@ -1,10 +1,10 @@
 import React from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text } from "react-native";
 
 import { Category } from "../types/category";
 
 interface CategoryPickerProps {
-  items: Category[];
+  items?: Category[] | null;
   selectedId?: string | null;
   onSelect: (id: string) => void;
 }
@@ -13,15 +13,21 @@ export function CategoryPicker({
   items,
   selectedId,
   onSelect,
-}: CategoryPickerProps) {
+}: Readonly<CategoryPickerProps>) {
+  const safeItems = Array.isArray(items) ? items : [];
+
+  if (safeItems.length === 0) {
+    return <Text style={styles.empty}>Chưa có danh mục phù hợp</Text>;
+  }
+
   return (
     <FlatList
       horizontal
-      data={items}
+      data={safeItems}
       keyExtractor={(item: Category) => item.id}
       contentContainerStyle={styles.list}
       showsHorizontalScrollIndicator={false}
-      renderItem={({ item }: { item: Category }) => {
+      renderItem={({ item }) => {
         const selected = item.id === selectedId;
         return (
           <Pressable
@@ -64,5 +70,6 @@ const styles = StyleSheet.create({
   },
   empty: {
     color: "#64748b",
+    paddingVertical: 8,
   },
 });

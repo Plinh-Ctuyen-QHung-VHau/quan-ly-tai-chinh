@@ -5,50 +5,61 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
 import { AppInput } from "../../components/AppInput";
-import { AuthStackParamList } from "../../app/AuthNavigator";
+import type { AuthStackParamList } from "../../app/AuthNavigator";
 import { signUp } from "../../services/authService";
 import { useAuthStore } from "../../store/authStore";
 import { isEmail, validatePassword } from "../../utils/validators";
 
 export function RegisterScreen({
   navigation,
-}: NativeStackScreenProps<AuthStackParamList, "Register">) {
+}: Readonly<NativeStackScreenProps<AuthStackParamList, "Register">>) {
   const setSession = useAuthStore((state) => state.setSession);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fullNameError, setFullNameError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [error, setError] = useState("");
 
   const handleRegister = async () => {
     setError("");
+    setFullNameError("");
+    setEmailError("");
+    setPasswordError("");
+    setConfirmPasswordError("");
 
-    if (!fullName.trim()) {
-      setError("Họ tên không được để trống.");
+    const normalizedFullName = fullName.trim();
+    const normalizedEmail = email.trim();
+
+    if (!normalizedFullName) {
+      setFullNameError("Vui lòng nhập họ và tên.");
       return;
     }
 
-    if (!isEmail(email)) {
-      setError("Email không hợp lệ.");
+    if (!isEmail(normalizedEmail)) {
+      setEmailError("Vui lòng nhập email hợp lệ.");
       return;
     }
 
     if (!validatePassword(password)) {
-      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+      setPasswordError("Mật khẩu phải có ít nhất 6 ký tự.");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Xác nhận mật khẩu không khớp.");
+      setConfirmPasswordError("Xác nhận mật khẩu không khớp.");
       return;
     }
 
     setLoading(true);
     try {
       const result = await signUp({
-        fullName: fullName.trim(),
-        email: email.trim(),
+        fullName: normalizedFullName,
+        email: normalizedEmail,
         password,
         confirmPassword,
       });
@@ -89,30 +100,48 @@ export function RegisterScreen({
         <AppInput
           label="Họ và tên"
           value={fullName}
-          onChangeText={setFullName}
-          placeholder="Nguyen Van A"
+          onChangeText={(value) => {
+            setFullName(value);
+            if (fullNameError) setFullNameError("");
+          }}
+          placeholder="Nguyễn Văn A"
+          error={fullNameError}
         />
         <AppInput
           label="Email"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(value) => {
+            setEmail(value);
+            if (emailError) setEmailError("");
+          }}
           autoCapitalize="none"
+          autoCorrect={false}
           keyboardType="email-address"
           placeholder="you@example.com"
+          error={emailError}
         />
         <AppInput
           label="Mật khẩu"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(value) => {
+            setPassword(value);
+            if (passwordError) setPasswordError("");
+          }}
           secureTextEntry
           placeholder="Tối thiểu 6 ký tự"
+          helperText="Nên kết hợp chữ và số để tăng bảo mật"
+          error={passwordError}
         />
         <AppInput
           label="Xác nhận mật khẩu"
           value={confirmPassword}
-          onChangeText={setConfirmPassword}
+          onChangeText={(value) => {
+            setConfirmPassword(value);
+            if (confirmPasswordError) setConfirmPasswordError("");
+          }}
           secureTextEntry
           placeholder="Nhập lại mật khẩu"
+          error={confirmPasswordError}
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <AppButton title="Đăng ký" onPress={handleRegister} loading={loading} />

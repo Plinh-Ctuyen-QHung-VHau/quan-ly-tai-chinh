@@ -11,7 +11,6 @@ import {
   createTransaction,
 } from "../../services/transactionApi";
 import { useTransactionStore } from "../../store/transactionStore";
-import { useAuthStore } from "../../store/authStore";
 import { Category, TransactionType } from "../../types/category";
 import { OcrResult } from "../../types/ocr";
 import { isPositiveAmount } from "../../utils/validators";
@@ -64,7 +63,6 @@ export function TransactionConfirmScreen() {
   );
   const draftSourceType = useTransactionStore((state) => state.draftSourceType);
   const clearDraft = useTransactionStore((state) => state.clearDraft);
-  const user = useAuthStore((state) => state.user);
 
   // --- State Initialization ---
   const parsedFields = getParsedFields(draftOcr);
@@ -112,25 +110,21 @@ export function TransactionConfirmScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const loadCategories = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const list = await getCategories(type);
-      const safeList = Array.isArray(list) ? list : [];
-      setCategories(safeList);
+  useEffect(() => {
+    const loadCategories = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const list = await getCategories(type);
+        const safeList = Array.isArray(list) ? list : [];
+        setCategories(safeList);
 
-      if (categoryId) return;
-
-      if (suggestedCategoryText) {
-        const normalizedSuggested = normalizeText(
-          String(suggestedCategoryText),
-        );
-        const found = safeList.find(
-          (item) =>
-            normalizeText(item.name) === normalizedSuggested ||
-            normalizeText(item.name).includes(normalizedSuggested) ||
-            normalizedSuggested.includes(normalizeText(item.name)),
+        if (safeList.length > 0 && (!categoryId || !safeList.some((item) => item.id === categoryId))) {
+          setCategoryId(safeList[0].id);
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Không thể tải danh mục.",
         );
 
         if (found) {
@@ -173,15 +167,15 @@ export function TransactionConfirmScreen() {
     setError("");
 
     if (!isPositiveAmount(amount)) {
-      setError("Số tiền phải lớn hơn 0.");
+      setError("Vui lòng nhập số tiền lớn hơn 0.");
       return;
     }
     if (!categoryId) {
-      setError("Danh mục là bắt buộc.");
+      setError("Vui lòng chọn danh mục.");
       return;
     }
     if (!transactionDate) {
-      setError("Ngày giao dịch là bắt buộc.");
+      setError("Vui lòng chọn ngày giao dịch.");
       return;
     }
     if (!draftSourceType) {
@@ -214,19 +208,27 @@ export function TransactionConfirmScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <AppCard>
+      <AppCard style={styles.card}>
         <Text style={styles.title}>Xác nhận giao dịch</Text>
-        <Text style={styles.subtitle}>Kiểm tra dữ liệu OCR trước khi lưu.</Text>
+        <Text style={styles.subtitle}>
+          Thông tin đã được OCR tự điền, bạn có thể chỉnh sửa trước khi lưu.
+        </Text>
+
+        {validImageUrl ? (
+          <View style={styles.badgeRow}>
+            <Text style={styles.badgeText}>Đã đính kèm ảnh hóa đơn</Text>
+          </View>
+        ) : null}
 
         <View style={styles.typeRow}>
           <AppButton
-            title="Chi phí"
+            title={TYPE_LABELS.expense}
             variant={type === "expense" ? "primary" : "secondary"}
             onPress={() => setType("expense")}
             style={styles.typeButton}
           />
           <AppButton
-            title="Thu nhập"
+            title={TYPE_LABELS.income}
             variant={type === "income" ? "primary" : "secondary"}
             onPress={() => setType("income")}
             style={styles.typeButton}
@@ -245,12 +247,28 @@ export function TransactionConfirmScreen() {
           value={transactionDate}
           onChangeText={setTransactionDate}
           placeholder="YYYY-MM-DD"
+          helperText="Định dạng: năm-tháng-ngày"
         />
+        <View style={styles.inlineActions}>
+          <AppButton
+            title="Hôm nay"
+            variant="ghost"
+            onPress={() => setTransactionDate(getTodayString())}
+            style={styles.inlineButton}
+          />
+        </View>
         <AppInput
-          label="Cửa hàng/Merchant"
+          label="Cửa hàng / Người nhận"
           value={merchantName}
           onChangeText={setMerchantName}
-          placeholder="Tên cửa hàng"
+          placeholder="VD: Coopmart, Grab, Shopee..."
+        />
+        <AppInput
+          label="Ghi chú"
+          value={note}
+          onChangeText={setNote}
+          placeholder="Ghi chú thêm nếu cần"
+          multiline
         />
 
         <Text style={styles.label}>Danh mục</Text>
@@ -270,25 +288,26 @@ export function TransactionConfirmScreen() {
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <AppButton
-          title="Lưu giao dịch"
-          onPress={() => void handleSave()}
-          loading={saving}
-        />
-
-        <View style={styles.summaryBox}>
-          <Text style={styles.summaryTitle}>Dữ liệu OCR gốc</Text>
-          <Text style={styles.summaryText} numberOfLines={1}>
-            Ảnh: {previewImage || "-"}
-          </Text>
-          <Text style={styles.summaryText}>Loại gợi ý: {initialType}</Text>
-          <Text style={styles.summaryText}>
-            Danh mục gợi ý: {suggestedCategoryText || "-"}
-          </Text>
-          <Text style={styles.summaryText}>
-            Nội dung: {draftOcr?.extractedText || "-"}
-          </Text>
+        <View style={styles.actionColumn}>
+          <AppButton
+            title="Lưu giao dịch"
+            onPress={() => void handleSave()}
+            loading={saving}
+          />
+          <Text style={styles.actionSpacer} />
+          <AppButton
+            title="Quay lại"
+            variant="ghost"
+            onPress={() => navigation.goBack()}
+            disabled={saving}
+          />
         </View>
+        {loading ? (
+          <Text style={styles.muted}>Đang tải danh mục...</Text>
+        ) : null}
+        {!loading && categories.length === 0 ? (
+          <Text style={styles.muted}>Chưa có danh mục phù hợp.</Text>
+        ) : null}
       </AppCard>
     </ScrollView>
   );
@@ -296,33 +315,40 @@ export function TransactionConfirmScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flexGrow: 1,
     padding: 20,
     backgroundColor: "#f8fafc",
+    justifyContent: "center",
+  },
+  card: {
+    width: "100%",
+    borderRadius: 22,
+    padding: 20,
   },
   title: {
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: "800",
     color: "#0f172a",
-    marginBottom: 6,
+    marginBottom: 8,
+    textAlign: "center",
   },
   subtitle: {
     color: "#475569",
+    marginBottom: 16,
+    textAlign: "center",
+    lineHeight: 21,
+  },
+  badgeRow: {
+    alignSelf: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#e7f8ef",
     marginBottom: 14,
   },
-  summaryBox: {
-    backgroundColor: "#f1f5f9",
-    padding: 12,
-    borderRadius: 12,
-    marginTop: 20,
-    gap: 4,
-  },
-  summaryTitle: {
-    fontWeight: "600",
-    color: "#334155",
-    marginBottom: 4,
-  },
-  summaryText: {
-    color: "#475569",
+  badgeText: {
+    color: "#166534",
+    fontWeight: "700",
     fontSize: 13,
   },
   typeRow: {
@@ -339,10 +365,32 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     marginTop: 10,
   },
+  inlineActions: {
+    flexDirection: "row",
+    marginBottom: 14,
+  },
+  inlineButton: {
+    minHeight: 42,
+    paddingHorizontal: 14,
+  },
+  actionColumn: {
+    marginTop: 4,
+  },
+  actionSpacer: {
+    height: 10,
+  },
   error: {
     color: "#b91c1c",
     marginTop: 8,
     marginBottom: 12,
+    backgroundColor: "#fee2e2",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  muted: {
+    color: "#64748b",
+    marginTop: 10,
     textAlign: "center",
   },
 });
