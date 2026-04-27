@@ -74,14 +74,18 @@ export function RegisterScreen({
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
+      <View style={styles.bgOrbTop} />
+      <View style={styles.bgOrbBottom} />
+
       <View style={styles.hero}>
-        <Text style={styles.title}>Tạo tài khoản</Text>
+        <Text style={styles.badge}>Bắt đầu tiết kiệm</Text>
+        <Text style={styles.title}>Tạo tài khoản quản lý tài chính</Text>
         <Text style={styles.subtitle}>
-          Đăng ký Supabase Auth trực tiếp từ ứng dụng di động.
+          Đăng ký nhanh để theo dõi chi tiêu, ngân sách và mục tiêu cá nhân.
         </Text>
       </View>
 
-      <AppCard>
+      <AppCard style={styles.card}>
         <AppInput
           label="Họ và tên"
           value={fullName}
@@ -112,6 +116,7 @@ export function RegisterScreen({
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <AppButton title="Đăng ký" onPress={handleRegister} loading={loading} />
+        <Text style={styles.helperText}>Thông tin của bạn được mã hóa và bảo mật</Text>
         <View style={styles.linkRow}>
           <Text style={styles.linkText}>Đã có tài khoản?</Text>
           <AppButton
@@ -129,34 +134,83 @@ export function RegisterScreen({
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 20,
-    backgroundColor: "#f8fafc",
+    paddingHorizontal: 20,
+    paddingVertical: 28,
+    backgroundColor: "#f3f7fb",
     justifyContent: "center",
   },
+  bgOrbTop: {
+    position: "absolute",
+    top: -70,
+    right: -50,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: "#d9f3e4",
+  },
+  bgOrbBottom: {
+    position: "absolute",
+    bottom: -95,
+    left: -65,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: "#dbeafe",
+  },
   hero: {
-    marginBottom: 24,
+    marginBottom: 18,
+    gap: 8,
+  },
+  badge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#e6f4ea",
+    color: "#166534",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "800",
     color: "#0f172a",
-    marginBottom: 8,
+    lineHeight: 38,
   },
   subtitle: {
     color: "#475569",
-    lineHeight: 21,
+    lineHeight: 23,
+    fontSize: 16,
+  },
+  card: {
+    borderRadius: 22,
+    padding: 20,
+    borderColor: "#dbe5f0",
   },
   error: {
     color: "#b91c1c",
-    marginBottom: 12,
+    marginBottom: 10,
+    backgroundColor: "#fee2e2",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+  },
+  helperText: {
+    marginTop: 10,
+    textAlign: "center",
+    color: "#64748b",
+    fontSize: 13,
   },
   linkRow: {
-    marginTop: 14,
+    marginTop: 16,
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
   linkText: {
     color: "#475569",
+    fontSize: 16,
   },
   linkButton: {
     alignSelf: "stretch",
