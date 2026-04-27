@@ -5,36 +5,42 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
 import { AppInput } from "../../components/AppInput";
-import { AuthStackParamList } from "../../app/AuthNavigator";
+import type { AuthStackParamList } from "../../app/AuthNavigator";
 import { signIn } from "../../services/authService";
 import { useAuthStore } from "../../store/authStore";
 import { isEmail, validatePassword } from "../../utils/validators";
 
 export function LoginScreen({
   navigation,
-}: NativeStackScreenProps<AuthStackParamList, "Login">) {
+}: Readonly<NativeStackScreenProps<AuthStackParamList, "Login">>) {
   const setSession = useAuthStore((state) => state.setSession);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [error, setError] = useState("");
 
   const handleLogin = async () => {
     setError("");
+    setEmailError("");
+    setPasswordError("");
 
-    if (!isEmail(email)) {
-      setError("Email không hợp lệ.");
+    const normalizedEmail = email.trim();
+
+    if (!isEmail(normalizedEmail)) {
+      setEmailError("Vui lòng nhập email hợp lệ.");
       return;
     }
 
     if (!validatePassword(password)) {
-      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+      setPasswordError("Mật khẩu phải có ít nhất 6 ký tự.");
       return;
     }
 
     setLoading(true);
     try {
-      const result = await signIn({ email: email.trim(), password });
+      const result = await signIn({ email: normalizedEmail, password });
       setSession(result.session ?? null);
       Alert.alert("Thành công", "Đăng nhập thành công.");
     } catch (err) {
@@ -58,7 +64,7 @@ export function LoginScreen({
         <Text style={styles.badge}>Tài chính cá nhân</Text>
         <Text style={styles.title}>Đăng nhập</Text>
         <Text style={styles.subtitle}>
-          Theo dõi giao dịch, ngân sách và thông báo trong một nơi an toàn.
+          Theo dõi giao dịch, ngân sách và thông báo của bạn trong một nơi an toàn.
         </Text>
       </View>
 
@@ -66,17 +72,27 @@ export function LoginScreen({
         <AppInput
           label="Email"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(value) => {
+            setEmail(value);
+            if (emailError) setEmailError("");
+          }}
           autoCapitalize="none"
+          autoCorrect={false}
           keyboardType="email-address"
           placeholder="you@example.com"
+          error={emailError}
         />
         <AppInput
           label="Mật khẩu"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(value) => {
+            setPassword(value);
+            if (passwordError) setPasswordError("");
+          }}
           secureTextEntry
           placeholder="Nhập mật khẩu"
+          helperText="Mật khẩu có ít nhất 6 ký tự"
+          error={passwordError}
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <AppButton title="Đăng nhập" onPress={handleLogin} loading={loading} />

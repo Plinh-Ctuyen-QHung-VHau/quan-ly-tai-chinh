@@ -12,10 +12,17 @@ import {
 interface AppInputProps extends TextInputProps {
   label?: string;
   error?: string;
+  helperText?: string;
   style?: StyleProp<TextStyle>;
 }
 
-export function AppInput({ label, error, style, ...props }: AppInputProps) {
+export function AppInput({
+  label,
+  error,
+  helperText,
+  style,
+  ...props
+}: Readonly<AppInputProps>) {
   return (
     <View style={styles.container}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
@@ -25,6 +32,7 @@ export function AppInput({ label, error, style, ...props }: AppInputProps) {
         {...props}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {!error && helperText ? <Text style={styles.helper}>{helperText}</Text> : null}
     </View>
   );
 }
@@ -55,6 +63,11 @@ const styles = StyleSheet.create({
   error: {
     marginTop: 6,
     color: "#ef4444",
+    fontSize: 12,
+  },
+  helper: {
+    marginTop: 6,
+    color: "#64748b",
     fontSize: 12,
   },
 });

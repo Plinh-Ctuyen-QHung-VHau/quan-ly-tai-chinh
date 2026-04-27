@@ -29,7 +29,8 @@
       "EXPO_PUBLIC_API_BASE_URL": ""
     },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      "@react-native-community/datetimepicker"
     ]
   }
 }

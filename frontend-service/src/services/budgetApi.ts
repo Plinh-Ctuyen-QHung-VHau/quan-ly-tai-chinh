@@ -9,12 +9,9 @@ export async function getCurrentBudgetStatus(): Promise<BudgetStatus | null> {
     return handleApiResponse<BudgetStatus>(response);
   } catch (error: any) {
     const status = error?.statusCode ?? error?.response?.status;
-    const message = error?.message ?? error?.response?.data?.message;
 
-    if (
-      status === 404 &&
-      message === "No active budget found for the current period."
-    ) {
+    // Budget for current period may not exist yet; treat any 404 as empty state.
+    if (status === 404) {
       return null;
     }
 

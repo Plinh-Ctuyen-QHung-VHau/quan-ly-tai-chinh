@@ -11,10 +11,17 @@ import {
   createTransaction,
 } from "../../services/transactionApi";
 import { useTransactionStore } from "../../store/transactionStore";
-import { useAuthStore } from "../../store/authStore";
 import { Category, TransactionType } from "../../types/category";
-import { OcrResult } from "../../types/ocr";
-import { isPositiveAmount, validateBudgetPeriod } from "../../utils/validators";
+import { isPositiveAmount } from "../../utils/validators";
+
+const TYPE_LABELS: Record<TransactionType, string> = {
+  expense: "Chi tiêu",
+  income: "Thu nhập",
+};
+
+function getTodayString() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export function TransactionConfirmScreen() {
   const navigation = useNavigation<any>();
@@ -24,14 +31,11 @@ export function TransactionConfirmScreen() {
   );
   const draftSourceType = useTransactionStore((state) => state.draftSourceType);
   const clearDraft = useTransactionStore((state) => state.clearDraft);
-  const user = useAuthStore((state) => state.user);
 
   const initialType = "expense" as TransactionType;
   const [type, setType] = useState<TransactionType>(initialType);
   const [amount, setAmount] = useState(String(draftOcr?.total_amount ?? ""));
-  const [categoryId, setCategoryId] = useState(
-    draftOcr?.suggested_category_id ?? "",
-  );
+  const [categoryId, setCategoryId] = useState(draftOcr?.suggested_category_id ?? "");
   const [note, setNote] = useState("");
   const [transactionDate, setTransactionDate] = useState(
     draftOcr?.transaction_date ?? new Date().toISOString().slice(0, 10),
@@ -50,10 +54,10 @@ export function TransactionConfirmScreen() {
       setError("");
       try {
         const list = await getCategories(type);
-        setCategories(list);
         const safeList = Array.isArray(list) ? list : [];
+        setCategories(safeList);
 
-        if (!categoryId && safeList.length) {
+        if (safeList.length > 0 && (!categoryId || !safeList.some((item) => item.id === categoryId))) {
           setCategoryId(safeList[0].id);
         }
       } catch (err) {
@@ -89,17 +93,17 @@ export function TransactionConfirmScreen() {
     setError("");
 
     if (!isPositiveAmount(amount)) {
-      setError("Số tiền phải lớn hơn 0.");
+      setError("Vui lòng nhập số tiền lớn hơn 0.");
       return;
     }
 
     if (!categoryId) {
-      setError("Danh mục là bắt buộc.");
+      setError("Vui lòng chọn danh mục.");
       return;
     }
 
     if (!transactionDate) {
-      setError("Ngày giao dịch là bắt buộc.");
+      setError("Vui lòng chọn ngày giao dịch.");
       return;
     }
 
@@ -132,34 +136,27 @@ export function TransactionConfirmScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <AppCard>
+      <AppCard style={styles.card}>
         <Text style={styles.title}>Xác nhận giao dịch</Text>
-        <Text style={styles.subtitle}>Kiểm tra dữ liệu OCR trước khi lưu.</Text>
-        <View style={styles.summaryBox}>
-          <Text style={styles.summaryText}>
-            Amount gợi ý: {draftOcr?.total_amount ?? "-"}
-          </Text>
-          <Text style={styles.summaryText}>
-            Date gợi ý: {draftOcr?.transaction_date ?? "-"}
-          </Text>
-          <Text style={styles.summaryText}>
-            Category gợi ý: {draftOcr?.suggested_category_id ?? "-"}
-          </Text>
-          <Text style={styles.summaryText}>
-            Merchant: {draftOcr?.merchant_name ?? "-"}
-          </Text>
-          <Text style={styles.summaryText}>Image: {validImageUrl || "-"}</Text>
-        </View>
+        <Text style={styles.subtitle}>
+          Thông tin đã được OCR tự điền, bạn có thể chỉnh sửa trước khi lưu.
+        </Text>
+
+        {validImageUrl ? (
+          <View style={styles.badgeRow}>
+            <Text style={styles.badgeText}>Đã đính kèm ảnh hóa đơn</Text>
+          </View>
+        ) : null}
 
         <View style={styles.typeRow}>
           <AppButton
-            title="Expense"
+            title={TYPE_LABELS.expense}
             variant={type === "expense" ? "primary" : "secondary"}
             onPress={() => setType("expense")}
             style={styles.typeButton}
           />
           <AppButton
-            title="Income"
+            title={TYPE_LABELS.income}
             variant={type === "income" ? "primary" : "secondary"}
             onPress={() => setType("income")}
             style={styles.typeButton}
@@ -178,18 +175,27 @@ export function TransactionConfirmScreen() {
           value={transactionDate}
           onChangeText={setTransactionDate}
           placeholder="YYYY-MM-DD"
+          helperText="Định dạng: năm-tháng-ngày"
         />
+        <View style={styles.inlineActions}>
+          <AppButton
+            title="Hôm nay"
+            variant="ghost"
+            onPress={() => setTransactionDate(getTodayString())}
+            style={styles.inlineButton}
+          />
+        </View>
         <AppInput
-          label="Merchant"
+          label="Cửa hàng / Người nhận"
           value={merchantName}
           onChangeText={setMerchantName}
-          placeholder="Tên cửa hàng"
+          placeholder="VD: Coopmart, Grab, Shopee..."
         />
         <AppInput
           label="Ghi chú"
           value={note}
           onChangeText={setNote}
-          placeholder="Ghi chú thêm"
+          placeholder="Ghi chú thêm nếu cần"
           multiline
         />
 
@@ -201,16 +207,25 @@ export function TransactionConfirmScreen() {
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <AppButton
-          title="Lưu giao dịch"
-          onPress={() => void handleSave()}
-          loading={saving}
-        />
+        <View style={styles.actionColumn}>
+          <AppButton
+            title="Lưu giao dịch"
+            onPress={() => void handleSave()}
+            loading={saving}
+          />
+          <Text style={styles.actionSpacer} />
+          <AppButton
+            title="Quay lại"
+            variant="ghost"
+            onPress={() => navigation.goBack()}
+            disabled={saving}
+          />
+        </View>
         {loading ? (
           <Text style={styles.muted}>Đang tải danh mục...</Text>
         ) : null}
-        {!user ? (
-          <Text style={styles.muted}>Chưa có dữ liệu người dùng.</Text>
+        {!loading && categories.length === 0 ? (
+          <Text style={styles.muted}>Chưa có danh mục phù hợp.</Text>
         ) : null}
       </AppCard>
     </ScrollView>
@@ -219,28 +234,40 @@ export function TransactionConfirmScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flexGrow: 1,
     padding: 20,
     backgroundColor: "#f8fafc",
+    justifyContent: "center",
+  },
+  card: {
+    width: "100%",
+    borderRadius: 22,
+    padding: 20,
   },
   title: {
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: "800",
     color: "#0f172a",
-    marginBottom: 6,
+    marginBottom: 8,
+    textAlign: "center",
   },
   subtitle: {
     color: "#475569",
+    marginBottom: 16,
+    textAlign: "center",
+    lineHeight: 21,
+  },
+  badgeRow: {
+    alignSelf: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#e7f8ef",
     marginBottom: 14,
   },
-  summaryBox: {
-    backgroundColor: "#f1f5f9",
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 14,
-    gap: 4,
-  },
-  summaryText: {
-    color: "#334155",
+  badgeText: {
+    color: "#166534",
+    fontWeight: "700",
     fontSize: 13,
   },
   typeRow: {
@@ -256,13 +283,32 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 6,
   },
+  inlineActions: {
+    flexDirection: "row",
+    marginBottom: 14,
+  },
+  inlineButton: {
+    minHeight: 42,
+    paddingHorizontal: 14,
+  },
+  actionColumn: {
+    marginTop: 4,
+  },
+  actionSpacer: {
+    height: 10,
+  },
   error: {
     color: "#b91c1c",
     marginTop: 8,
     marginBottom: 12,
+    backgroundColor: "#fee2e2",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   muted: {
     color: "#64748b",
     marginTop: 10,
+    textAlign: "center",
   },
 });
