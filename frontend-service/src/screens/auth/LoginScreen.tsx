@@ -5,7 +5,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
 import { AppInput } from "../../components/AppInput";
-import { AuthNavigator, AuthStackParamList } from "../../app/AuthNavigator";
+import { AuthStackParamList } from "../../app/AuthNavigator";
 import { signIn } from "../../services/authService";
 import { useAuthStore } from "../../store/authStore";
 import { isEmail, validatePassword } from "../../utils/validators";
@@ -51,14 +51,18 @@ export function LoginScreen({
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
+      <View style={styles.bgOrbTop} />
+      <View style={styles.bgOrbBottom} />
+
       <View style={styles.hero}>
-        <Text style={styles.title}>Quản lý chi tiêu thông minh</Text>
+        <Text style={styles.badge}>Tài chính cá nhân</Text>
+        <Text style={styles.title}>Đăng nhập</Text>
         <Text style={styles.subtitle}>
-          Đăng nhập để đồng bộ giao dịch, ngân sách và thông báo của bạn.
+          Theo dõi giao dịch, ngân sách và thông báo trong một nơi an toàn.
         </Text>
       </View>
 
-      <AppCard>
+      <AppCard style={styles.card}>
         <AppInput
           label="Email"
           value={email}
@@ -76,6 +80,7 @@ export function LoginScreen({
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <AppButton title="Đăng nhập" onPress={handleLogin} loading={loading} />
+        <Text style={styles.helperText}>Bảo mật bởi Supabase Auth</Text>
         <View style={styles.linkRow}>
           <Text style={styles.linkText}>Chưa có tài khoản?</Text>
           <AppButton
@@ -93,34 +98,83 @@ export function LoginScreen({
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 20,
-    backgroundColor: "#f8fafc",
+    paddingHorizontal: 20,
+    paddingVertical: 28,
+    backgroundColor: "#f3f7fb",
     justifyContent: "center",
   },
+  bgOrbTop: {
+    position: "absolute",
+    top: -70,
+    right: -50,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: "#d9f3e4",
+  },
+  bgOrbBottom: {
+    position: "absolute",
+    bottom: -95,
+    left: -65,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: "#dbeafe",
+  },
   hero: {
-    marginBottom: 24,
+    marginBottom: 18,
+    gap: 8,
+  },
+  badge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#e6f4ea",
+    color: "#166534",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "800",
     color: "#0f172a",
-    marginBottom: 8,
+    lineHeight: 38,
   },
   subtitle: {
     color: "#475569",
-    lineHeight: 21,
+    lineHeight: 23,
+    fontSize: 16,
+  },
+  card: {
+    borderRadius: 22,
+    padding: 20,
+    borderColor: "#dbe5f0",
   },
   error: {
     color: "#b91c1c",
-    marginBottom: 12,
+    marginBottom: 10,
+    backgroundColor: "#fee2e2",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+  },
+  helperText: {
+    marginTop: 10,
+    textAlign: "center",
+    color: "#64748b",
+    fontSize: 13,
   },
   linkRow: {
-    marginTop: 14,
+    marginTop: 16,
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
   linkText: {
     color: "#475569",
+    fontSize: 16,
   },
   linkButton: {
     alignSelf: "stretch",
