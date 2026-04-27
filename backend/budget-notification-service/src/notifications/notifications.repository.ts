@@ -17,6 +17,15 @@ export interface Notification {
   created_at: Date;
 }
 
+export type CreateNotificationInput = {
+  user_id: string;
+  title: string;
+  content: string;
+  type: "reminder" | "budget_alert" | "anomaly_alert" | "financial_tip";
+  related_entity_type?: string | null;
+  related_entity_id?: string | null;
+};
+
 export interface NotificationSettings {
   id: string;
   user_id: string;
@@ -37,9 +46,7 @@ export class NotificationsRepository {
     return this.supabaseService.getClient().schema(SCHEMA);
   }
 
-  async create(
-    notification: Omit<Notification, "id" | "is_read" | "created_at">,
-  ): Promise<Notification> {
+  async create(notification: CreateNotificationInput): Promise<Notification> {
     const {
       user_id,
       type,
@@ -55,8 +62,8 @@ export class NotificationsRepository {
         type,
         title,
         content,
-        related_entity_id,
-        related_entity_type,
+        related_entity_id: related_entity_id ?? null,
+        related_entity_type: related_entity_type ?? null,
       })
       .select()
       .single();
@@ -127,7 +134,7 @@ export class NotificationsRepository {
   async markAsRead(id: string, user_id: string): Promise<Notification | null> {
     const { data, error } = await this.supabase
       .from("notifications")
-      .update({ is_read: true, updated_at: new Date() })
+      .update({ is_read: true })
       .eq("id", id)
       .eq("user_id", user_id)
       .select()
@@ -140,7 +147,7 @@ export class NotificationsRepository {
   async markAllAsRead(user_id: string): Promise<number> {
     const { count, error } = await this.supabase
       .from("notifications")
-      .update({ is_read: true, updated_at: new Date() }, { count: "exact" })
+      .update({ is_read: true }, { count: "exact" })
       .eq("user_id", user_id)
       .eq("is_read", false);
 

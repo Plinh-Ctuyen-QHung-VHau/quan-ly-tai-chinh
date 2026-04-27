@@ -27,10 +27,17 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    // Log request
     console.log(
       `[API REQUEST] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
     );
+
+    if (config.data) {
+      try {
+        console.log("[API BODY]", JSON.stringify(config.data));
+      } catch {
+        console.log("[API BODY]", config.data);
+      }
+    }
 
     const {
       data: { session },

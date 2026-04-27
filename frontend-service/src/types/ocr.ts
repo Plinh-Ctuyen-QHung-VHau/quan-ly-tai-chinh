@@ -1,20 +1,25 @@
 import { TransactionType } from "./category";
 
 export interface OcrResult {
-  id: string;
-  extracted_text: string;
-  confidence_score: number;
-  bounding_box: any;
-  status: "pending" | "completed" | "failed";
-  error_message?: string | null;
-  user_id: string;
-  image_url: string;
-  created_at: string;
-  updated_at: string;
-  merchant_name?: string | null;
-  transaction_date?: string | null;
-  total_amount?: number | null;
+  id?: string;
+  requestId?: string;
+  request_id?: string;
+  extractedText?: string | null;
+  extracted_text?: string | null;
+  suggestedAmount?: number | string | null;
+  suggested_amount?: number | string | null;
+  suggestedDate?: string | Date | null;
+  suggested_date?: string | Date | null;
+  suggestedType?: "income" | "expense" | null;
+  suggested_type?: "income" | "expense" | null;
+  suggestedCategoryId?: string | null;
   suggested_category_id?: string | null;
+  merchantName?: string | null;
+  merchant_name?: string | null;
+  imageUrl?: string | null;
+  image_url?: string | null;
+  parsedFieldsJson?: Record<string, any> | string | null;
+  parsed_fields_json?: Record<string, any> | string | null;
 }
 
 export interface OcrScanRequest {

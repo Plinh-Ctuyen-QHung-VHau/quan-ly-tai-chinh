@@ -1,6 +1,16 @@
-FROM node:18-alpine
+FROM node:18-bookworm
 
 WORKDIR /app
+
+# Install system dependencies required for Tesseract, OpenCV, and building node packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-vie \
+    python3 \
+    python3-pip \
+    && pip3 install --no-cache-dir --break-system-packages opencv-python-headless numpy \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY ocr-service/package*.json ./
 

@@ -12,7 +12,7 @@ export class CategoriesRepository {
     return this.supabaseService.getClient().schema(SCHEMA);
   }
 
-  async findAll(_user_id: string, queryDto: GetCategoriesQueryDto) {
+  async findAll(queryDto: GetCategoriesQueryDto) {
     const { type } = queryDto;
     let query = this.supabase.from("categories").select("*");
 

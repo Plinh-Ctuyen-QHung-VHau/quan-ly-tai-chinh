@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
@@ -14,7 +14,47 @@ import { useTransactionStore } from "../../store/transactionStore";
 import { useAuthStore } from "../../store/authStore";
 import { Category, TransactionType } from "../../types/category";
 import { OcrResult } from "../../types/ocr";
-import { isPositiveAmount, validateBudgetPeriod } from "../../utils/validators";
+import { isPositiveAmount } from "../../utils/validators";
+
+// --- Helper Functions ---
+function toAmountString(value: unknown) {
+  if (value === null || value === undefined) return "";
+  const cleaned = String(value).replace(/[^\d.]/g, "");
+  return cleaned;
+}
+
+function toDateInput(value: unknown) {
+  if (!value) return new Date().toISOString().slice(0, 10);
+  const date = new Date(String(value));
+  if (!Number.isNaN(date.getTime())) {
+    return date.toISOString().slice(0, 10);
+  }
+  const match = String(value).match(/\d{4}-\d{2}-\d{2}/);
+  return match?.[0] ?? new Date().toISOString().slice(0, 10);
+}
+
+function getParsedFields(draftOcr: OcrResult | null) {
+  const parsed = draftOcr?.parsedFieldsJson ?? draftOcr?.parsed_fields_json;
+  if (!parsed) return {};
+  if (typeof parsed === "string") {
+    try {
+      return JSON.parse(parsed);
+    } catch {
+      return {};
+    }
+  }
+  return parsed;
+}
+
+function normalizeText(value: string) {
+  if (!value) return "";
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .trim();
+}
 
 export function TransactionConfirmScreen() {
   const navigation = useNavigation<any>();
@@ -26,51 +66,96 @@ export function TransactionConfirmScreen() {
   const clearDraft = useTransactionStore((state) => state.clearDraft);
   const user = useAuthStore((state) => state.user);
 
-  const initialType = "expense" as TransactionType;
-  const [type, setType] = useState<TransactionType>(initialType);
-  const [amount, setAmount] = useState(String(draftOcr?.total_amount ?? ""));
-  const [categoryId, setCategoryId] = useState(
-    draftOcr?.suggested_category_id ?? "",
+  // --- State Initialization ---
+  const parsedFields = getParsedFields(draftOcr);
+
+  const initialAmount =
+    draftOcr?.suggestedAmount ??
+    draftOcr?.suggested_amount ??
+    parsedFields?.suggestedAmount ??
+    "";
+
+  const initialType = (draftOcr?.suggestedType ??
+    draftOcr?.suggested_type ??
+    parsedFields?.suggestedType ??
+    "expense") as TransactionType;
+
+  const initialDate =
+    draftOcr?.suggestedDate ??
+    draftOcr?.suggested_date ??
+    parsedFields?.suggestedDate ??
+    null;
+
+  const initialCategoryId =
+    draftOcr?.suggestedCategoryId ?? draftOcr?.suggested_category_id ?? "";
+
+  const suggestedCategoryText =
+    parsedFields?.suggestedCategory ?? parsedFields?.category ?? null;
+
+  const [amount, setAmount] = useState(toAmountString(initialAmount));
+  const [type, setType] = useState<TransactionType>(
+    initialType === "income" ? "income" : "expense",
+  );
+  const [transactionDate, setTransactionDate] = useState(
+    toDateInput(initialDate),
+  );
+  const [categoryId, setCategoryId] = useState(initialCategoryId ?? "");
+  const [merchantName, setMerchantName] = useState(
+    draftOcr?.merchantName ??
+      draftOcr?.merchant_name ??
+      parsedFields?.merchantName ??
+      "",
   );
   const [note, setNote] = useState("");
-  const [transactionDate, setTransactionDate] = useState(
-    draftOcr?.transaction_date ?? new Date().toISOString().slice(0, 10),
-  );
-  const [merchantName, setMerchantName] = useState(
-    draftOcr?.merchant_name ?? "",
-  );
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const list = await getCategories(type);
-        setCategories(list);
-        const safeList = Array.isArray(list) ? list : [];
+  const loadCategories = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const list = await getCategories(type);
+      const safeList = Array.isArray(list) ? list : [];
+      setCategories(safeList);
 
-        if (!categoryId && safeList.length) {
-          setCategoryId(safeList[0].id);
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Không thể tải danh mục.",
+      if (categoryId) return;
+
+      if (suggestedCategoryText) {
+        const normalizedSuggested = normalizeText(
+          String(suggestedCategoryText),
         );
-      } finally {
-        setLoading(false);
-      }
-    };
+        const found = safeList.find(
+          (item) =>
+            normalizeText(item.name) === normalizedSuggested ||
+            normalizeText(item.name).includes(normalizedSuggested) ||
+            normalizedSuggested.includes(normalizeText(item.name)),
+        );
 
+        if (found) {
+          setCategoryId(found.id);
+          return;
+        }
+      }
+
+      if (safeList.length) {
+        setCategoryId(safeList[0].id);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải danh mục.");
+    } finally {
+      setLoading(false);
+    }
+  }, [type, categoryId, suggestedCategoryText]);
+
+  useEffect(() => {
     void loadCategories();
-  }, [type]);
+  }, [loadCategories]);
 
   const previewImage = useMemo(
-    () => draftOcr?.image_url ?? draftReceiptPath ?? "",
-    [draftOcr?.image_url, draftReceiptPath],
+    () => draftOcr?.imageUrl ?? draftReceiptPath ?? "",
+    [draftOcr?.imageUrl, draftReceiptPath],
   );
 
   const validImageUrl = useMemo(() => {
@@ -81,7 +166,6 @@ export function TransactionConfirmScreen() {
     ) {
       return previewImage;
     }
-
     return undefined;
   }, [previewImage]);
 
@@ -92,19 +176,17 @@ export function TransactionConfirmScreen() {
       setError("Số tiền phải lớn hơn 0.");
       return;
     }
-
     if (!categoryId) {
       setError("Danh mục là bắt buộc.");
       return;
     }
-
     if (!transactionDate) {
       setError("Ngày giao dịch là bắt buộc.");
       return;
     }
-
     if (!draftSourceType) {
       setError("Thiếu nguồn ảnh giao dịch.");
+      Alert.alert("Lỗi", "Thiếu nguồn ảnh giao dịch (camera/gallery).");
       return;
     }
 
@@ -113,16 +195,16 @@ export function TransactionConfirmScreen() {
       await createTransaction({
         amount: Number(amount),
         type,
-        category_id: categoryId,
+        categoryId,
         note: note.trim() || undefined,
-        transaction_date: transactionDate,
-        merchant_name: merchantName.trim() || undefined,
-        image_url: validImageUrl,
+        transactionDate,
+        merchantName: merchantName.trim() || undefined,
+        imageUrl: validImageUrl,
         source: draftSourceType,
       });
       clearDraft();
       Alert.alert("Đã lưu", "Giao dịch đã được lưu thành công.");
-      navigation.navigate("MainTabs");
+      navigation.navigate("MainTabs", { screen: "Home" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể lưu giao dịch.");
     } finally {
@@ -135,31 +217,16 @@ export function TransactionConfirmScreen() {
       <AppCard>
         <Text style={styles.title}>Xác nhận giao dịch</Text>
         <Text style={styles.subtitle}>Kiểm tra dữ liệu OCR trước khi lưu.</Text>
-        <View style={styles.summaryBox}>
-          <Text style={styles.summaryText}>
-            Amount gợi ý: {draftOcr?.total_amount ?? "-"}
-          </Text>
-          <Text style={styles.summaryText}>
-            Date gợi ý: {draftOcr?.transaction_date ?? "-"}
-          </Text>
-          <Text style={styles.summaryText}>
-            Category gợi ý: {draftOcr?.suggested_category_id ?? "-"}
-          </Text>
-          <Text style={styles.summaryText}>
-            Merchant: {draftOcr?.merchant_name ?? "-"}
-          </Text>
-          <Text style={styles.summaryText}>Image: {validImageUrl || "-"}</Text>
-        </View>
 
         <View style={styles.typeRow}>
           <AppButton
-            title="Expense"
+            title="Chi phí"
             variant={type === "expense" ? "primary" : "secondary"}
             onPress={() => setType("expense")}
             style={styles.typeButton}
           />
           <AppButton
-            title="Income"
+            title="Thu nhập"
             variant={type === "income" ? "primary" : "secondary"}
             onPress={() => setType("income")}
             style={styles.typeButton}
@@ -180,17 +247,10 @@ export function TransactionConfirmScreen() {
           placeholder="YYYY-MM-DD"
         />
         <AppInput
-          label="Merchant"
+          label="Cửa hàng/Merchant"
           value={merchantName}
           onChangeText={setMerchantName}
           placeholder="Tên cửa hàng"
-        />
-        <AppInput
-          label="Ghi chú"
-          value={note}
-          onChangeText={setNote}
-          placeholder="Ghi chú thêm"
-          multiline
         />
 
         <Text style={styles.label}>Danh mục</Text>
@@ -198,6 +258,15 @@ export function TransactionConfirmScreen() {
           items={categories}
           selectedId={categoryId}
           onSelect={setCategoryId}
+          loading={loading}
+        />
+
+        <AppInput
+          label="Ghi chú"
+          value={note}
+          onChangeText={setNote}
+          placeholder="Ghi chú thêm (không bắt buộc)"
+          multiline
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -206,12 +275,20 @@ export function TransactionConfirmScreen() {
           onPress={() => void handleSave()}
           loading={saving}
         />
-        {loading ? (
-          <Text style={styles.muted}>Đang tải danh mục...</Text>
-        ) : null}
-        {!user ? (
-          <Text style={styles.muted}>Chưa có dữ liệu người dùng.</Text>
-        ) : null}
+
+        <View style={styles.summaryBox}>
+          <Text style={styles.summaryTitle}>Dữ liệu OCR gốc</Text>
+          <Text style={styles.summaryText} numberOfLines={1}>
+            Ảnh: {previewImage || "-"}
+          </Text>
+          <Text style={styles.summaryText}>Loại gợi ý: {initialType}</Text>
+          <Text style={styles.summaryText}>
+            Danh mục gợi ý: {suggestedCategoryText || "-"}
+          </Text>
+          <Text style={styles.summaryText}>
+            Nội dung: {draftOcr?.extractedText || "-"}
+          </Text>
+        </View>
       </AppCard>
     </ScrollView>
   );
@@ -236,11 +313,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#f1f5f9",
     padding: 12,
     borderRadius: 12,
-    marginBottom: 14,
+    marginTop: 20,
     gap: 4,
   },
-  summaryText: {
+  summaryTitle: {
+    fontWeight: "600",
     color: "#334155",
+    marginBottom: 4,
+  },
+  summaryText: {
+    color: "#475569",
     fontSize: 13,
   },
   typeRow: {
@@ -255,14 +337,12 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontWeight: "600",
     marginBottom: 6,
+    marginTop: 10,
   },
   error: {
     color: "#b91c1c",
     marginTop: 8,
     marginBottom: 12,
-  },
-  muted: {
-    color: "#64748b",
-    marginTop: 10,
+    textAlign: "center",
   },
 });

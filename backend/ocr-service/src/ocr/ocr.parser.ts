@@ -27,7 +27,14 @@ export class OcrParser {
       "nhà hàng",
       "restaurant",
     ],
-    "Học tập": ["nhà sách", "bookstore", "sách", "udemy", "coursera"],
+    "Học tập": [
+      "nhà sách",
+      "bookstore",
+      "sách",
+      "udemy",
+      "coursera",
+      "học phí",
+    ],
     "Mua sắm": [
       "winmart",
       "coopmart",
@@ -40,15 +47,17 @@ export class OcrParser {
     ],
   };
 
-  parse(
+  public parse(
     rawText: string,
     ocrEngine: string,
     ocrLanguage: string,
   ): ParsedOcrResult {
     const normalizedText = rawText.toLowerCase().replace(/\s+/g, " ").trim();
-    const lines = normalizedText
-      .split("\n")
-      .filter((line) => line.trim() !== "");
+    const normalizedLines = rawText
+      .toLowerCase()
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
 
     const detectedAmounts = this.findAmounts(normalizedText);
     const detectedDates = this.findDates(normalizedText);
@@ -60,8 +69,7 @@ export class OcrParser {
     const suggestedDate = detectedDates.length > 0 ? detectedDates[0] : null;
     const suggestedType = this.findType(normalizedText);
     const suggestedCategoryText = this.findCategory(normalizedText); // This is a string
-    const merchantName = this.findMerchant(normalizedText, lines);
-
+    const merchantName = this.findMerchant(normalizedText, normalizedLines);
     return {
       extractedText: rawText,
       suggestedAmount,
@@ -85,37 +93,54 @@ export class OcrParser {
   }
 
   private findAmounts(text: string): number[] {
-    const amountRegex =
-      /[\d.,]+(?=\s*(?:vnd|d|đồng|total|amount|payment|thành tiền|tổng cộng))/gi;
-    const genericAmountRegex = /(?:\d[.,]?){4,}/g;
+    const patterns = [
+      // 5,240,464 VND | 5.240.464đ | 100,000 VND
+      /\b\d{1,3}(?:[.,]\d{3})+(?:\s*(?:vnd|vnđ|đ|d|đồng))?\b/gi,
 
-    let matches = text.match(amountRegex) || [];
-    if (matches.length === 0) {
-      matches = text.match(genericAmountRegex) || [];
-    }
+      // 5240464 VND | 100000đ
+      /\b\d{4,}(?:\s*(?:vnd|vnđ|đ|d|đồng))\b/gi,
+    ];
+
+    const matches = patterns.flatMap((regex) =>
+      [...text.matchAll(regex)].map((match) => match[0]),
+    );
 
     const amounts = matches
       .map((match) => {
-        const cleaned = match.replace(/\./g, "").replace(",", ".");
-        return parseFloat(cleaned);
+        const cleaned = match.replace(/[^\d]/g, "");
+        return Number(cleaned);
       })
-      .filter((num) => !isNaN(num) && num > 100); // Filter out small, likely irrelevant numbers
+      .filter((num) => Number.isFinite(num))
+      // lọc số nhỏ, số tài khoản, số tham chiếu quá dài
+      .filter((num) => num >= 1000 && num <= 500_000_000);
 
     return [...new Set(amounts)].sort((a, b) => b - a);
   }
-
   private determineSuggestedAmount(
     text: string,
     amounts: number[],
   ): number | null {
-    if (amounts.length === 0) return null;
+    const lines = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
 
-    const totalKeywords = ["total", "thành tiền", "tổng cộng", "payment"];
-    const textLines = text.split("\n");
+    const amountKeywords = [
+      "tổng cộng",
+      "tổng tiền",
+      "thành tiền",
+      "thanh toán",
+      "phải trả",
+      "số tiền",
+      "amount",
+      "total",
+      "payment",
+      "grand total",
+    ];
 
-    for (const line of textLines) {
+    for (const line of lines) {
       const lowerLine = line.toLowerCase();
-      if (totalKeywords.some((keyword) => lowerLine.includes(keyword))) {
+      if (amountKeywords.some((keyword) => lowerLine.includes(keyword))) {
         const lineAmounts = this.findAmounts(lowerLine);
         if (lineAmounts.length > 0) {
           return Math.max(...lineAmounts);
@@ -123,8 +148,7 @@ export class OcrParser {
       }
     }
 
-    // If no total keyword found, return the largest amount found
-    return Math.max(...amounts);
+    return amounts.length > 0 ? Math.max(...amounts) : null;
   }
 
   private findDates(text: string): Date[] {
@@ -150,15 +174,41 @@ export class OcrParser {
       .filter((date) => date && !isNaN(date.getTime())) as Date[];
   }
 
-  private findType(text: string): "income" | "expense" | null {
-    if (
-      text.includes("hóa đơn") ||
-      text.includes("bill") ||
-      text.includes("invoice")
-    ) {
+  private findType(text: string): "income" | "expense" {
+    const incomeKeywords = [
+      "nhận tiền",
+      "lương",
+      "thu nhập",
+      "thưởng",
+      "tiền vào",
+      "cộng tiền",
+      "ghi có",
+      "from",
+      "received",
+      "income",
+    ];
+
+    const expenseKeywords = [
+      "giao dịch thành công",
+      "đã thanh toán",
+      "thanh toán",
+      "chuyển tiền",
+      "đến:",
+      "hóa đơn",
+      "bill",
+      "invoice",
+      "payment",
+      "paid",
+    ];
+
+    if (incomeKeywords.some((keyword) => text.includes(keyword))) {
+      return "income";
+    }
+
+    if (expenseKeywords.some((keyword) => text.includes(keyword))) {
       return "expense";
     }
-    // Default to expense for receipts, can be refined
+
     return "expense";
   }
 

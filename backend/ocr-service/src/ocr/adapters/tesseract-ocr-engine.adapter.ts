@@ -1,99 +1,86 @@
 import { Inject, Injectable, Logger, OnModuleDestroy } from "@nestjs/common";
 import { ConfigType } from "@nestjs/config";
-import { createWorker, Worker } from "tesseract.js";
+import { createWorker, OEM, Worker as TesseractWorker } from "tesseract.js";
 import { configuration } from "../../config/configuration";
 import { AppError } from "@shared/errors/AppError";
-import { OcrEngineAdapter, OcrResult } from "./ocr-engine.adapter";
+import { OcrEngineAdapter } from "./ocr-engine.adapter";
 
 @Injectable()
 export class TesseractOcrEngineAdapter
-  implements OcrEngineAdapter, OnModuleDestroy {
+  implements OcrEngineAdapter, OnModuleDestroy
+{
   private readonly logger = new Logger(TesseractOcrEngineAdapter.name);
-  private worker: Worker | null = null;
-  private workerInitPromise: Promise<void> | null = null;
+  private worker: TesseractWorker | null = null;
+  private isReady = false;
+  private readonly lang: string;
+  private readonly tesseractConfig: Partial<Tesseract.RecognizeOptions>;
 
   constructor(
     @Inject(configuration.KEY)
     private readonly appConfig: ConfigType<typeof configuration>,
-  ) { }
-
-  async onModuleDestroy() {
-    await this.terminateWorker();
+  ) {
+    this.lang = this.appConfig.ocr.lang;
+    this.tesseractConfig = {
+      // Tesseract parameters can be configured here
+    };
+    this.initialize();
   }
 
-  private async initializeWorker(): Promise<void> {
-    if (this.worker) {
-      return;
-    }
-
-    this.logger.log("Initializing Tesseract worker...");
+  private async initialize(): Promise<void> {
     try {
-      // tesseract.js v7: createWorker accepts language as first arg and options as second
-      const worker = await createWorker(this.appConfig.ocr.lang, 1, {
-        logger: (m) => {
-          if (m.status === "recognizing text") {
-            const progress = (m.progress * 100).toFixed(2);
-            this.logger.debug(`Tesseract progress: ${progress}%`);
-          }
-        },
+      this.logger.log(`Initializing Tesseract with lang: ${this.lang}`);
+      this.worker = await createWorker(this.lang, OEM.DEFAULT, {
+        // logger: (m) => this.logger.debug(m), // Uncomment for verbose logging
       });
-      this.worker = worker;
+      this.isReady = true;
       this.logger.log("Tesseract worker initialized successfully.");
     } catch (error) {
-      this.logger.error("Failed to initialize Tesseract worker", error.stack);
-      this.workerInitPromise = null;
-      throw new AppError(
-        "OCR_PROCESSING_FAILED",
-        "Failed to initialize Tesseract worker.",
-        {
-          reason: "LANGUAGE_DATA_LOAD_FAILED",
-          originalError: error.message,
-        },
+      this.logger.error("Failed to initialize Tesseract worker", error);
+      this.isReady = false;
+    }
+  }
+
+  async recognize(image: Buffer): Promise<string> {
+    if (!this.isReady || !this.worker) {
+      this.logger.warn(
+        "Tesseract worker not ready, attempting to re-initialize.",
       );
-    }
-  }
-
-  private async getWorker(): Promise<Worker> {
-    if (this.worker) {
-      return this.worker;
-    }
-
-    if (!this.workerInitPromise) {
-      this.workerInitPromise = this.initializeWorker();
+      await this.initialize();
+      if (!this.isReady || !this.worker) {
+        throw new AppError(
+          "TESSERACT_NOT_INITIALIZED",
+          "Tesseract worker could not be initialized.",
+          { reason: "TESSERACT_FAILED" },
+        );
+      }
     }
 
-    await this.workerInitPromise;
-    return this.worker!;
-  }
-
-  private async terminateWorker() {
-    if (this.worker) {
-      this.logger.log("Terminating Tesseract worker...");
-      await this.worker.terminate();
-      this.worker = null;
-      this.workerInitPromise = null;
-      this.logger.log("Tesseract worker terminated.");
-    }
-  }
-
-  async recognize(image: Buffer): Promise<OcrResult> {
     try {
-      const worker = await this.getWorker();
+      this.logger.log("Starting Tesseract recognition...");
       const {
-        data: { text, confidence },
-      } = await worker.recognize(image);
-      return { text, confidence };
+        data: { text },
+      } = await this.worker.recognize(image, this.tesseractConfig);
+      this.logger.log("Tesseract recognition finished.");
+      return text;
     } catch (error) {
-      this.logger.error("Tesseract recognition failed", error.stack);
-      await this.terminateWorker();
+      this.logger.error("Tesseract recognition failed", error);
       throw new AppError(
         "OCR_PROCESSING_FAILED",
-        "Tesseract recognition failed.",
-        {
-          reason: "TESSERACT_FAILED",
-          originalError: error.message,
-        },
+        "Tesseract failed to process the image.",
+        { reason: "TESSERACT_FAILED", originalError: error.message },
       );
     }
+  }
+
+  async terminate(): Promise<void> {
+    if (this.worker) {
+      await this.worker.terminate();
+      this.logger.log("Tesseract worker terminated.");
+      this.isReady = false;
+    }
+  }
+
+  async onModuleDestroy() {
+    await this.terminate();
   }
 }

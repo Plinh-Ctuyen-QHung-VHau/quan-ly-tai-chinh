@@ -44,6 +44,7 @@ export function AddTransactionScreen() {
         result = await ImagePicker.launchCameraAsync({
           mediaTypes: ["images"],
           quality: 0.8,
+          allowsEditing: true,
         });
       } else {
         const permission =
@@ -58,6 +59,7 @@ export function AddTransactionScreen() {
         result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ["images"],
           quality: 0.8,
+          allowsEditing: true,
         });
       }
 

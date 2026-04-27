@@ -1,5 +1,4 @@
-import { IsEnum, IsUrl, IsString } from "class-validator";
-import { Expose } from "class-transformer";
+import { IsEnum, IsString, IsUrl } from "class-validator";
 
 export enum OcrSourceType {
   CAMERA = "camera",
@@ -8,11 +7,12 @@ export enum OcrSourceType {
 
 export class ScanOcrDto {
   @IsEnum(OcrSourceType)
-  @Expose({ name: "source_type" })
   sourceType: OcrSourceType;
 
-  @IsUrl()
   @IsString()
-  @Expose({ name: "image_url" })
+  @IsUrl({
+    require_protocol: true,
+    protocols: ["http", "https"],
+  })
   imageUrl: string;
 }

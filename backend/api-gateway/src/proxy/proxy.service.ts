@@ -42,21 +42,34 @@ export class ProxyService {
     return null;
   }
 
-  async proxyRequest(req: Request): Promise<AxiosResponse<any>> {
-    const { method, body, headers, originalUrl } = req;
+  async proxyRequest(req: Request): Promise<AxiosResponse<any> | null> {
+    const { method, body, headers, query } = req;
     const user = req["user"];
 
-    const { targetUrl } = this.getTargetUrl(originalUrl);
-    if (!targetUrl) {
-      return null; // Or throw a NotFoundException
+    // req.path không chứa query string
+    const path = req.path;
+
+    const target = this.getTargetUrl(path);
+    if (!target) {
+      return null;
     }
+
+    const { targetUrl } = target;
+
+    console.log("[PROXY METHOD]", method);
+    console.log("[PROXY PATH]", path);
+    console.log("[PROXY QUERY]", query);
+    console.log("[PROXY TARGET URL]", targetUrl);
+    console.log("[PROXY BODY]", body);
 
     const config: AxiosRequestConfig = {
       method: method as any,
       url: targetUrl,
+      params: query,
       data: body,
       headers: {
-        "Content-Type": headers["content-type"] || "application/json",
+        "content-type": headers["content-type"] || "application/json",
+        authorization: headers.authorization,
         "x-user-id": user?.user_id,
         "x-user-email": user?.email,
       },

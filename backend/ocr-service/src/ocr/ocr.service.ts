@@ -11,8 +11,8 @@ import { OcrParser } from "./ocr.parser";
 import { OcrRepository } from "./ocr.repository";
 import { configuration } from "../config/configuration";
 import { AppMetrics } from "../metrics/app.metrics";
-import { ImagePreprocessorService } from "./image-preprocessor.service";
-import { race, firstValueFrom, throwError, timer } from "rxjs";
+import { ImagePreprocessorService } from "../preprocess/image-preprocessor.service";
+import { race, firstValueFrom, throwError, timer, from } from "rxjs";
 import { catchError, map } from "rxjs/operators";
 
 @Injectable()
@@ -43,7 +43,8 @@ export class OcrService {
     );
 
     try {
-      const ocrPromise = this.performOcr(imageUrl);
+      // Wrap the async operation in `from` to convert the Promise to an Observable
+      const ocrPromise = from(this.performOcrWithPreprocessing(imageUrl));
 
       const timeout$ = timer(this.appConfig.ocr.timeoutMs).pipe(
         map(() => {
@@ -103,35 +104,34 @@ export class OcrService {
     }
   }
 
-  private async performOcr(imageUrl: string) {
-    let imageBuffer: Buffer;
-    try {
-      this.logger.log(`Reading image from storage: ${imageUrl}`);
-      imageBuffer = await this.storageReader.downloadImage(imageUrl);
-    } catch (error) {
+  private async performOcrWithPreprocessing(imageUrl: string) {
+    this.logger.log(`Starting OCR process for image: ${imageUrl}`);
+    // FIX: Use the correct method 'downloadImage' instead of 'getImageBuffer'
+    const imageBuffer = await this.storageReader.downloadImage(imageUrl);
+
+    // Preprocess the image buffer using OpenCV
+    const processedBuffer =
+      await this.imagePreprocessor.preprocess(imageBuffer);
+
+    // The ocrEngine.recognize method returns the raw text string.
+    const rawText = await this.ocrEngine.recognize(processedBuffer);
+
+    if (!rawText || rawText.trim().length < 5) {
       throw new AppError(
-        "OCR_PROCESSING_FAILED",
-        "Failed to read image from storage.",
-        { reason: "STORAGE_READ_FAILED", originalError: error.message },
+        "OCR_NO_TEXT_DETECTED",
+        "Could not detect sufficient text in the image.",
       );
     }
 
-    const processedBuffer = await this.imagePreprocessor.process(imageBuffer);
-
-    this.logger.log("Processing image with OCR engine...");
-    const ocrResult = await this.ocrEngine.recognize(processedBuffer);
-
-    this.logger.log("Parsing OCR text...");
-    const parsedData = this.ocrParser.parse(
-      ocrResult.text,
+    const parsedResult = this.ocrParser.parse(
+      rawText,
       this.appConfig.ocr.engine,
       this.appConfig.ocr.lang,
     );
 
     return {
-      extractedText: ocrResult.text,
-      confidenceScore: ocrResult.confidence,
-      ...parsedData,
+      ...parsedResult,
+      imageUrl,
     };
   }
 

@@ -1,4 +1,0 @@
-# This file is used to orchestrate the backend services.
-# To run the backend, use the docker-compose.yml file in the backend directory.
-# Example: docker-compose -f backend/docker-compose.yml up --build -d
-
