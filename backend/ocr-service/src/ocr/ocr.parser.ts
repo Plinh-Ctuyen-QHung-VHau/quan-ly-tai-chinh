@@ -369,7 +369,8 @@ export class OcrParser {
       // ── Text-level bonuses ──
       if (/(?:vnd|vnđ|đ|đồng|₫)/i.test(c.raw)) { s += 10; r.push("has_currency"); }
       if (c.lineIndex >= totalLines / 2) { s += 10; r.push("near_bottom"); }
-      if (maxVal > 0 && c.value === maxVal && c.role !== "balance") { s += 10; r.push("largest_value"); }
+      // Largest value bonus — but NOT for targets (subtotal > final total is common)
+      if (maxVal > 0 && c.value === maxVal && c.role !== "balance" && c.role !== "target") { s += 10; r.push("largest_value"); }
 
       // ── Visual scoring (only boost target/unknown/item) ──
       if (c.visual) {
@@ -402,6 +403,14 @@ export class OcrParser {
 
       c.score = s;
       c.reasons = r;
+    }
+
+    // Last-target bonus: the final "target" line is usually the real total (after discounts)
+    const targets = candidates.filter(c => c.role === "target");
+    if (targets.length > 1) {
+      const lastTarget = targets.reduce((a, b) => a.lineIndex > b.lineIndex ? a : b);
+      lastTarget.score += 15;
+      lastTarget.reasons.push("last_target");
     }
   }
 
