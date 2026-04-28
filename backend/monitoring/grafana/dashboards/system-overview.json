@@ -79,94 +79,128 @@
     },
     {
       "id": 2,
-      "title": "Total HTTP Requests",
+      "title": "Total HTTP Requests (5min rate)",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(app_http_requests_total[5m])) by (job)",
+          "expr": "sum(rate(http_requests_total[5m])) by (job)",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
       ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "rps"
+        }
+      },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
     },
     {
       "id": 3,
-      "title": "HTTP Request Errors",
+      "title": "HTTP Request Errors (4xx + 5xx)",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(app_http_requests_total{status_code=~\"5..\"}[5m])) by (job)",
+          "expr": "sum(rate(http_requests_total{status_code=~\"5..\"}[5m])) by (job)",
           "legendFormat": "{{job}} - 5xx",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(app_http_requests_total{status_code=~\"4..\"}[5m])) by (job)",
+          "expr": "sum(rate(http_requests_total{status_code=~\"4..\"}[5m])) by (job)",
           "legendFormat": "{{job}} - 4xx",
           "refId": "B"
         }
       ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "rps"
+        }
+      },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
     },
     {
       "id": 4,
-      "title": "95th Percentile Request Duration",
+      "title": "Request Latency p95",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(app_http_request_duration_seconds_bucket[5m])) by (le, job))",
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
       ],
-      "fieldConfig": { "defaults": { "unit": "s" } },
+      "fieldConfig": { 
+        "defaults": { 
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2
+          }
+        } 
+      },
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 }
     },
     {
       "id": 5,
-      "title": "Transactions Created",
+      "title": "Transaction Operations (1h)",
       "type": "stat",
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "targets": [
         {
-          "expr": "sum(increase(transaction_service_transactions_created_total[1h]))",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 20 }
-    },
-    {
-      "id": 6,
-      "title": "OCR Processing",
-      "type": "stat",
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "targets": [
-        {
-          "expr": "sum(increase(ocr_service_processing_total{status=\"success\"}[1h]))",
-          "legendFormat": "Success",
+          "expr": "sum(increase(transactions_created_total[1h]))",
+          "legendFormat": "Created",
           "refId": "A"
         },
         {
-          "expr": "sum(increase(ocr_service_processing_total{status=\"failure\"}[1h]))",
-          "legendFormat": "Failure",
+          "expr": "sum(increase(transactions_updated_total[1h]))",
+          "legendFormat": "Updated",
           "refId": "B"
+        },
+        {
+          "expr": "sum(increase(transactions_deleted_total[1h]))",
+          "legendFormat": "Deleted",
+          "refId": "C"
         }
       ],
       "options": {
         "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
         "orientation": "horizontal"
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 20 }
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 20 }
+    },
+    {
+      "id": 6,
+      "title": "OCR Processing (1h)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum(increase(ocr_success_total[1h]))",
+          "legendFormat": "Success",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(increase(ocr_failures_total[1h]))",
+          "legendFormat": "Failures",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(increase(ocr_timeout_total[1h]))",
+          "legendFormat": "Timeouts",
+          "refId": "C"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "orientation": "horizontal"
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 20 }
     },
     {
       "id": 7,
-      "title": "Notifications Created",
+      "title": "Budget Notifications (1h)",
       "type": "stat",
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "targets": [
@@ -180,13 +214,75 @@
         "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
         "orientation": "horizontal"
       },
-      "gridPos": { "h": 4, "w": 12, "x": 12, "y": 20 }
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 20 }
+    },
+    {
+      "id": 8,
+      "title": "OCR Processing Duration (p95)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(ocr_processing_duration_seconds_bucket[5m]))",
+          "legendFormat": "Processing",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(ocr_preprocessing_duration_seconds_bucket[5m]))",
+          "legendFormat": "Preprocessing",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 24 }
+    },
+    {
+      "id": 9,
+      "title": "Transaction Query Latency (p95)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(transaction_query_duration_seconds_bucket[5m])) by (method)",
+          "legendFormat": "{{method}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 24 }
+    },
+    {
+      "id": 10,
+      "title": "Budget Threshold Alerts",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(budget_notification_service_budget_threshold_reached_total[5m])) by (threshold)",
+          "legendFormat": "{{threshold}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 30 }
     }
   ],
   "refresh": "15s",
   "schemaVersion": 37,
   "style": "dark",
-  "tags": [],
+  "tags": ["backend", "monitoring"],
   "templating": {
     "list": []
   },
@@ -198,6 +294,6 @@
   "timezone": "browser",
   "title": "System Overview",
   "uid": "system-overview",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

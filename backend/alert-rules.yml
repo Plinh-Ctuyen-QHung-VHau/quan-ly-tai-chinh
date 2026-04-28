@@ -1,0 +1,91 @@
+groups:
+  - name: application_alerts
+    interval: 30s
+    rules:
+      # Service availability
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute."
+
+      # High error rate (5xx errors > 5% in 5 minutes)
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status_code=~"5.."}[5m])) by (job) /
+          sum(rate(http_requests_total[5m])) by (job) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Service {{ $labels.job }} has error rate > 5% for the past 5 minutes."
+
+      # High latency (p95 > 2 seconds)
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency on {{ $labels.job }}"
+          description: "Service {{ $labels.job }} p95 latency is above 2 seconds."
+
+      # OCR service: high failure rate
+      - alert: OCRHighFailureRate
+        expr: |
+          sum(rate(ocr_failures_total[5m])) /
+          sum(rate(ocr_requests_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OCR service has high failure rate"
+          description: "OCR failure rate is above 10% for the past 5 minutes."
+
+      # OCR service: timeouts
+      - alert: OCRTimeouts
+        expr: increase(ocr_timeout_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OCR service experiencing timeouts"
+          description: "More than 5 timeouts detected in the past 5 minutes."
+
+      # Budget notification service: no notifications in last hour (possible issue)
+      - alert: BudgetNotificationServiceNoActivity
+        expr: |
+          increase(budget_notification_service_notifications_created_total[1h]) == 0
+          and on(job) up == 1
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: "Budget notification service has no activity"
+          description: "No notifications created in the past hour. Service may be idle or have an issue."
+
+      # Transaction service: database query latency high
+      - alert: TransactionQueryLatencyHigh
+        expr: |
+          histogram_quantile(0.95, sum(rate(transaction_query_duration_seconds_bucket[5m])) by (le, method)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Transaction query latency is high"
+          description: "p95 query latency for transaction service is above 1 second."
+
+      # Identity service: high user creation rate (possible spam/attack)
+      - alert: HighUserCreationRate
+        expr: rate(identity_service_users_created_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Unusually high user creation rate"
+          description: "User creation rate exceeds 10 per minute. Check for suspicious activity."
