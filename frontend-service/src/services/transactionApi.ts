@@ -38,8 +38,12 @@ export async function getTransactionSummary() {
 }
 
 export async function getTransactions(filters: TransactionFilters = {}) {
+  const { category_id, ...restFilters } = filters;
   const response = await apiClient.get(endpoints.transactions.list, {
-    params: filters,
+    params: {
+      ...restFilters,
+      ...(category_id ? { categoryId: category_id } : {}),
+    },
   });
   return handleApiResponse<TransactionListResponse>(response);
 }

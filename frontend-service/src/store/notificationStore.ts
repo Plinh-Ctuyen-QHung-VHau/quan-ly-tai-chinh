@@ -23,10 +23,10 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
     set((state) => ({
       notifications: [item, ...state.notifications],
     })),
-  updateNotificationReadState: (id: string, readAt?: string | null) =>
+  updateNotificationReadState: (id: string, _readAt?: string | null) =>
     set((state) => ({
       notifications: state.notifications.map((item) =>
-        item.id === id ? { ...item, readAt } : item,
+        item.id === id ? { ...item, is_read: true } : item,
       ),
     })),
   startRealtime: async (user_id: string) => {

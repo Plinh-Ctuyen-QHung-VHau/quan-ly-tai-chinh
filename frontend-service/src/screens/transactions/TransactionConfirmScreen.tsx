@@ -1,11 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
-import { AppCard } from "../../components/AppCard";
 import { AppInput } from "../../components/AppInput";
 import { CategoryPicker } from "../../components/CategoryPicker";
+import { DatePickerModal } from "../../components/DatePickerModal";
 import { transactionTypeOptions } from "../../constants/options";
 import { COLORS, shadow } from "../../constants/ui";
 import { createTransaction, getCategories } from "../../services/transactionApi";
@@ -32,7 +39,22 @@ function toDateInput(value: unknown) {
 function formatDisplayDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value || "Chưa chọn";
-  return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return date.toLocaleDateString("vi-VN", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatAmount(value: string) {
+  const num = Number(value);
+  if (!num) return "0 đ";
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(num);
 }
 
 function getParsedFields(draftOcr: OcrResult | null) {
@@ -60,13 +82,6 @@ function normalizeText(value: string) {
 
 function isTransactionType(value: unknown): value is TransactionType {
   return value === "income" || value === "expense";
-}
-
-function pickDraftValue<T>(...values: Array<T | null | undefined>) {
-  for (const value of values) {
-    if (value !== null && value !== undefined) return value;
-  }
-  return undefined;
 }
 
 function getValidimage_url(value?: string | null) {
@@ -100,7 +115,6 @@ export function TransactionConfirmScreen() {
   const draftsource_type = useTransactionStore((state) => state.draftsource_type);
   const clearDraft = useTransactionStore((state) => state.clearDraft);
 
-  // State initialization
   const parsedFields = getParsedFields(draftOcr);
 
   const initialAmount =
@@ -130,8 +144,9 @@ export function TransactionConfirmScreen() {
 
   const [amount, setAmount] = useState(toAmountString(initialAmount));
   const [type, setType] = useState<TransactionType>(initialType);
-  const [transaction_date, settransaction_date] = useState(toDateInput(initialDate));
-  const [category_id, setcategory_id] = useState(initialcategory_id ?? "");
+  const [category_id, setcategory_id] = useState<string>(
+    String(initialcategory_id ?? ""),
+  );
   const [merchant_name, setmerchant_name] = useState(
     draftOcr?.merchant_name ?? parsedFields?.merchant_name ?? "",
   );
@@ -140,6 +155,12 @@ export function TransactionConfirmScreen() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [transaction_date, settransaction_date] = useState(toDateInput(initialDate));
+
+  useEffect(() => {
+    settransaction_date(toDateInput(initialDate));
+  }, [initialDate]);
 
   useEffect(() => {
     let active = true;
@@ -156,7 +177,6 @@ export function TransactionConfirmScreen() {
 
         setCategories(safeList);
 
-        // Prefer suggested category text if it matches
         const found = findCategoryByText(safeList, suggestedCategoryText);
         if (found) {
           setcategory_id(found.id);
@@ -184,7 +204,16 @@ export function TransactionConfirmScreen() {
 
   const validimage_url = useMemo(() => (getValidimage_url(previewImage) ? previewImage : undefined), [previewImage]);
 
-  const dateHint = useMemo(() => `Định dạng: năm-tháng-ngày · ${formatDisplayDate(transaction_date)}`, [transaction_date]);
+  const ocrDate = useMemo(() => toDateInput(initialDate), [initialDate]);
+  const displayDate = useMemo(
+    () => formatDisplayDate(transaction_date),
+    [transaction_date],
+  );
+
+  const isExpense = type === "expense";
+  const amountColor = isExpense ? COLORS.expense : COLORS.income;
+  const amountBg = isExpense ? COLORS.expenseSoft : COLORS.incomeSoft;
+  const amountBorder = isExpense ? COLORS.expenseBorder : COLORS.incomeBorder;
 
   const handleSave = async () => {
     setError("");
@@ -235,84 +264,240 @@ export function TransactionConfirmScreen() {
   };
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    >
+      {/* ── Hero ── */}
       <View style={styles.heroWrap}>
-        <View style={styles.heroGlow} />
+        <View style={styles.heroGlowLeft} />
+        <View style={styles.heroGlowRight} />
 
-        <Text style={styles.heroKicker}>Giao dịch</Text>
-        <Text style={styles.heroTitle}>Xác nhận giao dịch</Text>
-        <Text style={styles.heroSubtitle}>Thông tin đã được OCR tự điền, bạn có thể chỉnh sửa trước khi lưu.</Text>
-      </View>
-
-      <AppCard style={styles.card}>
-        <Text style={styles.title}>Điền thông tin giao dịch</Text>
-        <Text style={styles.subtitle}>Kiểm tra lại trước khi lưu.</Text>
+        <View style={styles.heroContent}>
+          <Text style={styles.heroKicker}>XÁC NHẬN GIAO DỊCH</Text>
+          <Text style={styles.heroTitle}>Kiểm tra thông tin</Text>
+          <Text style={styles.heroSubtitle}>
+            OCR đã tự điền thông tin. Hãy xác nhận hoặc chỉnh sửa trước khi lưu.
+          </Text>
+        </View>
 
         {previewImage ? (
-          <View style={styles.badgeRow}>
-            <Text style={styles.badgeText}>Đã đính kèm ảnh hóa đơn</Text>
+          <View style={styles.receiptBadge}>
+            <Text style={styles.receiptBadgeText}>Đã đính kèm hóa đơn</Text>
           </View>
         ) : null}
+      </View>
 
-        <View style={styles.typeRow}>
-          {transactionTypeOptions.map((option) => (
-            <AppButton key={option.value} title={option.label} variant={type === option.value ? "primary" : "secondary"} onPress={() => { setType(option.value); setcategory_id(""); }} style={styles.typeButton} />
-          ))}
+      {/* ── Amount preview card ── */}
+      <View style={[styles.amountCard, { backgroundColor: amountBg, borderColor: amountBorder }]}>
+        <Text style={styles.amountCardLabel}>
+          {isExpense ? "Chi tiêu" : "Thu nhập"}
+        </Text>
+        <Text style={[styles.amountCardValue, { color: amountColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+          {formatAmount(amount)}
+        </Text>
+        <Text style={styles.amountCardDate}>{displayDate}</Text>
+      </View>
+
+      {/* ── Loại giao dịch ── */}
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>Loại giao dịch</Text>
+        <View style={styles.typeSegment}>
+          {transactionTypeOptions.map((option) => {
+            const active = type === option.value;
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => { setType(option.value); setcategory_id(""); }}
+                style={[styles.typeBtn, active ? styles.typeBtnActive : styles.typeBtnInactive]}
+              >
+                <Text style={[styles.typeBtnText, active && styles.typeBtnTextActive]}>
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* ── Form card ── */}
+      <View style={styles.formCard}>
+
+        {/* Số tiền */}
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Số tiền</Text>
+          <AppInput
+            label=""
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="numeric"
+            placeholder="0"
+            error={amount && !isPositiveAmount(amount) ? "Vui lòng nhập số tiền lớn hơn 0." : undefined}
+          />
         </View>
 
-        <AppInput label="Số tiền" value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="0" error={amount && !isPositiveAmount(amount) ? "Vui lòng nhập số tiền lớn hơn 0." : undefined} />
-
-        <AppInput label="Ngày giao dịch" value={transaction_date} onChangeText={settransaction_date} placeholder="YYYY-MM-DD" helperText={dateHint} />
-
-        <View style={styles.inlineActions}>
-          <AppButton title="Hôm nay" variant="ghost" onPress={() => settransaction_date(new Date().toISOString().slice(0, 10))} style={styles.inlineButton} />
+        {/* Ngày giao dịch */}
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Ngày giao dịch</Text>
+          <Pressable
+            onPress={() => setShowDatePicker(true)}
+            style={({ pressed }) => [styles.dateField, pressed && styles.dateFieldPressed]}
+          >
+            <View style={styles.dateFieldRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.dateFieldValue}>{displayDate}</Text>
+                {ocrDate && ocrDate !== transaction_date && (
+                  <Text style={styles.ocrHint}>
+                    Gợi ý: {formatDisplayDate(ocrDate)}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.dateEditBtn}>
+                <Text style={styles.dateEditBtnText}>Sửa</Text>
+              </View>
+            </View>
+          </Pressable>
         </View>
 
-        <AppInput label="Cửa hàng / Người nhận" value={merchant_name} onChangeText={setmerchant_name} placeholder="VD: Coopmart, Grab, Shopee..." />
-
-        <Text style={styles.label}>Danh mục</Text>
-
-        <CategoryPicker items={safeCategories} selectedId={category_id} onSelect={setcategory_id} loading={loading} />
-
-        <AppInput label="Ghi chú" value={note} onChangeText={setNote} placeholder="Ghi chú thêm nếu cần" multiline />
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <View style={styles.actionColumn}>
-          <AppButton title="Lưu giao dịch" onPress={() => void handleSave()} loading={saving} />
-
-          <Text style={styles.actionSpacer} />
-
-          <AppButton title="Quay lại" variant="ghost" onPress={() => navigation.goBack()} disabled={saving} />
+        {/* Cửa hàng */}
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Cửa hàng / Người nhận</Text>
+          <AppInput
+            label=""
+            value={merchant_name}
+            onChangeText={setmerchant_name}
+            placeholder="VD: Coopmart, Grab, Shopee..."
+          />
         </View>
 
-        {loading ? <Text style={styles.muted}>Đang tải danh mục...</Text> : null}
+        {/* Danh mục */}
+        <View style={styles.fieldGroup}>
+          <View style={styles.fieldLabelRow}>
+            <Text style={styles.fieldLabel}>Danh mục</Text>
+            {loading && <Text style={styles.loadingHint}>Đang tải...</Text>}
+          </View>
+          {!loading && safeCategories.length === 0 ? (
+            <Text style={styles.emptyHint}>Chưa có danh mục phù hợp.</Text>
+          ) : (
+            <CategoryPicker
+              items={safeCategories}
+              selectedId={category_id}
+              onSelect={setcategory_id}
+            />
+          )}
+        </View>
 
-        {!loading && safeCategories.length === 0 ? <Text style={styles.muted}>Chưa có danh mục phù hợp.</Text> : null}
-      </AppCard>
+        {/* Ghi chú */}
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Ghi chú</Text>
+          <AppInput
+            label=""
+            value={note}
+            onChangeText={setNote}
+            placeholder="Ghi chú thêm nếu cần"
+            multiline
+          />
+        </View>
+
+        {/* Error */}
+        {error ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {/* ── Actions ── */}
+      <View style={styles.actionsWrap}>
+        <AppButton
+          title={saving ? "Đang lưu..." : "Lưu giao dịch"}
+          onPress={() => void handleSave()}
+          loading={saving}
+        />
+
+        <Pressable
+          onPress={() => navigation.goBack()}
+          disabled={saving}
+          style={({ pressed }) => [
+            styles.backBtn,
+            (pressed && !saving) && styles.backBtnPressed,
+            saving && styles.backBtnDisabled,
+          ]}
+        >
+          <Text style={styles.backBtnText}>Quay lại</Text>
+        </Pressable>
+      </View>
+
+      <DatePickerModal
+        visible={showDatePicker}
+        title="Chọn ngày giao dịch"
+        value={new Date(transaction_date || Date.now())}
+        onClose={() => setShowDatePicker(false)}
+        onConfirm={(date) => {
+          settransaction_date(date.toISOString().slice(0, 10));
+          setShowDatePicker(false);
+        }}
+      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, justifyContent: "center", padding: 16, paddingBottom: 30, backgroundColor: COLORS.bg },
-  heroWrap: { marginBottom: 14, borderRadius: 26, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 16, backgroundColor: COLORS.dark, overflow: "hidden" },
-  heroGlow: { position: "absolute", right: -24, top: -30, width: 140, height: 140, borderRadius: 999, backgroundColor: "rgba(59,130,246,0.20)" },
-  heroKicker: { color: "#93C5FD", fontSize: 12, fontWeight: "800", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 6 },
-  heroTitle: { color: COLORS.white, fontSize: 30, lineHeight: 36, fontWeight: "900", marginBottom: 6, textAlign: "center" },
-  heroSubtitle: { color: "#CBD5E1", fontSize: 14, lineHeight: 21, textAlign: "center" },
-  card: { ...shadow, width: "100%", borderRadius: 24, padding: 20, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.white },
-  title: { fontSize: 24, fontWeight: "900", color: COLORS.text, marginBottom: 4, textAlign: "center" },
-  subtitle: { color: COLORS.muted, marginBottom: 14, lineHeight: 20, textAlign: "center" },
-  badgeRow: { alignSelf: "center", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: COLORS.incomeSoft, marginBottom: 14 },
-  badgeText: { color: COLORS.income, fontWeight: "700", fontSize: 13 },
-  typeRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
-  typeButton: { flex: 1 },
-  label: { color: COLORS.text, fontWeight: "600", marginBottom: 6 },
-  inlineActions: { flexDirection: "row", marginBottom: 14 },
-  inlineButton: { minHeight: 42, paddingHorizontal: 14 },
-  actionColumn: { marginTop: 4 },
-  actionSpacer: { height: 10 },
-  error: { color: COLORS.expense, marginTop: 8, marginBottom: 12, backgroundColor: COLORS.expenseSoft, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  muted: { color: COLORS.muted, marginTop: 10, textAlign: "center" },
+  container: { flexGrow: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingBottom: 40 },
+
+  // Hero
+  heroWrap: { marginTop: 12, marginBottom: 20, borderRadius: 32, backgroundColor: COLORS.dark, overflow: "hidden", padding: 24, paddingBottom: 20 },
+  heroGlowLeft: { position: "absolute", left: -40, bottom: -40, width: 180, height: 180, borderRadius: 999, backgroundColor: "rgba(37,99,235,0.18)" },
+  heroGlowRight: { position: "absolute", right: -20, top: -20, width: 120, height: 120, borderRadius: 999, backgroundColor: "rgba(124,58,237,0.15)" },
+  heroContent: { marginBottom: 16 },
+  heroKicker: { color: "#93C5FD", fontSize: 11, fontWeight: "900", letterSpacing: 2, marginBottom: 10 },
+  heroTitle: { color: COLORS.white, fontSize: 34, fontWeight: "900", letterSpacing: -0.8, marginBottom: 8 },
+  heroSubtitle: { color: "#94A3B8", fontSize: 14, lineHeight: 21 },
+  receiptBadge: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(22,163,74,0.2)", borderWidth: 1, borderColor: "rgba(22,163,74,0.35)", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, alignSelf: "flex-start" },
+  receiptBadgeIcon: { fontSize: 16 },
+  receiptBadgeText: { color: "#86EFAC", fontWeight: "800", fontSize: 13 },
+
+  // Amount card
+  amountCard: { borderRadius: 28, borderWidth: 1.5, padding: 22, marginBottom: 16, ...shadow },
+  amountCardLabel: { color: COLORS.muted, fontSize: 14, fontWeight: "800", marginBottom: 8 },
+  amountCardValue: { fontSize: 44, fontWeight: "900", letterSpacing: -1.5, marginBottom: 6 },
+  amountCardDate: { color: COLORS.muted, fontSize: 13, fontWeight: "700" },
+
+  // Type selector
+  section: { marginBottom: 14 },
+  sectionLabel: { color: COLORS.text, fontSize: 15, fontWeight: "900", marginBottom: 10 },
+  typeSegment: { flexDirection: "row", gap: 10 },
+  typeBtn: { flex: 1, paddingVertical: 14, borderRadius: 20, borderWidth: 1, alignItems: "center" },
+  typeBtnActive: { backgroundColor: COLORS.dark, borderColor: COLORS.dark },
+  typeBtnInactive: { backgroundColor: COLORS.white, borderColor: COLORS.border },
+  typeBtnText: { color: COLORS.muted, fontWeight: "900", fontSize: 15 },
+  typeBtnTextActive: { color: COLORS.white },
+
+  // Form card
+  formCard: { ...shadow, backgroundColor: COLORS.white, borderRadius: 28, padding: 20, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16 },
+  fieldGroup: { marginBottom: 18 },
+  fieldLabel: { color: COLORS.text, fontWeight: "900", fontSize: 14, marginBottom: 8 },
+  fieldLabelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  loadingHint: { color: COLORS.muted, fontSize: 12, fontWeight: "700" },
+  emptyHint: { color: COLORS.muted, fontSize: 13, paddingVertical: 8, fontWeight: "700" },
+
+  // Date field
+  dateField: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: "#F8FAFC" },
+  dateFieldPressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
+  dateFieldRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  dateFieldValue: { color: COLORS.text, fontSize: 15, fontWeight: "900", flexShrink: 1, marginRight: 10 },
+  ocrHint: { color: COLORS.blue, fontSize: 12, fontWeight: "700", marginTop: 4 },
+  dateEditBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: COLORS.blueLight, borderWidth: 1, borderColor: COLORS.blueSoft },
+  dateEditBtnText: { color: COLORS.blue, fontWeight: "900", fontSize: 12 },
+
+  // Error
+  errorBox: { backgroundColor: COLORS.expenseSoft, borderWidth: 1, borderColor: COLORS.expenseBorder, borderRadius: 16, padding: 14 },
+  errorText: { color: COLORS.expense, fontWeight: "800", fontSize: 14, lineHeight: 20 },
+
+  // Actions
+  actionsWrap: { gap: 10, marginBottom: 16 },
+  backBtn: { height: 52, borderRadius: 18, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" },
+  backBtnPressed: { opacity: 0.8 },
+  backBtnDisabled: { opacity: 0.5 },
+  backBtnText: { color: COLORS.text, fontSize: 15, fontWeight: "900" },
 });

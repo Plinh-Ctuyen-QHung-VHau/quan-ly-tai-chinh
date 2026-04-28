@@ -9,6 +9,7 @@ import {
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
 import { LoadingView } from "../../components/LoadingView";
+import { COLORS } from "../../constants/ui";
 import {
   deleteTransaction,
   getTransactionById,
@@ -82,7 +83,9 @@ export function TransactionDetailScreen() {
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>Loại</Text>
-          <Text style={styles.value}>{transaction.type}</Text>
+          <Text style={styles.value}>
+            {transaction.type === "income" ? "Thu nhập" : "Chi tiêu"}
+          </Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.label}>Danh mục</Text>
@@ -101,7 +104,7 @@ export function TransactionDetailScreen() {
           </Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.label}>Merchant</Text>
+          <Text style={styles.label}>Cửa hàng / Người nhận</Text>
           <Text style={styles.value}>{transaction.merchant_name ?? "-"}</Text>
         </View>
         <View style={styles.row}>
@@ -110,8 +113,11 @@ export function TransactionDetailScreen() {
             {transaction.isAnomaly ? "Có" : "Không"}
           </Text>
         </View>
-        {transaction.image_url ? (
-          <Text style={styles.imagePath}>{transaction.image_url}</Text>
+        {transaction.image_url?.startsWith("http") ? (
+          <View style={styles.row}>
+            <Text style={styles.label}>Hóa đơn</Text>
+            <Text style={[styles.value, styles.attachedText]}>Đã đính kèm ảnh</Text>
+          </View>
         ) : null}
       </AppCard>
 
@@ -169,17 +175,16 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontWeight: "600",
   },
-  imagePath: {
-    marginTop: 8,
-    color: "#475569",
-    fontSize: 13,
-  },
   image: {
     width: "100%",
     height: 240,
     borderRadius: 18,
     marginTop: 12,
     backgroundColor: "#e2e8f0",
+  },
+  attachedText: {
+    color: COLORS.income,
+    fontWeight: "800",
   },
   actions: {
     marginTop: 12,
