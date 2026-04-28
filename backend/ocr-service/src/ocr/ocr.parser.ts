@@ -356,14 +356,14 @@ export class OcrParser {
 
       // ── Role base ──
       switch (c.role) {
-        case "target":   s += 100; r.push("target_keyword"); break;
-        case "item":     s += 20;  r.push("item_line"); break;
-        case "unknown":  s += 5;   r.push("unknown_role"); break;
-        case "discount": s -= 50;  r.push("discount"); break;
-        case "fee":      s -= 20;  r.push("fee"); break;
-        case "balance":  s -= 40;  r.push("balance"); break;
+        case "target": s += 100; r.push("target_keyword"); break;
+        case "item": s += 20; r.push("item_line"); break;
+        case "unknown": s += 5; r.push("unknown_role"); break;
+        case "discount": s -= 50; r.push("discount"); break;
+        case "fee": s -= 20; r.push("fee"); break;
+        case "balance": s -= 40; r.push("balance"); break;
         case "quantity": s -= 100; r.push("quantity"); break;
-        case "code":     s -= 100; r.push("code_or_id"); break;
+        case "code": s -= 100; r.push("code_or_id"); break;
       }
 
       // ── Text-level bonuses ──
@@ -378,8 +378,8 @@ export class OcrParser {
 
         // Text height relative to median
         if (c.visual.relativeHeight && canBoost) {
-          if (c.visual.relativeHeight >= 1.8)      { s += 30; r.push("very_large_text"); }
-          else if (c.visual.relativeHeight >= 1.5)  { s += 22; r.push("large_text"); }
+          if (c.visual.relativeHeight >= 1.8) { s += 30; r.push("very_large_text"); }
+          else if (c.visual.relativeHeight >= 1.5) { s += 22; r.push("large_text"); }
           else if (c.visual.relativeHeight >= 1.25) { s += 12; r.push("slightly_large_text"); }
         }
         // Penalize visually prominent but invalid roles
@@ -555,7 +555,7 @@ export class OcrParser {
     const brands: Record<string, string> = {
       shopee: "Shopee", lazada: "Lazada", tiki: "Tiki",
       highlands: "Highlands Coffee", starbucks: "Starbucks",
-      grab: "Grab", gojek: "Gojek",
+      grab: "Grab", gojek: "Gojek", tiktok: "tiktok", bidv: "BIDV", vcb: "VCB", acb: "ACB", techcombank: "Techcombank", vpbank: "VPBank", agribank: "Agribank", mb: "MB", momo: "MoMo",
     };
     const fAll = foldedLines.join(" ");
     for (const [key, brand] of Object.entries(brands)) {
