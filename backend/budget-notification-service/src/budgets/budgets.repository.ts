@@ -32,16 +32,26 @@ export class BudgetsRepository {
     user_id: string,
     createBudgetDto: CreateBudgetDto,
   ): Promise<Budget> {
-    const { budget_amount, budget_period, start_date, end_date } =
-      createBudgetDto;
+    const budget_amount = Number(
+      (createBudgetDto as any).budget_amount ??
+      (createBudgetDto as any).budgetAmount,
+    );
+    const budget_period =
+      (createBudgetDto as any).budget_period ??
+      (createBudgetDto as any).budgetPeriod;
+    const start_date =
+      (createBudgetDto as any).start_date ?? (createBudgetDto as any).startDate;
+    const end_date =
+      (createBudgetDto as any).end_date ?? (createBudgetDto as any).endDate;
+
     const { data, error } = await this.supabase
       .from("budgets")
       .insert({
         user_id: user_id,
-        budget_amount,
-        budget_period,
-        start_date,
-        end_date,
+        budget_amount: budget_amount,
+        budget_period: budget_period,
+        start_date: start_date,
+        end_date: end_date,
       })
       .select()
       .single();
@@ -85,6 +95,18 @@ export class BudgetsRepository {
     user_id: string,
     updateBudgetDto: UpdateBudgetDto,
   ): Promise<Budget | null> {
+    const budget_amount = Number(
+      (updateBudgetDto as any).budget_amount ??
+      (updateBudgetDto as any).budgetAmount,
+    );
+    const budget_period =
+      (updateBudgetDto as any).budget_period ??
+      (updateBudgetDto as any).budgetPeriod;
+    const start_date =
+      (updateBudgetDto as any).start_date ?? (updateBudgetDto as any).startDate;
+    const end_date =
+      (updateBudgetDto as any).end_date ?? (updateBudgetDto as any).endDate;
+
     const { data, error } = await this.supabase
       .from("budgets")
       .update({
@@ -147,6 +169,11 @@ export class BudgetsRepository {
     return data ? this.mapToBudget(data) : null;
   }
 
+  private toDate(value: string | Date | null | undefined): Date | null {
+    if (!value) return null;
+    return value instanceof Date ? value : new Date(value);
+  }
+
   private mapToBudget(row: any): Budget {
     if (!row) return null;
     return {
@@ -154,13 +181,13 @@ export class BudgetsRepository {
       user_id: row.user_id,
       budget_amount: parseFloat(row.budget_amount),
       budget_period: row.budget_period,
-      start_date: row.start_date,
-      end_date: row.end_date,
+      start_date: this.toDate(row.start_date),
+      end_date: this.toDate(row.end_date),
       status: row.status,
       alert_80_sent: row.alert_80_sent,
       alert_100_sent: row.alert_100_sent,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
+      created_at: this.toDate(row.created_at),
+      updated_at: this.toDate(row.updated_at),
     };
   }
 }

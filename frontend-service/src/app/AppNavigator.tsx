@@ -21,6 +21,7 @@ import { getSession, signOut } from "../services/authService";
 import { useAuthStore } from "../store/authStore";
 import { setUnauthorizedHandler } from "../services/apiClient";
 import { useNotificationStore } from "../store/notificationStore";
+import { Budget } from "../types/budget";
 
 export type RootStackParamList = {
   Auth: undefined;

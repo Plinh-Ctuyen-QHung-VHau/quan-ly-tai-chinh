@@ -263,8 +263,12 @@ export function BudgetFormScreen() {
         await createBudget(payload);
       }
 
-      const currentBudgetStatus = await getCurrentBudgetStatus();
-      setCurrentBudgetStatus(currentBudgetStatus);
+      try {
+        const currentBudgetStatus = await getCurrentBudgetStatus();
+        setCurrentBudgetStatus(currentBudgetStatus);
+      } catch (refreshError) {
+        console.warn("[BUDGET STATUS REFRESH FAILED]", refreshError);
+      }
 
       Alert.alert("Đã lưu", "Ngân sách đã được lưu thành công.");
       navigation.goBack();
@@ -296,9 +300,16 @@ export function BudgetFormScreen() {
 
       <View style={styles.previewCard}>
         <View style={styles.previewTopRow}>
-          <View>
+          <View style={styles.previewTopContent}>
             <Text style={styles.previewLabel}>Ngân sách dự kiến</Text>
-            <Text style={styles.previewAmount}>{formatVND(budget_amount)}</Text>
+            <Text
+              style={styles.previewAmount}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.72}
+            >
+              {formatVND(budget_amount)}
+            </Text>
           </View>
 
           <View style={styles.previewBadge}>
@@ -448,9 +459,10 @@ const styles = StyleSheet.create({
 
   previewCard: { ...shadow, backgroundColor: COLORS.white, borderRadius: 30, padding: 20, borderWidth: 1, borderColor: COLORS.border, marginBottom: 18 },
   previewTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
+  previewTopContent: { flex: 1, minWidth: 0, paddingRight: 4 },
   previewLabel: { color: COLORS.muted, fontSize: 17, fontWeight: "900", marginBottom: 12 },
-  previewAmount: { color: COLORS.text, fontSize: 42, lineHeight: 48, fontWeight: "900", letterSpacing: -1.2 },
-  previewBadge: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: COLORS.blueLight, borderWidth: 1, borderColor: COLORS.blueSoft },
+  previewAmount: { color: COLORS.text, fontSize: 42, lineHeight: 48, fontWeight: "900", letterSpacing: -1.2, flexShrink: 1, maxWidth: "100%" },
+  previewBadge: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: COLORS.blueLight, borderWidth: 1, borderColor: COLORS.blueSoft, alignSelf: "flex-start", flexShrink: 0, maxWidth: 116 },
   previewBadgeText: { color: COLORS.blue, fontSize: 12, fontWeight: "900" },
   previewDivider: { height: 1, backgroundColor: COLORS.border, marginVertical: 20 },
   previewStatsRow: { flexDirection: "row", alignItems: "center" },

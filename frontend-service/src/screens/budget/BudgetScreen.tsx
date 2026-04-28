@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
@@ -9,7 +9,7 @@ import { LoadingView } from "../../components/LoadingView";
 import { ScreenHero } from "../../components/ScreenHero";
 import { SectionHeader } from "../../components/SectionHeader";
 import { COLORS, shadow } from "../../constants/ui";
-import { getCurrentBudgetStatus } from "../../services/budgetApi";
+import { getCurrentBudget, getCurrentBudgetStatus } from "../../services/budgetApi";
 import { useBudgetStore } from "../../store/budgetStore";
 import { BudgetStatus } from "../../types/budget";
 import { formatCurrency } from "../../utils/formatCurrency";
@@ -34,6 +34,7 @@ export function BudgetScreen() {
   );
 
   const [loading, setLoading] = useState(true);
+  const [editLoading, setEditLoading] = useState(false);
 
   const loadBudgetStatus = useCallback(async () => {
     setLoading(true);
@@ -78,6 +79,34 @@ export function BudgetScreen() {
   if (loading) {
     return <LoadingView label="Đang tải ngân sách..." />;
   }
+
+  const openEditBudget = async () => {
+    setEditLoading(true);
+
+    try {
+      const currentBudget = await getCurrentBudget();
+
+      if (!currentBudget) {
+        Alert.alert(
+          "Không tìm thấy ngân sách",
+          "Ngân sách hiện tại không còn tồn tại. Vui lòng tạo lại ngân sách.",
+        );
+        return;
+      }
+
+      navigation.navigate("BudgetForm", {
+        mode: "edit",
+        budget: currentBudget,
+      });
+    } catch (error) {
+      Alert.alert(
+        "Không thể tải ngân sách",
+        error instanceof Error ? error.message : "Vui lòng thử lại sau.",
+      );
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   const showCentered = !hasBudget;
 
@@ -154,12 +183,8 @@ export function BudgetScreen() {
 
             <AppButton
               title="Sửa ngân sách"
-              onPress={() =>
-                navigation.navigate("BudgetForm", {
-                  mode: "edit",
-                  budget: budgetStatus as BudgetStatus,
-                })
-              }
+              onPress={() => void openEditBudget()}
+              loading={editLoading}
             />
           </>
         ) : (
