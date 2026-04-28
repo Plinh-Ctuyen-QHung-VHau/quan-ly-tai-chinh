@@ -1,6 +1,6 @@
 import { TransactionType } from "./category";
 
-export type TransactionSource = "camera" | "gallery";
+export type TransactionSource = "camera" | "gallery" | "ocr";
 export interface Transaction {
   id: string;
   amount: number;
@@ -26,9 +26,9 @@ export interface TransactionSummary {
 
 export interface TransactionFilters {
   type?: TransactionType;
-  category_id?: string;
-  from_date?: string;
-  to_date?: string;
+  categoryId?: string;
+  fromDate?: string;
+  toDate?: string;
   page?: number;
   limit?: number;
 }

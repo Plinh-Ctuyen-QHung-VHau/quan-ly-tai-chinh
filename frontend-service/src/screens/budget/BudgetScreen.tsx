@@ -1,34 +1,48 @@
-import React, { useCallback, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useMemo, useState } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
 import { EmptyState } from "../../components/EmptyState";
 import { LoadingView } from "../../components/LoadingView";
-import { deleteBudget, getCurrentBudgetStatus } from "../../services/budgetApi";
+import { ScreenHero } from "../../components/ScreenHero";
+import { SectionHeader } from "../../components/SectionHeader";
+import { COLORS, shadow } from "../../constants/ui";
+import { getCurrentBudgetStatus } from "../../services/budgetApi";
 import { useBudgetStore } from "../../store/budgetStore";
-import { Budget, BudgetStatus } from "../../types/budget";
+import { BudgetStatus } from "../../types/budget";
 import { formatCurrency } from "../../utils/formatCurrency";
+
+function clampPercent(value: number) {
+  if (!Number.isFinite(value) || Number.isNaN(value)) return 0;
+  return Math.min(100, Math.max(0, value));
+}
+
+function getProgressColor(percent: number) {
+  if (percent >= 90) return COLORS.expense;
+  if (percent >= 70) return "#D97706";
+  return COLORS.income;
+}
 
 export function BudgetScreen() {
   const navigation = useNavigation<any>();
-  const currentStatus = useBudgetStore((state) => state.currentBudgetStatus);
+
+  const budgetStatus = useBudgetStore((state) => state.currentBudgetStatus);
   const setCurrentBudgetStatus = useBudgetStore(
     (state) => state.setCurrentBudgetStatus,
   );
-  const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState("");
 
-  const loadStatus = useCallback(async () => {
+  const [loading, setLoading] = useState(true);
+
+  const loadBudgetStatus = useCallback(async () => {
     setLoading(true);
-    setError("");
+
     try {
-      const status = await getCurrentBudgetStatus();
-      setCurrentBudgetStatus(status);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể tải ngân sách.");
+      const result = await getCurrentBudgetStatus();
+      setCurrentBudgetStatus(result);
+    } catch {
+      setCurrentBudgetStatus(null);
     } finally {
       setLoading(false);
     }
@@ -36,100 +50,126 @@ export function BudgetScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void loadStatus();
-    }, [loadStatus]),
+      void loadBudgetStatus();
+    }, [loadBudgetStatus]),
   );
 
-  const handleDelete = () => {
-    const budgetId = currentStatus?.id;
-    if (!budgetId) {
-      return;
-    }
+  const hasBudget = Boolean(
+    budgetStatus && budgetStatus.status !== "no-budget",
+  );
 
-    Alert.alert("Xác nhận xóa", "Bạn chắc chắn muốn xóa ngân sách hiện tại?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Xóa",
-        style: "destructive",
-        onPress: async () => {
-          setDeleting(true);
-          try {
-            await deleteBudget(budgetId);
-            await loadStatus();
-          } finally {
-            setDeleting(false);
-          }
-        },
-      },
-    ]);
-  };
+  const budgetAmount = Number(budgetStatus?.budget_amount ?? 0);
+  const spentAmount = Number(budgetStatus?.spent_amount ?? 0);
+  const remainingAmount = Number(
+    budgetStatus?.remaining_amount ?? Math.max(0, budgetAmount - spentAmount),
+  );
+
+  const budgetPercent = useMemo(() => {
+    if (!hasBudget || budgetAmount <= 0) return 0;
+
+    const percent =
+      typeof budgetStatus?.percent_used === "number"
+        ? budgetStatus.percent_used
+        : (spentAmount / budgetAmount) * 100;
+
+    return clampPercent(percent);
+  }, [budgetAmount, budgetStatus?.percent_used, hasBudget, spentAmount]);
 
   if (loading) {
     return <LoadingView label="Đang tải ngân sách..." />;
   }
 
+  const showCentered = !hasBudget;
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <AppCard>
-        <Text style={styles.title}>Ngân sách hiện tại</Text>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {!currentStatus || currentStatus.status === "no-budget" ? (
-          <EmptyState
-            title="Bạn chưa có ngân sách cho kỳ hiện tại"
-            description="Hãy tạo ngân sách để theo dõi chi tiêu trong kỳ này."
-            actionLabel="Tạo ngân sách"
-            onAction={() =>
-              navigation.navigate("BudgetForm", { mode: "create" })
-            }
-          />
-        ) : (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={showCentered ? [styles.container, styles.centered] : styles.container}
+    >
+      <ScreenHero
+        kicker="Ngân sách"
+        title="Ngân sách hiện tại"
+        subtitle="Theo dõi chi tiêu, phần trăm sử dụng và trạng thái ngân sách theo kỳ."
+      />
+
+      <AppCard style={showCentered ? [styles.card, styles.centerCard] : styles.card}>
+        <SectionHeader
+          title="Chi tiết ngân sách"
+          subtitle="Theo dõi hạn mức chi tiêu trong kỳ hiện tại."
+          rightSlot={
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>
+                {hasBudget ? "Đang theo dõi" : "Chưa tạo"}
+              </Text>
+            </View>
+          }
+        />
+
+        {hasBudget ? (
           <>
-            <View style={styles.row}>
-              <Text style={styles.label}>Budget</Text>
-              <Text style={styles.value}>
-                {formatCurrency(currentStatus.budget_amount)}
-              </Text>
+            <Text style={styles.label}>Đã sử dụng</Text>
+
+            <View style={styles.progressRow}>
+              <Text style={styles.percent}>{Math.round(budgetPercent)}%</Text>
+              <Text style={styles.percentHint}>ngân sách</Text>
             </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Đã chi</Text>
-              <Text style={styles.valueExpense}>
-                {formatCurrency(currentStatus.spent_amount)}
-              </Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Còn lại</Text>
-              <Text style={styles.valueIncome}>
-                {formatCurrency(currentStatus.remaining_amount)}
-              </Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Đã dùng</Text>
-              <Text style={styles.value}>
-                {`${Math.round(currentStatus.percent_used)}%`}
-              </Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Trạng thái</Text>
-              <Text style={styles.value}>{currentStatus.status}</Text>
-            </View>
-            <View style={styles.actions}>
-              <AppButton
-                title="Sửa budget"
-                onPress={() =>
-                  navigation.navigate("BudgetForm", {
-                    mode: "edit",
-                    budget: currentStatus,
-                  })
-                }
-              />
-              <AppButton
-                title="Xóa budget"
-                variant="danger"
-                onPress={handleDelete}
-                loading={deleting}
+
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${budgetPercent}%`,
+                    backgroundColor: getProgressColor(budgetPercent),
+                  },
+                ]}
               />
             </View>
+
+            <View style={styles.moneyRow}>
+              <View style={styles.moneyBox}>
+                <Text style={styles.moneyLabel}>Ngân sách</Text>
+                <Text style={styles.moneyValue} numberOfLines={1}>
+                  {formatCurrency(budgetAmount)}
+                </Text>
+              </View>
+
+              <View style={styles.moneyBox}>
+                <Text style={styles.moneyLabel}>Đã chi</Text>
+                <Text
+                  style={[styles.moneyValue, styles.expense]}
+                  numberOfLines={1}
+                >
+                  {formatCurrency(spentAmount)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.moneyBoxWide}>
+              <Text style={styles.moneyLabel}>Còn lại</Text>
+              <Text style={[styles.moneyValue, styles.income]} numberOfLines={1}>
+                {formatCurrency(remainingAmount)}
+              </Text>
+            </View>
+
+            <AppButton
+              title="Sửa ngân sách"
+              onPress={() =>
+                navigation.navigate("BudgetForm", {
+                  mode: "edit",
+                  budget: budgetStatus as BudgetStatus,
+                })
+              }
+            />
           </>
+        ) : (
+          <EmptyState
+            icon="₫"
+            title="Bạn chưa có ngân sách cho kỳ hiện tại"
+            description="Tạo ngân sách để theo dõi hạn mức chi tiêu và kiểm soát tài chính tốt hơn."
+            actionLabel="Tạo ngân sách"
+            onAction={() => navigation.navigate("BudgetForm", { mode: "create" })}
+          />
         )}
       </AppCard>
     </ScrollView>
@@ -137,42 +177,23 @@ export function BudgetScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: "#f8fafc",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  label: {
-    color: "#64748b",
-  },
-  value: {
-    fontWeight: "700",
-    color: "#0f172a",
-  },
-  valueIncome: {
-    fontWeight: "700",
-    color: "#15803d",
-  },
-  valueExpense: {
-    fontWeight: "700",
-    color: "#b91c1c",
-  },
-  actions: {
-    marginTop: 14,
-    gap: 10,
-  },
-  error: {
-    color: "#b91c1c",
-    marginBottom: 12,
-  },
+  container: { flexGrow: 1, padding: 16, paddingBottom: 120, backgroundColor: COLORS.bg },
+  card: { ...shadow, padding: 20, borderRadius: 28, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: COLORS.blueLight },
+  statusText: { color: COLORS.blue, fontSize: 12, fontWeight: "900" },
+  label: { color: COLORS.muted, fontSize: 13, fontWeight: "800" },
+  progressRow: { flexDirection: "row", alignItems: "baseline", marginTop: 4, marginBottom: 10 },
+  percent: { color: COLORS.text, fontSize: 38, fontWeight: "900" },
+  percentHint: { marginLeft: 8, color: COLORS.muted, fontSize: 13, fontWeight: "700" },
+  progressTrack: { height: 12, borderRadius: 999, backgroundColor: "#E2E8F0", overflow: "hidden", marginBottom: 16 },
+  progressFill: { height: "100%", borderRadius: 999 },
+  moneyRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
+  moneyBox: { flex: 1, padding: 14, borderRadius: 18, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0" },
+  moneyBoxWide: { padding: 14, borderRadius: 18, backgroundColor: "#F0FDF4", borderWidth: 1, borderColor: COLORS.incomeBorder, marginBottom: 16 },
+  moneyLabel: { color: COLORS.muted, fontSize: 12, fontWeight: "800", marginBottom: 5 },
+  moneyValue: { color: COLORS.text, fontSize: 15, fontWeight: "900" },
+  income: { color: COLORS.income },
+  expense: { color: COLORS.expense },
+  centered: { justifyContent: "center" },
+  centerCard: { alignSelf: "center", width: "92%" },
 });

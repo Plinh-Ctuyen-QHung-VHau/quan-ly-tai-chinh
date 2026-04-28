@@ -1,12 +1,25 @@
 import React, { useCallback, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
 import { AppInput } from "../../components/AppInput";
+import { ScreenHero } from "../../components/ScreenHero";
+import { SectionHeader } from "../../components/SectionHeader";
 import { getMyProfile, updateMyProfile } from "../../services/identityApi";
 import { UserProfile } from "../../types/user";
+
+function getInitials(name: string, username: string) {
+  const text = name.trim() || username.trim() || "U";
+
+  return text
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase())
+    .join("");
+}
 
 export function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -21,8 +34,10 @@ export function ProfileScreen() {
   const loadProfile = useCallback(async () => {
     setLoading(true);
     setError("");
+
     try {
       const result = await getMyProfile();
+
       setProfile(result);
       setFullName(result.full_name ?? "");
       setAvatarUrl(result.avatar_url ?? "");
@@ -42,7 +57,9 @@ export function ProfileScreen() {
   );
 
   const handleSave = async () => {
+    setError("");
     setSaving(true);
+
     try {
       const result = await updateMyProfile({
         full_name: fullName.trim(),
@@ -50,55 +67,97 @@ export function ProfileScreen() {
         username: username.trim() || undefined,
         website: website.trim() || undefined,
       });
+
       setProfile(result);
       Alert.alert("Đã lưu", "Hồ sơ đã được cập nhật.");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Không thể cập nhật hồ sơ.",
-      );
+      setError(err instanceof Error ? err.message : "Không thể cập nhật hồ sơ.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <AppCard>
-        <Text style={styles.title}>Hồ sơ người dùng</Text>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    >
+      <ScreenHero
+        kicker="Hồ sơ"
+        title="Thông tin tài khoản"
+        subtitle="Cập nhật tên, ảnh đại diện và thông tin hiển thị của bạn."
+      />
+
+      <AppCard style={styles.profileCard}>
+        <View style={styles.profileRow}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{getInitials(fullName, username)}</Text>
+          </View>
+
+          <View style={styles.profileInfo}>
+            <Text style={styles.name} numberOfLines={1}>
+              {fullName || "Người dùng"}
+            </Text>
+
+            <Text style={styles.username} numberOfLines={1}>
+              {username ? `@${username}` : "Chưa có tên người dùng"}
+            </Text>
+          </View>
+        </View>
+
+        {profile ? (
+          <Text style={styles.userId} numberOfLines={1}>
+            Mã người dùng: {profile.id}
+          </Text>
+        ) : null}
+      </AppCard>
+
+      <AppCard style={styles.card}>
+        <SectionHeader
+          title="Thông tin hồ sơ"
+          subtitle="Các trường này sẽ được dùng ở tài khoản của bạn."
+        />
+
         {error ? <Text style={styles.error}>{error}</Text> : null}
+
         <AppInput
           label="Họ và tên"
           value={fullName}
           onChangeText={setFullName}
-          placeholder="Họ và tên"
+          placeholder="VD: Nguyễn Văn A"
         />
+
         <AppInput
-          label="Avatar URL"
+          label="Tên người dùng"
+          value={username}
+          onChangeText={setUsername}
+          placeholder="VD: quangtran"
+          autoCapitalize="none"
+        />
+
+        <AppInput
+          label="Ảnh đại diện"
           value={avatarUrl}
           onChangeText={setAvatarUrl}
           placeholder="https://..."
+          autoCapitalize="none"
         />
-        <AppInput
-          label="Username"
-          value={username}
-          onChangeText={setUsername}
-          placeholder="Username"
-        />
+
         <AppInput
           label="Website"
           value={website}
           onChangeText={setWebsite}
           placeholder="https://..."
+          autoCapitalize="none"
         />
+
         <AppButton
-          title="Lưu hồ sơ"
+          title={saving ? "Đang lưu..." : "Lưu hồ sơ"}
           onPress={() => void handleSave()}
           loading={saving}
         />
-        {profile ? (
-          <Text style={styles.meta}>User ID: {profile.id}</Text>
-        ) : null}
-        {loading ? <Text style={styles.meta}>Đang tải...</Text> : null}
+
+        {loading ? <Text style={styles.meta}>Đang tải hồ sơ...</Text> : null}
       </AppCard>
     </ScrollView>
   );
@@ -106,21 +165,98 @@ export function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: "#f8fafc",
+    flexGrow: 1,
+    padding: 18,
+    paddingTop: 12,
+    paddingBottom: 120,
+    backgroundColor: "#EEF4FA",
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 12,
+
+  profileCard: {
+    borderRadius: 26,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#D9E3EE",
+    marginBottom: 16,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 4,
   },
+
+  profileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  avatar: {
+    width: 68,
+    height: 68,
+    borderRadius: 22,
+    backgroundColor: "#DBEAFE",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+
+  avatarText: {
+    color: "#2563EB",
+    fontSize: 24,
+    fontWeight: "900",
+  },
+
+  profileInfo: {
+    flex: 1,
+  },
+
+  name: {
+    color: "#0F172A",
+    fontSize: 22,
+    fontWeight: "900",
+    marginBottom: 4,
+  },
+
+  username: {
+    color: "#64748B",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  userId: {
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 16,
+    backgroundColor: "#F1F5F9",
+    color: "#64748B",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  card: {
+    borderRadius: 26,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#D9E3EE",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+
   error: {
-    color: "#b91c1c",
-    marginBottom: 10,
+    color: "#B91C1C",
+    backgroundColor: "#FEE2E2",
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    fontWeight: "700",
   },
+
   meta: {
-    marginTop: 8,
-    color: "#64748b",
+    marginTop: 10,
+    color: "#64748B",
+    textAlign: "center",
   },
 });

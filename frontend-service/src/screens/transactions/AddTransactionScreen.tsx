@@ -1,82 +1,95 @@
 import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
 
+import { ActionButton } from "../../components/ActionButton";
 import { AppCard } from "../../components/AppCard";
-import { uploadReceiptImage } from "../../services/storageService";
+import { ScreenHero } from "../../components/ScreenHero";
+import { COLORS, shadow } from "../../constants/ui";
 import { scanReceipt } from "../../services/ocrApi";
+import { uploadReceiptImage } from "../../services/storageService";
 import { useAuthStore } from "../../store/authStore";
 import { useTransactionStore } from "../../store/transactionStore";
 import { normalizeAxiosError } from "../../utils/responseHandler";
-
-const COLORS = {
-  bg: "#F6F8FB",
-  card: "#FFFFFF",
-  text: "#0F172A",
-  muted: "#64748B",
-  soft: "#F1F5F9",
-  border: "#E2E8F0",
-  primary: "#2563EB",
-  primarySoft: "#DBEAFE",
-  primaryLight: "#EFF6FF",
-  dark: "#0F172A",
-  green: "#16A34A",
-  greenSoft: "#DCFCE7",
-};
 
 function isNumericOverflowError(message: string) {
   return message.toLowerCase().includes("numeric field overflow");
 }
 
-type ActionButtonProps = {
-  title: string;
-  description: string;
-  active?: boolean;
-  loading?: boolean;
-  onPress: () => void;
-};
+async function selectReceiptImage(sourceType: "camera" | "gallery") {
+  if (sourceType === "camera") {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
 
-function ActionButton({
-  title,
-  description,
-  loading,
-  onPress,
-}: ActionButtonProps) {
-  return (
-    <Pressable
-      disabled={loading}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.actionButton,
-        pressed && !loading && styles.actionButtonPressed,
-      ]}
-    >
-      <View style={styles.actionLeft}>
-        <View style={styles.actionDot} />
-        <View style={styles.actionTextWrap}>
-          <Text style={styles.actionTitle}>{title}</Text>
-          <Text style={styles.actionDescription}>{description}</Text>
-        </View>
-      </View>
+    if (!permission.granted) {
+      Alert.alert("Quyền camera", "Cần cấp quyền camera để chụp hóa đơn.");
+      return null;
+    }
 
-      <View style={styles.actionCircle}>
-        {loading ? (
-          <ActivityIndicator color="#FFFFFF" size="small" />
-        ) : (
-          <Text style={styles.actionArrow}>→</Text>
-        )}
-      </View>
-    </Pressable>
-  );
+    return ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+      allowsEditing: true,
+    });
+  }
+
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if (!permission.granted) {
+    Alert.alert(
+      "Quyền thư viện ảnh",
+      "Cần cấp quyền thư viện để chọn hóa đơn.",
+    );
+    return null;
+  }
+
+  return ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ["images"],
+    quality: 0.8,
+    allowsEditing: true,
+  });
+}
+
+async function processReceiptImage(params: {
+  imageUri: string;
+  userId: string;
+  sourceType: "camera" | "gallery";
+}) {
+  const imageUrl = await uploadReceiptImage(params.imageUri, params.userId);
+
+  const validImageUrl =
+    imageUrl && (imageUrl.startsWith("http://") || imageUrl.startsWith("https://"))
+      ? imageUrl
+      : null;
+
+  if (!validImageUrl) {
+    throw new Error("Ảnh tải lên không hợp lệ.");
+  }
+
+  let ocrResult = null;
+
+  try {
+    ocrResult = await scanReceipt({
+      sourceType: params.sourceType,
+      imageUrl: validImageUrl,
+    });
+  } catch (error) {
+    const normalized = normalizeAxiosError(error);
+
+    if (isNumericOverflowError(normalized.message)) {
+      Alert.alert(
+        "OCR chưa hỗ trợ ảnh này",
+        "Ảnh chuyển khoản ngân hàng có thể không đọc được tự động. Bạn vẫn có thể nhập thủ công ở màn xác nhận giao dịch.",
+      );
+    } else {
+      Alert.alert(
+        "OCR không nhận diện được",
+        "Vui lòng thử lại với ảnh rõ hơn. Bạn vẫn có thể nhập thủ công ở bước tiếp theo.",
+      );
+    }
+  }
+
+  return { imageUrl: validImageUrl, ocrResult };
 }
 
 export function AddTransactionScreen() {
@@ -86,9 +99,11 @@ export function AddTransactionScreen() {
   const setDraftReceiptPath = useTransactionStore(
     (state) => state.setDraftReceiptPath,
   );
+
   const setDraftOcrResult = useTransactionStore(
     (state) => state.setDraftOcrResult,
   );
+
   const setDraftSourceType = useTransactionStore(
     (state) => state.setDraftSourceType,
   );
@@ -98,6 +113,10 @@ export function AddTransactionScreen() {
   >(null);
 
   const pickImage = async (sourceType: "camera" | "gallery") => {
+    if (loadingSource !== null) {
+      return;
+    }
+
     if (!user?.id) {
       Alert.alert("Thiếu phiên đăng nhập", "Vui lòng đăng nhập lại.");
       return;
@@ -106,69 +125,21 @@ export function AddTransactionScreen() {
     try {
       setLoadingSource(sourceType);
 
-      let result: ImagePicker.ImagePickerResult;
+      const result = await selectReceiptImage(sourceType);
 
-      if (sourceType === "camera") {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-        if (!permission.granted) {
-          Alert.alert("Quyền camera", "Cần cấp quyền camera để chụp hóa đơn.");
-          return;
-        }
-
-        result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ["images"],
-          quality: 0.8,
-          allowsEditing: true,
-        });
-      } else {
-        const permission =
-          await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-        if (!permission.granted) {
-          Alert.alert(
-            "Quyền thư viện ảnh",
-            "Cần cấp quyền thư viện để chọn hóa đơn.",
-          );
-          return;
-        }
-
-        result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ["images"],
-          quality: 0.8,
-          allowsEditing: true,
-        });
+      if (!result) {
+        return;
       }
 
       if (result.canceled || !result.assets?.length) {
         return;
       }
 
-      const imageUri = result.assets[0].uri;
-      const imageUrl = await uploadReceiptImage(imageUri, user.id);
-
-      let ocrResult = null;
-
-      try {
-        ocrResult = await scanReceipt({
-          sourceType,
-          imageUrl,
-        });
-      } catch (error) {
-        const normalized = normalizeAxiosError(error);
-
-        if (isNumericOverflowError(normalized.message)) {
-          Alert.alert(
-            "OCR chưa hỗ trợ ảnh này",
-            "Ảnh chuyển khoản ngân hàng có thể không đọc được tự động. Bạn vẫn có thể nhập thông tin thủ công ở màn xác nhận giao dịch.",
-          );
-        } else {
-          Alert.alert(
-            "OCR không nhận diện được",
-            "Vui lòng thử lại với ảnh rõ hơn. Bạn vẫn có thể nhập thủ công ở bước tiếp theo.",
-          );
-        }
-      }
+      const { imageUrl, ocrResult } = await processReceiptImage({
+        imageUri: result.assets[0].uri,
+        userId: user.id,
+        sourceType,
+      });
 
       setDraftReceiptPath(imageUrl);
       setDraftOcrResult(ocrResult);
@@ -177,7 +148,13 @@ export function AddTransactionScreen() {
       navigation.navigate("TransactionConfirm");
     } catch (error) {
       const normalized = normalizeAxiosError(error);
-      Alert.alert("Không thể xử lý ảnh", normalized.message);
+
+      const fallbackMessage =
+        normalized.message.length > 220
+          ? "Vui lòng thử lại với ảnh rõ hơn hoặc kiểm tra kết nối mạng."
+          : normalized.message;
+
+      Alert.alert("Không thể xử lý hóa đơn", fallbackMessage);
     } finally {
       setLoadingSource(null);
     }
@@ -188,16 +165,11 @@ export function AddTransactionScreen() {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.container}
     >
-      <View style={styles.header}>
-        <Text style={styles.label}>Thêm giao dịch</Text>
-
-        <Text style={styles.title}>Quét hóa đơn</Text>
-
-        <Text style={styles.subtitle}>
-          Tải ảnh hóa đơn lên để hệ thống tự nhận diện số tiền, ngày giao dịch
-          và nội dung thanh toán.
-        </Text>
-      </View>
+      <ScreenHero
+        kicker="Giao dịch"
+        title="Thêm từ hóa đơn"
+        subtitle="Chụp hoặc chọn ảnh hóa đơn, hệ thống sẽ tự nhận diện số tiền, ngày và cửa hàng."
+      />
 
       <View style={styles.scanCard}>
         <View style={styles.scanPreview}>
@@ -212,6 +184,7 @@ export function AddTransactionScreen() {
 
         <View style={styles.scanInfo}>
           <Text style={styles.scanTitle}>Nhận diện tự động</Text>
+
           <Text style={styles.scanText}>
             Sau khi chọn ảnh, bạn sẽ được kiểm tra và chỉnh sửa lại thông tin
             trước khi lưu.
@@ -226,22 +199,29 @@ export function AddTransactionScreen() {
         </View>
 
         <ActionButton
-          title="Chụp hóa đơn"
+          title="Chụp ảnh hóa đơn"
           description="Mở camera và chụp hóa đơn mới"
           loading={loadingSource === "camera"}
           onPress={() => void pickImage("camera")}
         />
 
         <ActionButton
-          title="Chọn từ thư viện"
+          title="Chọn ảnh từ thư viện"
           description="Dùng ảnh hóa đơn đã có trong máy"
           loading={loadingSource === "gallery"}
           onPress={() => void pickImage("gallery")}
         />
       </AppCard>
 
+      {loadingSource ? (
+        <Text style={styles.loadingText}>
+          Đang tải ảnh và nhận diện hóa đơn...
+        </Text>
+      ) : null}
+
       <View style={styles.tipBox}>
         <Text style={styles.tipTitle}>Mẹo nhỏ</Text>
+
         <Text style={styles.tipText}>
           Ảnh rõ, đủ sáng và không bị cắt mất phần tổng tiền sẽ giúp nhận diện
           chính xác hơn.
@@ -252,233 +232,43 @@ export function AddTransactionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 28,
-    paddingBottom: 32,
-    backgroundColor: COLORS.bg,
-  },
+  container: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 32, backgroundColor: "#EEF2F7" },
 
-  header: {
-    marginBottom: 22,
-  },
+  scanCard: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.dark, borderRadius: 28, padding: 18, marginBottom: 18 },
 
-  label: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: COLORS.primarySoft,
-    color: COLORS.primary,
-    fontSize: 13,
-    fontWeight: "700",
-    marginBottom: 14,
-  },
+  scanPreview: { width: 86, height: 104, borderRadius: 24, backgroundColor: "#1E293B", alignItems: "center", justifyContent: "center", marginRight: 16 },
 
-  title: {
-    fontSize: 34,
-    lineHeight: 40,
-    fontWeight: "800",
-    color: COLORS.text,
-    marginBottom: 10,
-  },
+  receiptPaper: { width: 48, height: 66, borderRadius: 8, backgroundColor: "#FFFFFF", padding: 8 },
 
-  subtitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: COLORS.muted,
-  },
+  receiptLineLong: { height: 5, width: "100%", borderRadius: 999, backgroundColor: "#CBD5E1", marginBottom: 7 },
 
-  scanCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.dark,
-    borderRadius: 28,
-    padding: 18,
-    marginBottom: 18,
-  },
+  receiptLine: { height: 5, width: "78%", borderRadius: 999, backgroundColor: "#E2E8F0", marginBottom: 7 },
 
-  scanPreview: {
-    width: 86,
-    height: 104,
-    borderRadius: 24,
-    backgroundColor: "#1E293B",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 16,
-  },
+  receiptLineShort: { height: 5, width: "58%", borderRadius: 999, backgroundColor: "#E2E8F0", marginBottom: 9 },
 
-  receiptPaper: {
-    width: 48,
-    height: 66,
-    borderRadius: 8,
-    backgroundColor: "#FFFFFF",
-    padding: 8,
-  },
+  receiptDivider: { height: 1, width: "100%", backgroundColor: "#E2E8F0", marginBottom: 8 },
 
-  receiptLineLong: {
-    height: 5,
-    width: "100%",
-    borderRadius: 999,
-    backgroundColor: "#CBD5E1",
-    marginBottom: 7,
-  },
+  receiptAmount: { height: 7, width: "72%", borderRadius: 999, backgroundColor: COLORS.income },
 
-  receiptLine: {
-    height: 5,
-    width: "78%",
-    borderRadius: 999,
-    backgroundColor: "#E2E8F0",
-    marginBottom: 7,
-  },
+  scanInfo: { flex: 1 },
 
-  receiptLineShort: {
-    height: 5,
-    width: "58%",
-    borderRadius: 999,
-    backgroundColor: "#E2E8F0",
-    marginBottom: 9,
-  },
+  scanTitle: { color: "#FFFFFF", fontSize: 18, fontWeight: "800", marginBottom: 6 },
 
-  receiptDivider: {
-    height: 1,
-    width: "100%",
-    backgroundColor: "#E2E8F0",
-    marginBottom: 8,
-  },
+  scanText: { color: "#CBD5E1", fontSize: 14, lineHeight: 21 },
 
-  receiptAmount: {
-    height: 7,
-    width: "72%",
-    borderRadius: 999,
-    backgroundColor: COLORS.green,
-  },
+  card: { padding: 18, borderRadius: 28, backgroundColor: COLORS.white, borderWidth: 1, borderColor: "#DCE4EE", ...shadow },
 
-  scanInfo: {
-    flex: 1,
-  },
+  cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
 
-  scanTitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 6,
-  },
+  cardTitle: { fontSize: 19, fontWeight: "800", color: COLORS.text },
 
-  scanText: {
-    color: "#CBD5E1",
-    fontSize: 14,
-    lineHeight: 21,
-  },
+  cardHint: { fontSize: 13, color: COLORS.muted, fontWeight: "700" },
 
-  card: {
-    padding: 18,
-    borderRadius: 28,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
+  loadingText: { marginTop: 10, marginBottom: 2, textAlign: "center", color: COLORS.muted, fontSize: 13, fontWeight: "600" },
 
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
+  tipBox: { marginTop: 18, padding: 16, borderRadius: 22, backgroundColor: COLORS.blueLight, borderWidth: 1, borderColor: COLORS.blueSoft },
 
-  cardTitle: {
-    fontSize: 19,
-    fontWeight: "800",
-    color: COLORS.text,
-  },
+  tipTitle: { fontSize: 15, fontWeight: "800", color: COLORS.text, marginBottom: 5 },
 
-  cardHint: {
-    fontSize: 13,
-    color: COLORS.muted,
-    fontWeight: "700",
-  },
-
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-
-  actionButtonPressed: {
-    opacity: 0.75,
-  },
-
-  actionLeft: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingRight: 12,
-  },
-
-  actionDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: COLORS.primary,
-    marginRight: 14,
-  },
-
-  actionTextWrap: {
-    flex: 1,
-  },
-
-  actionTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-
-  actionDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: COLORS.muted,
-  },
-
-  actionCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: COLORS.dark,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  actionArrow: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "700",
-    marginTop: -2,
-  },
-
-  tipBox: {
-    marginTop: 18,
-    padding: 16,
-    borderRadius: 22,
-    backgroundColor: COLORS.primaryLight,
-    borderWidth: 1,
-    borderColor: COLORS.primarySoft,
-  },
-
-  tipTitle: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: COLORS.text,
-    marginBottom: 5,
-  },
-
-  tipText: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: COLORS.muted,
-  },
+  tipText: { fontSize: 14, lineHeight: 21, color: COLORS.muted },
 });

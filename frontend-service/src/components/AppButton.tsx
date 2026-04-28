@@ -23,15 +23,16 @@ export function AppButton({
   variant = "primary",
   style,
   disabled = false,
-}: AppButtonProps) {
-  const backgroundColor =
-    variant === "secondary"
-      ? "#1e293b"
-      : variant === "danger"
-        ? "#991b1b"
-        : variant === "ghost"
-          ? "transparent"
-          : "#0f172a";
+}: Readonly<AppButtonProps>) {
+  let backgroundColor = "#0f172a";
+
+  if (variant === "secondary") {
+    backgroundColor = "#1e293b";
+  } else if (variant === "danger") {
+    backgroundColor = "#991b1b";
+  } else if (variant === "ghost") {
+    backgroundColor = "transparent";
+  }
 
   const borderColor = variant === "ghost" ? "#334155" : backgroundColor;
 

@@ -115,7 +115,7 @@ export function TransactionDetailScreen() {
         ) : null}
       </AppCard>
 
-      {transaction.image_url && transaction.image_url.startsWith("http") ? (
+      {transaction.image_url?.startsWith("http") ? (
         <Image source={{ uri: transaction.image_url }} style={styles.image} />
       ) : null}
 

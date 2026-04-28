@@ -1,11 +1,13 @@
 import React, { useCallback, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
 import { EmptyState } from "../../components/EmptyState";
 import { LoadingView } from "../../components/LoadingView";
+import { ScreenHero } from "../../components/ScreenHero";
+import { SectionHeader } from "../../components/SectionHeader";
 import {
   getNotifications,
   markAllNotificationsAsRead,
@@ -26,6 +28,9 @@ export function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
+  const hasUnread = safeNotifications.some((item) => !item.read_at);
 
   const loadNotifications = useCallback(async () => {
     setLoading(true);
@@ -72,18 +77,25 @@ export function NotificationsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <AppCard>
-        <Text style={styles.title}>Thông báo</Text>
+      <ScreenHero
+        kicker="Thông báo"
+        title="Trung tâm thông báo"
+        subtitle="Theo dõi cảnh báo ngân sách và cập nhật quan trọng từ hệ thống."
+      />
+
+      <AppCard style={styles.card}>
+        <SectionHeader title="Danh sách thông báo" />
         <AppButton
           title="Đánh dấu tất cả đã đọc"
           onPress={handleReadAll}
           loading={savingId === "all"}
+          disabled={!hasUnread || savingId !== null}
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </AppCard>
 
-      {notifications.length ? (
-        notifications.map((notification) => (
+      {safeNotifications.length ? (
+        safeNotifications.map((notification) => (
           <AppCard
             key={notification.id}
             style={notification.read_at ? styles.readCard : styles.unreadCard}
@@ -93,21 +105,22 @@ export function NotificationsScreen() {
             <Text style={styles.meta}>
               {formatDate(notification.created_at)}
             </Text>
-            {!notification.read_at ? (
+            {notification.read_at ? (
+              <Text style={styles.readLabel}>Đã đọc</Text>
+            ) : (
               <AppButton
                 title="Đánh dấu đã đọc"
                 variant="secondary"
                 onPress={() => void handleReadOne(notification)}
                 loading={savingId === notification.id}
               />
-            ) : (
-              <Text style={styles.readLabel}>Đã đọc</Text>
             )}
           </AppCard>
         ))
       ) : (
         <EmptyState
-          title="Không có thông báo"
+          icon="🔔"
+          title="Bạn chưa có thông báo nào"
           description="Thông báo mới sẽ hiển thị ở đây."
         />
       )}
@@ -117,14 +130,19 @@ export function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: "#f8fafc",
+    padding: 16,
+    backgroundColor: "#EEF2F7",
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 12,
+  card: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#DCE4EE",
+    marginBottom: 10,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 4,
   },
   notificationTitle: {
     fontWeight: "700",

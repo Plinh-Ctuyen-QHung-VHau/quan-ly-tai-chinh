@@ -12,6 +12,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
 import { AppInput } from "../../components/AppInput";
+import { ScreenHero } from "../../components/ScreenHero";
+import { SectionHeader } from "../../components/SectionHeader";
 import {
   getNotificationSettings,
   updateNotificationSettings,
@@ -73,8 +75,17 @@ export function NotificationSettingsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <AppCard>
-        <Text style={styles.title}>Cài đặt thông báo</Text>
+      <ScreenHero
+        kicker="Cài đặt"
+        title="Thông báo"
+        subtitle="Bật tắt cảnh báo ngân sách, bất thường và nhắc nhở hàng ngày."
+      />
+
+      <AppCard style={styles.card}>
+        <SectionHeader
+          title="Tùy chọn thông báo"
+          subtitle="Chọn những thông báo bạn muốn hệ thống gửi về."
+        />
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Row
@@ -138,11 +149,11 @@ function Row({
   label,
   value,
   onChange,
-}: {
+}: Readonly<{
   label: string;
   value: boolean;
   onChange: (value: boolean) => void;
-}) {
+}>) {
   return (
     <View style={styles.switchRow}>
       <Text style={styles.switchLabel}>{label}</Text>
@@ -153,14 +164,19 @@ function Row({
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: "#f8fafc",
+    padding: 16,
+    paddingBottom: 120,
+    backgroundColor: "#EEF2F7",
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 12,
+  card: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#DCE4EE",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 4,
   },
   switchRow: {
     flexDirection: "row",

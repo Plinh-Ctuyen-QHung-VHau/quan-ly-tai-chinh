@@ -22,18 +22,28 @@ import {
   getCurrentBudgetStatus,
   updateBudget,
 } from "../../services/budgetApi";
+import { COLORS, shadow } from "../../constants/ui";
 import { useBudgetStore } from "../../store/budgetStore";
 import { Budget, BudgetPeriod } from "../../types/budget";
 import { isPositiveAmount, validateBudgetPeriod } from "../../utils/validators";
 
 type DateField = "start" | "end";
 
-function formatDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+const PERIODS: { label: string; value: BudgetPeriod }[] = [
+  { label: "Theo tuần", value: "weekly" },
+  { label: "Theo tháng", value: "monthly" },
+];
 
-  return `${year}-${month}-${day}`;
+function formatDate(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function normalizeDate(value?: string | null) {
+  if (!value) return "";
+  return value.includes("T") ? value.slice(0, 10) : value;
 }
 
 function parseDate(value: string) {
@@ -41,8 +51,9 @@ function parseDate(value: string) {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
-function today() {
-  return formatDate(new Date());
+function startOfMonth() {
+  const now = new Date();
+  return formatDate(new Date(now.getFullYear(), now.getMonth(), 1));
 }
 
 function endOfMonth() {
@@ -50,9 +61,22 @@ function endOfMonth() {
   return formatDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 }
 
-function formatVND(value: string) {
-  const number = Number(value);
+function startOfWeek() {
+  const now = new Date();
+  const diff = now.getDay() === 0 ? 6 : now.getDay() - 1;
+  const start = new Date(now);
+  start.setDate(now.getDate() - diff);
+  return formatDate(start);
+}
 
+function endOfWeek() {
+  const end = parseDate(startOfWeek());
+  end.setDate(end.getDate() + 6);
+  return formatDate(end);
+}
+
+function formatVND(value: string | number) {
+  const number = Number(value);
   if (!number) return "0 đ";
 
   return new Intl.NumberFormat("vi-VN", {
@@ -60,6 +84,50 @@ function formatVND(value: string) {
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(number);
+}
+
+function getPeriodLabel(period: BudgetPeriod) {
+  return period === "weekly" ? "Theo tuần" : "Theo tháng";
+}
+
+function getPeriodDescription(period: BudgetPeriod) {
+  return period === "weekly"
+    ? "Chu kỳ tuần: nên đặt từ đầu tuần đến cuối tuần để dễ theo dõi."
+    : "Chu kỳ tháng: tự động từ ngày đầu đến cuối tháng.";
+}
+
+function PreviewStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.previewStatItem}>
+      <Text style={styles.previewStatLabel}>{label}</Text>
+      <Text style={styles.previewStatValue}>{value}</Text>
+    </View>
+  );
+}
+
+function DateCard({
+  label,
+  value,
+  active,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.dateCard, active && styles.dateCardActive]}
+    >
+      <Text style={styles.dateCardLabel}>{label}</Text>
+      <Text style={styles.dateCardValue}>{value}</Text>
+      <Text style={styles.dateCardHint}>
+        {active ? "Đang chọn" : "Chọn ngày"}
+      </Text>
+    </Pressable>
+  );
 }
 
 export function BudgetFormScreen() {
@@ -76,49 +144,58 @@ export function BudgetFormScreen() {
   const [budget_amount, setBudgetAmount] = useState(
     String(budget?.budget_amount ?? ""),
   );
-
   const [budgetPeriod, setBudgetPeriod] = useState<BudgetPeriod>(
     budget?.budget_period ?? "monthly",
   );
-
-  const [start_date, setStartDate] = useState(budget?.start_date ?? today());
-  const [end_date, setEndDate] = useState(budget?.end_date ?? endOfMonth());
-
+  const [start_date, setStartDate] = useState(
+    normalizeDate(budget?.start_date) || startOfMonth(),
+  );
+  const [end_date, setEndDate] = useState(
+    normalizeDate(budget?.end_date) || endOfMonth(),
+  );
   const [showIosPicker, setShowIosPicker] = useState<DateField | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const periodLabel = budgetPeriod === "weekly" ? "Theo tuần" : "Theo tháng";
+  const periodLabel = getPeriodLabel(budgetPeriod);
+  const periodDescription = getPeriodDescription(budgetPeriod);
+
+  const dayCount = useMemo(() => {
+    if (!start_date || !end_date) return 0;
+
+    const start = parseDate(start_date).getTime();
+    const end = parseDate(end_date).getTime();
+
+    if (Number.isNaN(start) || Number.isNaN(end) || end < start) return 0;
+
+    return Math.floor((end - start) / 86400000) + 1;
+  }, [start_date, end_date]);
 
   const dailyLimit = useMemo(() => {
     const amount = Number(budget_amount);
-
-    if (!amount || !start_date || !end_date) return "0 đ";
-
-    const start = new Date(start_date).getTime();
-    const end = new Date(end_date).getTime();
-
-    if (Number.isNaN(start) || Number.isNaN(end) || end < start) {
-      return "0 đ";
-    }
-
-    const days = Math.floor((end - start) / 86400000) + 1;
-    return formatVND(String(Math.floor(amount / days)));
-  }, [budget_amount, start_date, end_date]);
+    return amount && dayCount ? formatVND(Math.floor(amount / dayCount)) : "0 đ";
+  }, [budget_amount, dayCount]);
 
   const setDateValue = (field: DateField, date: Date) => {
     const value = formatDate(date);
+    field === "start" ? setStartDate(value) : setEndDate(value);
+  };
 
-    if (field === "start") {
-      setStartDate(value);
-    } else {
-      setEndDate(value);
+  const applyPeriod = (period: BudgetPeriod) => {
+    setBudgetPeriod(period);
+
+    if (period === "weekly") {
+      setStartDate(startOfWeek());
+      setEndDate(endOfWeek());
+      return;
     }
+
+    setStartDate(startOfMonth());
+    setEndDate(endOfMonth());
   };
 
   const openDatePicker = (field: DateField) => {
-    const currentValue = field === "start" ? start_date : end_date;
-    const currentDate = parseDate(currentValue);
+    const currentDate = parseDate(field === "start" ? start_date : end_date);
 
     if (Platform.OS === "android") {
       DateTimePickerAndroid.open({
@@ -149,48 +226,41 @@ export function BudgetFormScreen() {
     setDateValue(showIosPicker, selectedDate);
   };
 
+  const validateForm = () => {
+    if (!budget_amount.trim()) return "Vui lòng nhập số tiền ngân sách.";
+    if (!isPositiveAmount(budget_amount)) return "Số tiền ngân sách phải lớn hơn 0.";
+    if (!validateBudgetPeriod(budgetPeriod)) return "Vui lòng chọn chu kỳ ngân sách.";
+    if (!start_date.trim()) return "Vui lòng chọn ngày bắt đầu.";
+    if (!end_date.trim()) return "Vui lòng chọn ngày kết thúc.";
+    if (parseDate(end_date) < parseDate(start_date)) {
+      return "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.";
+    }
+
+    return "";
+  };
+
   const handleSave = async () => {
-    setError("");
+    const message = validateForm();
+    setError(message);
 
-    if (!budget_amount.trim()) {
-      setError("Vui lòng nhập số tiền ngân sách.");
-      return;
-    }
-
-    if (!isPositiveAmount(budget_amount)) {
-      setError("Số tiền ngân sách phải lớn hơn 0.");
-      return;
-    }
-
-    if (!validateBudgetPeriod(budgetPeriod)) {
-      setError("Vui lòng chọn chu kỳ ngân sách.");
-      return;
-    }
-
-    if (!start_date.trim()) {
-      setError("Vui lòng chọn ngày bắt đầu.");
-      return;
-    }
-
-    if (end_date && new Date(end_date) < new Date(start_date)) {
-      setError("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.");
-      return;
-    }
+    if (message) return;
 
     setLoading(true);
 
     try {
       const payload = {
-        budgetAmount: Number(budget_amount),
-        budgetPeriod,
-        startDate: parseDate(start_date),
-        endDate: end_date ? parseDate(end_date) : undefined,
+        budget_amount: Number(budget_amount),
+        budget_period: budgetPeriod,
+        start_date,
+        end_date: end_date || undefined,
       };
 
+      console.log("[BUDGET PAYLOAD]", payload);
+
       if (mode === "edit" && budget?.id) {
-        await updateBudget(budget.id, payload as any);
+        await updateBudget(budget.id, payload);
       } else {
-        await createBudget(payload as any);
+        await createBudget(payload);
       }
 
       const currentBudgetStatus = await getCurrentBudgetStatus();
@@ -210,107 +280,120 @@ export function BudgetFormScreen() {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.container}
     >
-      <Text style={styles.badge}>Ngân sách</Text>
+      <View style={styles.heroCard}>
+        <View style={styles.heroGlow} />
 
-      <Text style={styles.title}>
-        {mode === "edit" ? "Sửa ngân sách" : "Tạo ngân sách"}
-      </Text>
+        <Text style={styles.heroKicker}>Ngân sách</Text>
 
-      <Text style={styles.subtitle}>
-        Thiết lập giới hạn chi tiêu để kiểm soát tài chính tốt hơn.
-      </Text>
+        <Text style={styles.heroTitle}>
+          {mode === "edit" ? "Sửa ngân sách" : "Tạo ngân sách"}
+        </Text>
+
+        <Text style={styles.heroSubtitle}>
+          Thiết lập giới hạn chi tiêu để kiểm soát tài chính tốt hơn.
+        </Text>
+      </View>
 
       <View style={styles.previewCard}>
-        <Text style={styles.previewLabel}>Ngân sách dự kiến</Text>
-        <Text style={styles.previewAmount}>{formatVND(budget_amount)}</Text>
-
-        <View style={styles.previewRow}>
-          <View style={styles.previewItem}>
-            <Text style={styles.previewItemLabel}>Chu kỳ</Text>
-            <Text style={styles.previewItemValue}>{periodLabel}</Text>
+        <View style={styles.previewTopRow}>
+          <View>
+            <Text style={styles.previewLabel}>Ngân sách dự kiến</Text>
+            <Text style={styles.previewAmount}>{formatVND(budget_amount)}</Text>
           </View>
 
-          <View style={styles.previewDivider} />
-
-          <View style={styles.previewItem}>
-            <Text style={styles.previewItemLabel}>Mỗi ngày</Text>
-            <Text style={styles.previewItemValue}>{dailyLimit}</Text>
+          <View style={styles.previewBadge}>
+            <Text style={styles.previewBadgeText}>{periodLabel}</Text>
           </View>
+        </View>
+
+        <View style={styles.previewDivider} />
+
+        <View style={styles.previewStatsRow}>
+          <PreviewStat label="Chu kỳ" value={periodLabel} />
+          <View style={styles.previewStatDivider} />
+          <PreviewStat label="Mỗi ngày" value={dailyLimit} />
+        </View>
+
+        <View style={styles.periodNoteBox}>
+          <Text style={styles.periodNoteText}>{periodDescription}</Text>
         </View>
       </View>
 
-      <AppCard style={styles.card}>
-        <AppInput
-          label="Số tiền ngân sách"
-          value={budget_amount}
-          onChangeText={setBudgetAmount}
-          keyboardType="numeric"
-          placeholder="VD: 5000000"
-        />
+      <AppCard style={styles.formCard}>
+        <Text style={styles.formTitle}>Thông tin ngân sách</Text>
+
+        <Text style={styles.formSubtitle}>
+          Nhập số tiền và chọn khoảng thời gian áp dụng.
+        </Text>
+
+        <View style={styles.amountBox}>
+          <Text style={styles.label}>Số tiền ngân sách</Text>
+
+          <AppInput
+            label=""
+            value={budget_amount}
+            onChangeText={setBudgetAmount}
+            keyboardType="numeric"
+            placeholder="VD: 5000000"
+          />
+
+          <Text style={styles.helperText}>
+            Đây là số tiền tối đa bạn muốn chi trong kỳ đã chọn.
+          </Text>
+        </View>
 
         <Text style={styles.label}>Chu kỳ ngân sách</Text>
 
         <View style={styles.segment}>
-          <Pressable
-            onPress={() => setBudgetPeriod("weekly")}
-            style={[
-              styles.segmentButton,
-              budgetPeriod === "weekly" && styles.segmentButtonActive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.segmentText,
-                budgetPeriod === "weekly" && styles.segmentTextActive,
-              ]}
-            >
-              Theo tuần
-            </Text>
-          </Pressable>
+          {PERIODS.map((item) => {
+            const active = budgetPeriod === item.value;
 
-          <Pressable
-            onPress={() => setBudgetPeriod("monthly")}
-            style={[
-              styles.segmentButton,
-              budgetPeriod === "monthly" && styles.segmentButtonActive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.segmentText,
-                budgetPeriod === "monthly" && styles.segmentTextActive,
-              ]}
-            >
-              Theo tháng
-            </Text>
-          </Pressable>
+            return (
+              <Pressable
+                key={item.value}
+                onPress={() => applyPeriod(item.value)}
+                style={[styles.segmentButton, active && styles.segmentButtonActive]}
+              >
+                <Text
+                  style={[styles.segmentText, active && styles.segmentTextActive]}
+                >
+                  {item.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <View style={styles.dateHeader}>
-          <Text style={styles.label}>Ngày bắt đầu</Text>
+          <Text style={styles.label}>Khoảng thời gian</Text>
 
-          <Pressable onPress={() => setStartDate(today())}>
-            <Text style={styles.quickText}>Hôm nay</Text>
+          <Pressable onPress={() => applyPeriod(budgetPeriod)}>
+            <Text style={styles.quickText}>
+              {budgetPeriod === "weekly" ? "Tuần này" : "Tháng này"}
+            </Text>
           </Pressable>
         </View>
 
-        <Pressable
-          onPress={() => openDatePicker("start")}
-          style={[
-            styles.dateBox,
-            showIosPicker === "start" && styles.dateBoxActive,
-          ]}
-        >
-          <Text style={styles.dateText}>{start_date}</Text>
-          <Text style={styles.dateHint}>
-            {showIosPicker === "start" ? "Đóng" : "Chọn ngày"}
-          </Text>
-        </Pressable>
+        <View style={styles.dateRow}>
+          <DateCard
+            label="Bắt đầu"
+            value={start_date}
+            active={showIosPicker === "start"}
+            onPress={() => openDatePicker("start")}
+          />
 
-        {Platform.OS === "ios" && showIosPicker === "start" ? (
+          <DateCard
+            label="Kết thúc"
+            value={end_date}
+            active={showIosPicker === "end"}
+            onPress={() => openDatePicker("end")}
+          />
+        </View>
+
+        {Platform.OS === "ios" && showIosPicker ? (
           <View style={styles.pickerBox}>
             <DateTimePicker
-              value={parseDate(start_date)}
+              value={parseDate(showIosPicker === "start" ? start_date : end_date)}
               mode="date"
               display="spinner"
               onChange={handleIosPickDate}
@@ -325,46 +408,10 @@ export function BudgetFormScreen() {
           </View>
         ) : null}
 
-        <View style={styles.dateHeader}>
-          <Text style={styles.label}>Ngày kết thúc</Text>
-
-          <Pressable onPress={() => setEndDate(endOfMonth())}>
-            <Text style={styles.quickText}>Cuối tháng</Text>
-          </Pressable>
-        </View>
-
-        <Pressable
-          onPress={() => openDatePicker("end")}
-          style={[
-            styles.dateBox,
-            showIosPicker === "end" && styles.dateBoxActive,
-          ]}
-        >
-          <Text style={styles.dateText}>
-            {end_date || "Chọn ngày kết thúc"}
-          </Text>
-          <Text style={styles.dateHint}>
-            {showIosPicker === "end" ? "Đóng" : "Chọn ngày"}
-          </Text>
-        </Pressable>
-
-        {Platform.OS === "ios" && showIosPicker === "end" ? (
-          <View style={styles.pickerBox}>
-            <DateTimePicker
-              value={parseDate(end_date)}
-              mode="date"
-              display="spinner"
-              onChange={handleIosPickDate}
-            />
-
-            <Pressable
-              onPress={() => setShowIosPicker(null)}
-              style={styles.doneButton}
-            >
-              <Text style={styles.doneButtonText}>Xong</Text>
-            </Pressable>
-          </View>
-        ) : null}
+        <Text style={styles.dateHelperText}>
+          Ngày bắt đầu và ngày kết thúc có thể tự động đồng bộ theo chu kỳ,
+          hoặc bạn có thể chọn thủ công.
+        </Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -377,7 +424,10 @@ export function BudgetFormScreen() {
         <Pressable
           disabled={loading}
           onPress={() => navigation.goBack()}
-          style={styles.cancelButton}
+          style={({ pressed }) => [
+            styles.cancelButton,
+            pressed && !loading && styles.pressed,
+          ]}
         >
           <Text style={styles.cancelText}>Quay lại</Text>
         </Pressable>
@@ -387,230 +437,57 @@ export function BudgetFormScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 20,
-    paddingTop: 28,
-    backgroundColor: "#F6F8FB",
-  },
+  container: { flexGrow: 1, paddingHorizontal: 18, paddingTop: 14, paddingBottom: 120, backgroundColor: COLORS.bg },
+  pressed: { opacity: 0.8, transform: [{ scale: 0.99 }] },
 
-  badge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "#DBEAFE",
-    color: "#2563EB",
-    fontSize: 13,
-    fontWeight: "800",
-    marginBottom: 16,
-  },
+  heroCard: { backgroundColor: COLORS.dark, borderRadius: 30, padding: 20, paddingBottom: 28, marginBottom: 18, overflow: "hidden" },
+  heroGlow: { position: "absolute", right: -34, top: -42, width: 160, height: 160, borderRadius: 999, backgroundColor: "rgba(37,99,235,0.24)" },
+  heroKicker: { color: "#93C5FD", fontSize: 13, fontWeight: "900", letterSpacing: 1.6, textTransform: "uppercase", marginBottom: 14 },
+  heroTitle: { color: COLORS.white, fontSize: 40, lineHeight: 46, fontWeight: "900", letterSpacing: -1.2, marginBottom: 12 },
+  heroSubtitle: { color: "#CBD5E1", fontSize: 16, lineHeight: 25, maxWidth: "88%" },
 
-  title: {
-    fontSize: 34,
-    lineHeight: 40,
-    fontWeight: "900",
-    color: "#0F172A",
-    marginBottom: 10,
-  },
+  previewCard: { ...shadow, backgroundColor: COLORS.white, borderRadius: 30, padding: 20, borderWidth: 1, borderColor: COLORS.border, marginBottom: 18 },
+  previewTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
+  previewLabel: { color: COLORS.muted, fontSize: 17, fontWeight: "900", marginBottom: 12 },
+  previewAmount: { color: COLORS.text, fontSize: 42, lineHeight: 48, fontWeight: "900", letterSpacing: -1.2 },
+  previewBadge: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: COLORS.blueLight, borderWidth: 1, borderColor: COLORS.blueSoft },
+  previewBadgeText: { color: COLORS.blue, fontSize: 12, fontWeight: "900" },
+  previewDivider: { height: 1, backgroundColor: COLORS.border, marginVertical: 20 },
+  previewStatsRow: { flexDirection: "row", alignItems: "center" },
+  previewStatItem: { flex: 1 },
+  previewStatDivider: { width: 1, height: 42, backgroundColor: COLORS.border, marginHorizontal: 14 },
+  previewStatLabel: { color: COLORS.muted, fontSize: 14, fontWeight: "800", marginBottom: 6 },
+  previewStatValue: { color: COLORS.text, fontSize: 18, fontWeight: "900" },
+  periodNoteBox: { marginTop: 18, padding: 14, borderRadius: 18, backgroundColor: COLORS.blueLight, borderWidth: 1, borderColor: COLORS.blueSoft },
+  periodNoteText: { color: COLORS.muted, fontSize: 14, lineHeight: 21, fontWeight: "700" },
 
-  subtitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: "#64748B",
-    marginBottom: 20,
-  },
+  formCard: { ...shadow, backgroundColor: COLORS.white, borderRadius: 30, padding: 20, borderWidth: 1, borderColor: COLORS.border },
+  formTitle: { color: COLORS.text, fontSize: 22, fontWeight: "900", marginBottom: 5 },
+  formSubtitle: { color: COLORS.muted, fontSize: 14, lineHeight: 20, marginBottom: 18 },
+  amountBox: { padding: 16, borderRadius: 22, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: COLORS.border, marginBottom: 18 },
+  label: { color: COLORS.text, fontSize: 15, fontWeight: "900", marginBottom: 9 },
+  helperText: { color: COLORS.muted, fontSize: 13, lineHeight: 19, marginTop: 2 },
 
-  previewCard: {
-    padding: 22,
-    borderRadius: 28,
-    backgroundColor: "#0F172A",
-    marginBottom: 18,
-  },
+  segment: { flexDirection: "row", padding: 5, borderRadius: 20, backgroundColor: "#F1F5F9", marginBottom: 20 },
+  segmentButton: { flex: 1, minHeight: 50, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  segmentButtonActive: { backgroundColor: COLORS.white, shadowColor: COLORS.dark, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 2 },
+  segmentText: { color: COLORS.muted, fontSize: 15, fontWeight: "900" },
+  segmentTextActive: { color: COLORS.text },
 
-  previewLabel: {
-    color: "#CBD5E1",
-    fontSize: 14,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
+  dateHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  quickText: { color: COLORS.blue, fontSize: 14, fontWeight: "900" },
+  dateRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
+  dateCard: { flex: 1, minHeight: 92, borderRadius: 20, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.white, padding: 14, justifyContent: "center" },
+  dateCardActive: { borderColor: COLORS.blue, backgroundColor: COLORS.blueLight },
+  dateCardLabel: { color: COLORS.muted, fontSize: 12, fontWeight: "900", textTransform: "uppercase", marginBottom: 7 },
+  dateCardValue: { color: COLORS.text, fontSize: 17, fontWeight: "900", marginBottom: 5 },
+  dateCardHint: { color: COLORS.blue, fontSize: 12, fontWeight: "900" },
+  pickerBox: { marginBottom: 16, borderRadius: 20, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: COLORS.border, overflow: "hidden" },
+  doneButton: { height: 46, alignItems: "center", justifyContent: "center", borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.white },
+  doneButtonText: { color: COLORS.blue, fontSize: 15, fontWeight: "900" },
+  dateHelperText: { color: COLORS.muted, fontSize: 13, lineHeight: 20, marginBottom: 16 },
 
-  previewAmount: {
-    color: "#FFFFFF",
-    fontSize: 34,
-    lineHeight: 40,
-    fontWeight: "900",
-    marginBottom: 20,
-  },
-
-  previewRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#334155",
-  },
-
-  previewItem: {
-    flex: 1,
-  },
-
-  previewDivider: {
-    width: 1,
-    height: 38,
-    backgroundColor: "#334155",
-    marginHorizontal: 14,
-  },
-
-  previewItemLabel: {
-    color: "#94A3B8",
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 5,
-  },
-
-  previewItemValue: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "800",
-  },
-
-  card: {
-    padding: 20,
-    borderRadius: 28,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-
-  label: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#0F172A",
-    marginBottom: 8,
-  },
-
-  segment: {
-    flexDirection: "row",
-    padding: 4,
-    borderRadius: 18,
-    backgroundColor: "#F1F5F9",
-    marginBottom: 18,
-  },
-
-  segmentButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 14,
-    alignItems: "center",
-  },
-
-  segmentButtonActive: {
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#0F172A",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-
-  segmentText: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#64748B",
-  },
-
-  segmentTextActive: {
-    color: "#0F172A",
-  },
-
-  dateHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 4,
-  },
-
-  quickText: {
-    color: "#2563EB",
-    fontSize: 13,
-    fontWeight: "800",
-  },
-
-  dateBox: {
-    minHeight: 56,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
-    marginBottom: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  dateBoxActive: {
-    borderColor: "#2563EB",
-    backgroundColor: "#EFF6FF",
-    marginBottom: 10,
-  },
-
-  dateText: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#0F172A",
-  },
-
-  dateHint: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#2563EB",
-  },
-
-  pickerBox: {
-    marginBottom: 18,
-    borderRadius: 18,
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    overflow: "hidden",
-  },
-
-  doneButton: {
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
-    backgroundColor: "#FFFFFF",
-  },
-
-  doneButtonText: {
-    color: "#2563EB",
-    fontSize: 15,
-    fontWeight: "800",
-  },
-
-  error: {
-    color: "#DC2626",
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-
-  cancelButton: {
-    height: 48,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-    backgroundColor: "#F1F5F9",
-  },
-
-  cancelText: {
-    color: "#0F172A",
-    fontSize: 15,
-    fontWeight: "800",
-  },
+  error: { color: COLORS.expense, backgroundColor: COLORS.expenseSoft, borderWidth: 1, borderColor: COLORS.expenseBorder, padding: 12, borderRadius: 16, fontSize: 14, lineHeight: 20, fontWeight: "700", marginBottom: 14 },
+  cancelButton: { marginTop: 12, height: 52, borderRadius: 18, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" },
+  cancelText: { color: COLORS.text, fontSize: 16, fontWeight: "900" },
 });

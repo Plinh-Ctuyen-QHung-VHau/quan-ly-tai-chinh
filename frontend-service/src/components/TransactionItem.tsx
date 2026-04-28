@@ -13,8 +13,9 @@ interface TransactionItemProps {
 export function TransactionItem({
   transaction,
   onPress,
-}: TransactionItemProps) {
+}: Readonly<TransactionItemProps>) {
   const amountColor = transaction.type === "income" ? "#15803d" : "#b91c1c";
+  const typeLabel = transaction.type === "income" ? "Thu nhập" : "Chi tiêu";
 
   return (
     <Pressable
@@ -41,7 +42,7 @@ export function TransactionItem({
             {transaction.type === "expense" ? "-" : "+"}
             {formatCurrency(transaction.amount)}
           </Text>
-          <Text style={styles.type}>{transaction.type}</Text>
+          <Text style={styles.type}>{typeLabel}</Text>
         </View>
       </View>
     </Pressable>

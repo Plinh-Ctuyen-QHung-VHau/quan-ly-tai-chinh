@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
+import { ScreenHero } from "../../components/ScreenHero";
 import { signOut } from "../../services/authService";
 
 export function SettingsScreen() {
@@ -22,8 +23,14 @@ export function SettingsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <AppCard>
-        <Text style={styles.title}>Cài đặt</Text>
+      <ScreenHero
+        kicker="Cài đặt"
+        title="Trung tâm thiết lập"
+        subtitle="Quản lý hồ sơ, thông báo và bảo mật tài khoản của bạn."
+      />
+
+      <AppCard style={styles.card}>
+        <Text style={styles.title}>Tùy chọn tài khoản</Text>
         <AppButton
           title="Hồ sơ"
           variant="secondary"
@@ -48,12 +55,22 @@ export function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: "#f8fafc",
+    padding: 16,
+    backgroundColor: "#EEF2F7",
+  },
+  card: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#DCE4EE",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 4,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "800",
+    fontSize: 24,
+    fontWeight: "900",
     color: "#0f172a",
     marginBottom: 14,
   },
