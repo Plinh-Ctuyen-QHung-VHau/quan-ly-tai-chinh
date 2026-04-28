@@ -11,13 +11,13 @@ export interface Budget {
   user_id: string;
   budget_amount: number;
   budget_period: "weekly" | "monthly";
-  start_date: string; // DB type: date → Supabase returns "YYYY-MM-DD" string
-  end_date: string;   // DB type: date → Supabase returns "YYYY-MM-DD" string
+  start_date: Date;
+  end_date: Date;
   status: "active" | "completed" | "exceeded" | "deleted";
   alert_80_sent: boolean;
   alert_100_sent: boolean;
-  created_at: string; // timestamptz → ISO string
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 @Injectable()

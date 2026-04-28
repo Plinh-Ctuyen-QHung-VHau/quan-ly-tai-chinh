@@ -3,34 +3,29 @@ import { ConfigType } from "@nestjs/config";
 import { createWorker, OEM, PSM, Worker as TesseractWorker } from "tesseract.js";
 import { configuration } from "../../config/configuration";
 import { AppError } from "@shared/errors/AppError";
-import { OcrEngineAdapter } from "./ocr-engine.adapter";
+import { OcrEngineAdapter, OcrEngineResult, OcrLine, OcrWord } from "./ocr-engine.adapter";
 
 @Injectable()
 export class TesseractOcrEngineAdapter
   implements OcrEngineAdapter, OnModuleDestroy {
+  readonly name = "tesseract" as const;
   private readonly logger = new Logger(TesseractOcrEngineAdapter.name);
   private worker: TesseractWorker | null = null;
   private is_ready = false;
   private readonly lang: string;
-  private readonly tesseractConfig: Partial<Tesseract.RecognizeOptions>;
 
   constructor(
     @Inject(configuration.KEY)
     private readonly appConfig: ConfigType<typeof configuration>,
   ) {
     this.lang = this.appConfig.ocr.lang;
-    this.tesseractConfig = {
-      // RecognizeOptions like rectangle, etc.
-    };
     this.initialize();
   }
 
   private async initialize(): Promise<void> {
     try {
       this.logger.log(`Initializing Tesseract with lang: ${this.lang}`);
-      this.worker = await createWorker("vie+eng", OEM.DEFAULT, {
-        // logger: (m) => this.logger.debug(m),
-      });
+      this.worker = await createWorker("vie+eng", OEM.DEFAULT, {});
       await this.worker.setParameters({
         preserve_interword_spaces: "1",
         tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
@@ -43,11 +38,9 @@ export class TesseractOcrEngineAdapter
     }
   }
 
-  async recognize(image: Buffer): Promise<any> {
+  async recognize(image: Buffer): Promise<OcrEngineResult> {
     if (!this.is_ready || !this.worker) {
-      this.logger.warn(
-        "Tesseract worker not ready, attempting to re-initialize.",
-      );
+      this.logger.warn("Tesseract worker not ready, attempting to re-initialize.");
       await this.initialize();
       if (!this.is_ready || !this.worker) {
         throw new AppError(
@@ -58,23 +51,45 @@ export class TesseractOcrEngineAdapter
       }
     }
 
+    const t0 = Date.now();
     try {
       this.logger.log("Starting Tesseract recognition...");
-      const {
-        data: { text, confidence, blocks },
-      } = await this.worker.recognize(image, this.tesseractConfig);
+      const { data: { text, confidence, blocks } } = await this.worker.recognize(image);
 
-      const lines = [];
+      // Map Tesseract blocks → paragraphs → lines → words into OcrLine[]
+      const lines: OcrLine[] = [];
       if (blocks) {
         for (const block of blocks) {
           for (const para of block.paragraphs) {
-            lines.push(...para.lines);
+            for (const line of para.lines) {
+              const words: OcrWord[] = (line.words || []).map((w: any) => ({
+                text: w.text,
+                confidence: w.confidence ?? 0,
+                bbox: w.bbox ? { x0: w.bbox.x0, y0: w.bbox.y0, x1: w.bbox.x1, y1: w.bbox.y1 } : undefined,
+              }));
+              lines.push({
+                text: line.text,
+                confidence: line.confidence ?? 0,
+                words,
+                bbox: line.bbox ? { x0: line.bbox.x0, y0: line.bbox.y0, x1: line.bbox.x1, y1: line.bbox.y1 } : undefined,
+              });
+            }
           }
         }
       }
 
-      this.logger.log(`Tesseract recognition finished. Confidence: ${confidence}`);
-      return { text, confidence, lines };
+      const durationMs = Date.now() - t0;
+      this.logger.log(`Tesseract done in ${durationMs}ms, confidence: ${confidence}`);
+
+      return {
+        engine: "tesseract",
+        language: this.lang,
+        rawText: text,
+        lines,
+        confidence: confidence ?? 0,
+        durationMs,
+        warnings: [],
+      };
     } catch (error) {
       this.logger.error("Tesseract recognition failed", error);
       throw new AppError(

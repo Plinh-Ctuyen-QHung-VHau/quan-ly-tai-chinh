@@ -29,7 +29,7 @@ async function selectReceiptImage(source_type: "camera" | "gallery") {
     return ImagePicker.launchCameraAsync({
       mediaTypes: ["images"],
       quality: 0.8,
-      allowsEditing: true,
+      allowsEditing: false,
     });
   }
 
@@ -46,7 +46,7 @@ async function selectReceiptImage(source_type: "camera" | "gallery") {
   return ImagePicker.launchImageLibraryAsync({
     mediaTypes: ["images"],
     quality: 0.8,
-    allowsEditing: true,
+    allowsEditing: false,
   });
 }
 

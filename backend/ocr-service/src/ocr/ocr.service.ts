@@ -6,6 +6,7 @@ import {
   OCR_ENGINE_ADAPTER,
   OcrEngineAdapter,
 } from "./adapters/ocr-engine.adapter";
+import { OcrEngineSelector } from "./adapters/ocr-engine-selector";
 import { ScanOcrDto } from "./dto/ocr.dto";
 import { OcrParser } from "./ocr.parser";
 import { OcrRepository } from "./ocr.repository";
@@ -18,18 +19,29 @@ import { catchError, map } from "rxjs/operators";
 @Injectable()
 export class OcrService {
   private readonly logger = new Logger(OcrService.name);
+  private readonly compareEngines: boolean;
+  private readonly allEngines: OcrEngineAdapter[];
 
   constructor(
     private readonly ocrRepository: OcrRepository,
     private readonly storageReader: StorageReader,
     @Inject(OCR_ENGINE_ADAPTER)
-    private readonly ocrEngine: OcrEngineAdapter,
+    private readonly primaryEngine: OcrEngineAdapter,
+    @Inject("OCR_ENGINES_ALL")
+    allEngines: OcrEngineAdapter[],
+    private readonly engineSelector: OcrEngineSelector,
     private readonly ocrParser: OcrParser,
     private readonly metrics: AppMetrics,
     private readonly imagePreprocessor: ImagePreprocessorService,
     @Inject(configuration.KEY)
     private readonly appConfig: ConfigType<typeof configuration>,
-  ) { }
+  ) {
+    this.compareEngines = process.env.OCR_COMPARE_ENGINES === "true";
+    this.allEngines = allEngines;
+    this.logger.log(
+      `OCR engines: primary=${primaryEngine.name}, compare=${this.compareEngines}, available=[${allEngines.map(e => e.name).join(",")}]`,
+    );
+  }
 
   async scan(user_id: string, scanOcrDto: ScanOcrDto) {
     this.metrics.ocrRequestsTotal.inc();
@@ -43,8 +55,7 @@ export class OcrService {
     );
 
     try {
-      // Wrap the async operation in `from` to convert the Promise to an Observable
-      const ocrPromise = from(this.performOcrWithPreprocessing(image_url));
+      const ocrPromise = from(this.performOcr(image_url));
 
       const timeout$ = timer(this.appConfig.ocr.timeoutMs).pipe(
         map(() => {
@@ -104,58 +115,146 @@ export class OcrService {
     }
   }
 
-  private async performOcrWithPreprocessing(image_url: string) {
-    this.logger.log(`Starting OCR process for image: ${image_url}`);
-    const imageBuffer = await this.storageReader.downloadImage(image_url);
+  private async performOcr(image_url: string) {
+    this.logger.log(`Starting OCR pipeline for: ${image_url}`);
+    const t0 = Date.now();
 
-    const variants = ["standard", "upscale_gray", "adaptive"];
+    // 1. Download image
+    const rawBuffer = await this.storageReader.downloadImage(image_url);
+    this.logger.log(`[perf] Download: ${Date.now() - t0}ms (${(rawBuffer.length / 1024).toFixed(0)} KB)`);
+
+    // 2. Resize if needed
+    const imageBuffer = await this.resizeIfNeeded(rawBuffer, 1600);
+    this.logger.log(`[perf] After resize: ${(imageBuffer.length / 1024).toFixed(0)} KB`);
+
+    // 3. Preprocess (OpenCV) — only for Tesseract path
+    const tPre = Date.now();
+    const processedBuffer = await this.imagePreprocessor.preprocess(imageBuffer, "standard");
+    this.logger.log(`[perf] Preprocess: ${Date.now() - tPre}ms`);
+
+    // 4. Choose engine strategy
+    if (this.compareEngines && this.allEngines.length > 1) {
+      return this.runCompareMode(processedBuffer, image_url, t0);
+    } else {
+      return this.runSingleEngine(processedBuffer, image_url, t0);
+    }
+  }
+
+  /**
+   * Single engine mode: run primary engine with variant fallback.
+   */
+  private async runSingleEngine(imageBuffer: Buffer, image_url: string, t0: number) {
+    const variants = ["standard", "upscale_gray"];
     let bestResult = null;
     let highestScore = -1;
 
     for (const variant of variants) {
       try {
-        const processedBuffer = await this.imagePreprocessor.preprocess(imageBuffer, variant);
-        const ocrResult = await this.ocrEngine.recognize(processedBuffer);
-        const rawText = ocrResult.text;
+        const tVar = Date.now();
+        const buffer = variant === "standard"
+          ? imageBuffer
+          : await this.imagePreprocessor.preprocess(imageBuffer, variant);
+        this.logger.log(`[perf] Preprocess(${variant}): ${Date.now() - tVar}ms`);
 
-        if (!rawText || rawText.trim().length < 5) {
+        const ocrResult = await this.primaryEngine.recognize(buffer);
+        this.logger.log(`[perf] ${this.primaryEngine.name}(${variant}): ${ocrResult.durationMs}ms`);
+
+        if (!ocrResult.rawText || ocrResult.rawText.trim().length < 5) {
+          this.logger.warn(`Variant ${variant}: text too short, skipping`);
           continue;
         }
 
         const parsedResult = this.ocrParser.parse(
-          rawText,
+          ocrResult.rawText,
           ocrResult,
-          this.appConfig.ocr.engine,
+          this.primaryEngine.name,
           this.appConfig.ocr.lang,
         );
 
         parsedResult.parsed_fields_json.preprocessing_variant = variant;
+        parsedResult.parsed_fields_json.selected_ocr_engine = this.primaryEngine.name;
 
         if (parsedResult.confidence_score > highestScore) {
           highestScore = parsedResult.confidence_score;
           bestResult = parsedResult;
         }
 
-        // If we found a very good score, we can short-circuit
-        if (highestScore > 85) {
+        if (highestScore > 55) {
+          this.logger.log(`[perf] Short-circuit at '${variant}' score=${highestScore}`);
           break;
         }
       } catch (err) {
-        this.logger.warn(`OCR Variant ${variant} failed: ${err.message}`);
+        this.logger.warn(`Variant ${variant} failed: ${err.message}`);
       }
     }
+
+    this.logger.log(`[perf] Total OCR pipeline: ${Date.now() - t0}ms`);
 
     if (!bestResult) {
       throw new AppError(
         "OCR_NO_TEXT_DETECTED",
-        "Could not detect sufficient text in the image across all variants.",
+        "Could not detect sufficient text in the image.",
       );
     }
 
-    return {
-      ...bestResult,
-      image_url,
-    };
+    return { ...bestResult, image_url };
+  }
+
+  /**
+   * Compare mode: run all engines, parse each, pick the best by parse quality.
+   */
+  private async runCompareMode(imageBuffer: Buffer, image_url: string, t0: number) {
+    const selectorResult = await this.engineSelector.selectBest(
+      this.allEngines,
+      imageBuffer,
+      this.appConfig.ocr.lang,
+    );
+
+    this.logger.log(`[perf] Total compare pipeline: ${Date.now() - t0}ms`);
+
+    if (!selectorResult) {
+      throw new AppError(
+        "OCR_NO_TEXT_DETECTED",
+        "No engine could detect sufficient text.",
+      );
+    }
+
+    const { best, all } = selectorResult;
+    const parsedResult = best.parsedResult;
+
+    // Enrich parsed_fields_json with comparison data
+    parsedResult.parsed_fields_json.selected_ocr_engine = best.engineResult.engine;
+    parsedResult.parsed_fields_json.ocr_engine_results = all.map(r => ({
+      engine: r.engineResult.engine,
+      confidence: r.engineResult.confidence,
+      parse_score: r.parseScore,
+      raw_text_preview: r.engineResult.rawText.slice(0, 200),
+      duration_ms: r.engineResult.durationMs,
+      warnings: r.engineResult.warnings,
+    }));
+
+    return { ...parsedResult, image_url };
+  }
+
+  /**
+   * Resize image to maxWidth if larger, using sharp.
+   */
+  private async resizeIfNeeded(buffer: Buffer, maxWidth: number): Promise<Buffer> {
+    try {
+      const sharp = require("sharp");
+      const meta = await sharp(buffer).metadata();
+      if (meta.width && meta.width > maxWidth) {
+        this.logger.log(`Resizing from ${meta.width}x${meta.height} → maxWidth=${maxWidth}`);
+        return await sharp(buffer)
+          .resize({ width: maxWidth, withoutEnlargement: true })
+          .jpeg({ quality: 90 })
+          .toBuffer();
+      }
+      return buffer;
+    } catch (err) {
+      this.logger.warn(`Resize skipped: ${err.message}`);
+      return buffer;
+    }
   }
 
   async getResult(id: string, user_id: string) {

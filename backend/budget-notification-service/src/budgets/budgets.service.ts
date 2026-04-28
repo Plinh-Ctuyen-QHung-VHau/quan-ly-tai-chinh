@@ -42,8 +42,8 @@ export class BudgetsService {
 
     const summary = await this.transactionClient.getTransactionSummary(
       user_id,
-      budget.start_date as string,
-      budget.end_date as string,
+      budget.start_date instanceof Date ? budget.start_date.toISOString().split('T')[0] : String(budget.start_date),
+      budget.end_date instanceof Date ? budget.end_date.toISOString().split('T')[0] : String(budget.end_date),
     );
 
     const spent_amount = summary.totalSpent || 0;

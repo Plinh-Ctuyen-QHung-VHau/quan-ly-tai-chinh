@@ -7,7 +7,9 @@ export const configValidationSchema = Joi.object({
   SUPABASE_SERVICE_ROLE_KEY: Joi.string().required(),
   SUPABASE_DB_SCHEMA: Joi.string().default("ocr"),
   SUPABASE_STORAGE_BUCKET: Joi.string().default("receipts"),
-  OCR_ENGINE: Joi.string().valid("tesseract", "mock").default("tesseract"),
+  OCR_ENGINE: Joi.string().valid("tesseract", "paddleocr", "mock").default("tesseract"),
+  OCR_ENGINES: Joi.string().default("tesseract"),
+  OCR_COMPARE_ENGINES: Joi.string().valid("true", "false").default("false"),
   OCR_LANG: Joi.string().default("vie+eng"),
   OCR_TIMEOUT_MS: Joi.number().default(60000),
   OCR_PREPROCESS_ENABLED: Joi.boolean().default(true),
@@ -24,6 +26,8 @@ export const configuration = registerAs("app", () => ({
   },
   ocr: {
     engine: process.env.OCR_ENGINE || "tesseract",
+    engines: process.env.OCR_ENGINES || "tesseract",
+    compareEngines: process.env.OCR_COMPARE_ENGINES === "true",
     lang: process.env.OCR_LANG || "vie+eng",
     timeoutMs: parseInt(process.env.OCR_TIMEOUT_MS, 10) || 60000,
     preprocess: {
