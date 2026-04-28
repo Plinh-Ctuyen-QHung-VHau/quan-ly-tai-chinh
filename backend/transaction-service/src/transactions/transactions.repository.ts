@@ -13,7 +13,7 @@ const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "transaction";
 
 @Injectable()
 export class TransactionsRepository {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   private get supabase() {
     return this.supabaseService.getClient().schema(SCHEMA);
@@ -23,23 +23,24 @@ export class TransactionsRepository {
     const { data, error } = await this.supabase
       .from("transactions")
       .insert({
-        user_id: user_id,
+        user_id,
         type: dto.type,
         amount: dto.amount,
-        category_id: dto.categoryId,
+        category_id: dto.category_id,
         note: dto.note,
-        transaction_date: dto.transactionDate,
+        transaction_date: dto.transaction_date,
         source: dto.source,
-        image_url: dto.imageUrl,
-        merchant_name: dto.merchantName,
-        ocr_result_id: dto.ocrResultId,
-        is_anomaly: dto.isAnomaly,
-        anomaly_score: dto.anomalyScore,
+        image_url: dto.image_url,
+        merchant_name: dto.merchant_name,
+        ocr_result_id: dto.ocr_result_id,
+        isAnomaly: dto.isAnomaly,
+        anomaly_score: dto.anomaly_score,
       })
       .select()
       .single();
 
     if (error) throw new Error(error.message);
+    if (data) data.amount = Number(data.amount);
     return data;
   }
 
@@ -52,20 +53,21 @@ export class TransactionsRepository {
       .maybeSingle();
 
     if (error) throw new Error(error.message);
+    if (data) data.amount = Number(data.amount);
     return data;
   }
 
   async findAll(user_id: string, queryDto: GetTransactionsQueryDto) {
     const {
+      page = 1,
+      limit = 10,
+      sortBy = "transaction_date",
+      sortOrder = "DESC",
       type,
-      categoryId,
+      category_id,
       fromDate,
       toDate,
       keyword,
-      page,
-      limit,
-      sortBy,
-      sortOrder,
     } = queryDto;
 
     // --- Count query ---
@@ -75,7 +77,7 @@ export class TransactionsRepository {
       .eq("user_id", user_id);
 
     if (type) countQuery = countQuery.eq("type", type);
-    if (categoryId) countQuery = countQuery.eq("category_id", categoryId);
+    if (category_id) countQuery = countQuery.eq("category_id", category_id);
     if (fromDate) countQuery = countQuery.gte("transaction_date", fromDate);
     if (toDate) countQuery = countQuery.lte("transaction_date", toDate);
     if (keyword) {
@@ -105,7 +107,7 @@ export class TransactionsRepository {
       .range(offset, offset + limit - 1);
 
     if (type) dataQuery = dataQuery.eq("type", type);
-    if (categoryId) dataQuery = dataQuery.eq("category_id", categoryId);
+    if (category_id) dataQuery = dataQuery.eq("category_id", category_id);
     if (fromDate) dataQuery = dataQuery.gte("transaction_date", fromDate);
     if (toDate) dataQuery = dataQuery.lte("transaction_date", toDate);
     if (keyword) {
@@ -122,6 +124,7 @@ export class TransactionsRepository {
       const { categories, ...rest } = row;
       return {
         ...rest,
+        amount: Number(rest.amount),
         category_name: categories?.name || null,
         category_icon: categories?.icon || null,
       };
@@ -145,12 +148,12 @@ export class TransactionsRepository {
       .update({
         type: dto.type,
         amount: dto.amount,
-        category_id: dto.categoryId,
+        category_id: dto.category_id,
         note: dto.note,
-        transaction_date: dto.transactionDate,
-        merchant_name: dto.merchantName,
-        is_anomaly: dto.isAnomaly,
-        anomaly_score: dto.anomalyScore,
+        transaction_date: dto.transaction_date,
+        merchant_name: dto.merchant_name,
+        isAnomaly: dto.isAnomaly,
+        anomaly_score: dto.anomaly_score,
       })
       .eq("id", id)
       .eq("user_id", user_id)
@@ -158,6 +161,7 @@ export class TransactionsRepository {
       .single();
 
     if (error) throw new Error(error.message);
+    if (data) data.amount = Number(data.amount);
     return data;
   }
 
@@ -202,11 +206,11 @@ export class TransactionsRepository {
       grouped[date].push({
         id: rest.id,
         type: rest.type,
-        amount: rest.amount,
+        amount: Number(rest.amount),
         note: rest.note,
-        merchantName: rest.merchant_name,
-        categoryName: categories?.name || null,
-        categoryIcon: categories?.icon || null,
+        merchant_name: rest.merchant_name,
+        category_name: categories?.name || null,
+        category_icon: categories?.icon || null,
       });
     }
 

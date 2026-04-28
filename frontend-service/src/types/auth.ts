@@ -4,13 +4,13 @@ export interface AuthCredentials {
 }
 
 export interface RegisterPayload extends AuthCredentials {
-  fullName: string;
+  full_name: string;
   confirmPassword: string;
 }
 
 export interface AuthUser {
   id: string;
   email?: string | null;
-  fullName?: string | null;
-  avatarUrl?: string | null;
+  full_name?: string | null;
+  avatar_url?: string | null;
 }

@@ -30,9 +30,8 @@ export class UpdateNotificationSettingsDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-    message: "reminderTime must be in HH:mm format",
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/, {
+    message: "reminder_time must be in HH:mm or HH:mm:ss format",
   })
-  @Expose({ name: "reminder_time" })
-  reminderTime?: string;
+  reminder_time?: string;
 }

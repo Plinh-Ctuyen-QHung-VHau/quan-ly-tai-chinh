@@ -23,11 +23,7 @@
     "web": {
       "bundler": "metro"
     },
-    "extra": {
-      "EXPO_PUBLIC_SUPABASE_URL": "",
-      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "",
-      "EXPO_PUBLIC_API_BASE_URL": ""
-    },
+
     "plugins": [
       "expo-asset",
       "@react-native-community/datetimepicker"

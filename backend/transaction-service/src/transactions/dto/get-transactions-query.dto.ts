@@ -15,7 +15,7 @@ export class GetTransactionsQueryDto extends PaginationQueryDto {
 
   @IsOptional()
   @IsUUID()
-  categoryId?: string;
+  category_id?: string;
 
   @IsOptional()
   @IsDateString()

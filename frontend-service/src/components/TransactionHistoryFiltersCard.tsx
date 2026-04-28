@@ -25,8 +25,8 @@ type RangePreset = "today" | "7days" | "month" | "custom";
 type Props = Readonly<{
   type: TransactionType;
   setType: (type: TransactionType) => void;
-  categoryId: string;
-  setCategoryId: (value: string) => void;
+  category_id: string;
+  setcategory_id: (value: string) => void;
   categories: Category[];
   fromDate: string;
   toDate: string;
@@ -59,8 +59,8 @@ function DateBox({ label, value, active, onPress }: Readonly<{ label: string; va
 export function TransactionHistoryFiltersCard({
   type,
   setType,
-  categoryId,
-  setCategoryId,
+  category_id,
+  setcategory_id,
   categories,
   fromDate,
   toDate,
@@ -85,10 +85,10 @@ export function TransactionHistoryFiltersCard({
       <SectionHeader title="Bộ lọc giao dịch" subtitle="Chọn điều kiện để xem đúng dữ liệu cần tìm" />
 
       <Text style={styles.label}>Loại giao dịch</Text>
-      <SegmentedChips options={transactionTypeOptions} value={type} onChange={(nextType) => { setType(nextType as TransactionType); setCategoryId(""); onSetPage(1); }} />
+      <SegmentedChips options={transactionTypeOptions} value={type} onChange={(nextType) => { setType(nextType as TransactionType); setcategory_id(""); onSetPage(1); }} />
 
       <Text style={styles.label}>Danh mục</Text>
-      <CategoryPicker items={categories} selectedId={categoryId} onSelect={setCategoryId} />
+      <CategoryPicker items={categories} selectedId={category_id} onSelect={setcategory_id} />
 
       <View style={styles.rangeHeader}>
         <Text style={styles.label}>Khoảng thời gian</Text>

@@ -18,12 +18,18 @@ import { AppMetrics } from "../metrics/app.metrics";
 const ocrEngineFactory = {
   provide: OCR_ENGINE_ADAPTER,
   useFactory: (configService: ConfigService): OcrEngineAdapter => {
-    const engine = configService.get<string>("ocr.engine");
+    // NOTE: configuration is registered under namespace "app",
+    // so ocr.engine lives at "app.ocr.engine", not "ocr.engine"
+    const engine = configService.get<string>("app.ocr.engine");
+    console.log(`[OcrModule] OCR engine selected: "${engine}"`);
     if (engine === "tesseract") {
       const appConfig =
         configService.get<ConfigType<typeof configuration>>("app");
       return new TesseractOcrEngineAdapter(appConfig);
     }
+    console.warn(
+      `[OcrModule] engine="${engine}" is not "tesseract" — falling back to MockOcrEngineAdapter`,
+    );
     return new MockOcrEngineAdapter();
   },
   inject: [ConfigService],
@@ -41,4 +47,6 @@ const ocrEngineFactory = {
     ImagePreprocessorService,
   ],
 })
-export class OcrModule {}
+export class OcrModule { }
+
+

@@ -72,14 +72,14 @@ export async function uploadReceiptImage(uri: string, user_id: string) {
     .from("receipts")
     .getPublicUrl(data.path);
 
-  const imageUrl = publicUrlData.publicUrl;
+  const image_url = publicUrlData.publicUrl;
 
-  if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
+  if (!image_url.startsWith("http://") && !image_url.startsWith("https://")) {
     throw new Error("Không lấy được URL ảnh hợp lệ.");
   }
 
   console.log("[UPLOAD] uploaded path:", data.path);
-  console.log("[UPLOAD] imageUrl:", imageUrl);
+  console.log("[UPLOAD] image_url:", image_url);
 
-  return imageUrl;
+  return image_url;
 }

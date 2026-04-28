@@ -20,8 +20,8 @@ import { StatTile, SmallMetric } from "../../components/MetricTiles";
 import { COLORS, shadow } from "../../constants/ui";
 
 const EMPTY_SUMMARY: TransactionSummary = {
-  total_income: 0,
-  total_expense: 0,
+  totalIncome: 0,
+  totalExpense: 0,
   balance: 0,
 };
 
@@ -79,7 +79,7 @@ export function HomeScreen() {
     } else if (summaryResult.status === "rejected") {
       const summaryError = summaryResult.reason as { statusCode?: number } | undefined;
       if (summaryError?.statusCode === 404) {
-      setSummary(EMPTY_SUMMARY);
+        setSummary(EMPTY_SUMMARY);
       }
     }
 
@@ -105,25 +105,25 @@ export function HomeScreen() {
     void loadData();
   }, [loadData]);
 
-  const income = Number(summary.total_income ?? 0);
-  const expense = Number(summary.total_expense ?? 0);
+  const income = Number(summary.totalIncome ?? 0);
+  const expense = Number(summary.totalExpense ?? 0);
   const balance = Number(summary.balance ?? 0);
   const netCashFlow = income - expense;
 
   const hasBudget = Boolean(budgetStatus && budgetStatus.status !== "no-budget");
 
-  const budgetAmount = Number(budgetStatus?.budget_amount ?? 0);
-  const spentAmount = Number(budgetStatus?.spent_amount ?? 0);
-  const remainingAmount = Number(
-    budgetStatus?.remaining_amount ?? Math.max(0, budgetAmount - spentAmount),
+  const budget_amount = Number(budgetStatus?.budget_amount ?? 0);
+  const spent_amount = Number(budgetStatus?.spent_amount ?? 0);
+  const remaining_amount = Number(
+    budgetStatus?.remaining_amount ?? Math.max(0, budget_amount - spent_amount),
   );
 
   const budgetTheme = getBudgetTheme(budgetStatus?.status);
 
   const budgetPercent = useMemo(() => {
-    if (!hasBudget || budgetAmount <= 0) return 0;
-    return clampPercent((spentAmount / budgetAmount) * 100);
-  }, [budgetAmount, hasBudget, spentAmount]);
+    if (!hasBudget || budget_amount <= 0) return 0;
+    return clampPercent((spent_amount / budget_amount) * 100);
+  }, [budget_amount, hasBudget, spent_amount]);
 
   if (loading) return <LoadingView label="Đang tải tổng quan..." />;
 
@@ -278,21 +278,21 @@ export function HomeScreen() {
             <View style={styles.budgetMetricRow}>
               <SmallMetric
                 label="Ngân sách"
-                value={budgetAmount}
+                value={budget_amount}
                 color={COLORS.blue}
                 bg={COLORS.blueLight}
               />
 
               <SmallMetric
                 label="Đã chi"
-                value={spentAmount}
+                value={spent_amount}
                 color={COLORS.expense}
                 bg={COLORS.expenseSoft}
               />
 
               <SmallMetric
                 label="Còn lại"
-                value={remainingAmount}
+                value={remaining_amount}
                 color={COLORS.income}
                 bg={COLORS.incomeSoft}
               />

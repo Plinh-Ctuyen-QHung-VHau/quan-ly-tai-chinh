@@ -1,6 +1,6 @@
 import { apiClient } from "./apiClient";
 import { handleApiResponse } from "../utils/responseHandler";
-import { OcrResult, OcrScanRequest } from "../types/ocr";
+import { OcrResult, OcrResultRaw, OcrScanRequest } from "../types/ocr";
 import { endpoints } from "./endpoints";
 
 function parseJsonMaybe(value: unknown) {
@@ -16,32 +16,27 @@ function parseJsonMaybe(value: unknown) {
   return null;
 }
 
-function normalizeOcrResult(raw: any): OcrResult {
-  const data = raw?.data ?? raw;
-  const parsed = parseJsonMaybe(
-    data.parsedFieldsJson ?? data.parsed_fields_json,
-  );
+function normalizeOcrResult(raw: OcrResultRaw): OcrResult {
+  const parsed = parseJsonMaybe(raw.parsed_fields_json);
 
   return {
-    id: data.id,
-    requestId: data.requestId ?? data.request_id,
-    extractedText:
-      data.extractedText ?? data.extracted_text ?? parsed?.rawText ?? null,
-    suggestedAmount: data.suggestedAmount ?? data.suggested_amount ?? null,
-    suggestedDate: data.suggestedDate ?? data.suggested_date ?? null,
-    suggestedType: data.suggestedType ?? data.suggested_type ?? null,
-    suggestedCategoryId:
-      data.suggestedCategoryId ?? data.suggested_category_id ?? null,
-    merchantName: data.merchantName ?? data.merchant_name ?? null,
-    imageUrl: data.imageUrl ?? data.image_url ?? null,
-    parsedFieldsJson: parsed,
+    id: raw.id,
+    request_id: raw.request_id ?? raw.ocrrequest_id,
+    extracted_text: raw.extracted_text ?? parsed?.rawText ?? null,
+    suggested_amount:
+      raw.suggested_amount != null ? Number(raw.suggested_amount) : null,
+    suggested_date: raw.suggested_date ?? null,
+    suggested_type: raw.suggested_type ?? null,
+    suggestedcategory_id: raw.suggested_category_id ?? null,
+    merchant_name: raw.merchant_name ?? null,
+    image_url: raw.image_url ?? raw.image_url ?? null,
+    parsed_fields_json: parsed,
   };
 }
 
 export async function scanReceipt(payload: OcrScanRequest) {
   const response = await apiClient.post(endpoints.ocr.scan, payload);
-  // The handleApiResponse is likely just checking for success, we get the actual data
-  const handled = handleApiResponse<OcrResult>(response);
-  // Normalize the result before returning
+  const handled = handleApiResponse<OcrResultRaw>(response);
   return normalizeOcrResult(handled);
 }
+

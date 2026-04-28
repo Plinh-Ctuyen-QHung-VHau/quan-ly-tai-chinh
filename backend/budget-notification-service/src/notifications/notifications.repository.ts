@@ -40,7 +40,7 @@ export interface NotificationSettings {
 
 @Injectable()
 export class NotificationsRepository {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   private get supabase() {
     return this.supabaseService.getClient().schema(SCHEMA);
@@ -81,7 +81,7 @@ export class NotificationsRepository {
       limit = 10,
       sortBy = "created_at",
       sortOrder = "DESC",
-      isRead,
+      is_read,
     } = findDto;
     const offset = (page - 1) * limit;
 
@@ -91,8 +91,8 @@ export class NotificationsRepository {
       .select("*", { count: "exact", head: true })
       .eq("user_id", user_id);
 
-    if (isRead !== undefined) {
-      countQuery = countQuery.eq("is_read", isRead);
+    if (is_read !== undefined) {
+      countQuery = countQuery.eq("is_read", is_read);
     }
 
     const { count: total, error: countError } = await countQuery;
@@ -106,8 +106,8 @@ export class NotificationsRepository {
       .order(sortBy, { ascending: sortOrder === "ASC" })
       .range(offset, offset + limit - 1);
 
-    if (isRead !== undefined) {
-      dataQuery = dataQuery.eq("is_read", isRead);
+    if (is_read !== undefined) {
+      dataQuery = dataQuery.eq("is_read", is_read);
     }
 
     const { data, error: dataError } = await dataQuery;
@@ -175,7 +175,7 @@ export class NotificationsRepository {
       enable_budget_alert,
       enable_anomaly_alert,
       enable_daily_reminder,
-      reminderTime,
+      reminder_time,
     } = settings;
 
     const { data, error } = await this.supabase
@@ -187,8 +187,7 @@ export class NotificationsRepository {
           enable_budget_alert: enable_budget_alert,
           enable_anomaly_alert: enable_anomaly_alert,
           enable_daily_reminder: enable_daily_reminder,
-          reminder_time: reminderTime,
-          updated_at: new Date(),
+          reminder_time: reminder_time,
         },
         { onConflict: "user_id" },
       )

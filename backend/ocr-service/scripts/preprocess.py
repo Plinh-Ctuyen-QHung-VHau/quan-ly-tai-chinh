@@ -14,12 +14,22 @@ def preprocess_image(input_path, output_path):
     h, w = img.shape[:2]
     original_dims = f"{w}x{h}"
 
+    variant = "standard"
+    if len(sys.argv) >= 4:
+        variant = sys.argv[3]
+
     # 1. Resize image if necessary
     target_width = w
-    if w > 2200:
-        target_width = 2200
-    elif w < 1200:
-        target_width = 1600
+    if variant == "upscale_gray":
+        if w < 1200:
+            target_width = w * 2 # upscale 2x
+        elif w < 2200:
+            target_width = int(w * 1.5)
+    else:
+        if w > 2200:
+            target_width = 2200
+        elif w < 1200:
+            target_width = 1600
 
     if target_width != w:
         scale = target_width / w
@@ -28,27 +38,37 @@ def preprocess_image(input_path, output_path):
     # 2. Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # 3. Denoise lightly
-    # The h parameter (10) is the main knob to tune.
-    denoised = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
-
-    # 4. Increase contrast with CLAHE
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    contrast = clahe.apply(denoised)
-
-    # 5. Apply adaptive thresholding
-    binary = cv2.adaptiveThreshold(
-        contrast,
-        255,
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY,
-        31,  # Block size - needs to be odd
-        11,  # C - constant subtracted from the mean
-    )
-
-    # 6. Sharpen the image (optional, can sometimes introduce noise)
-    kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
-    final_image = cv2.filter2D(binary, -1, kernel)
+    if variant == "upscale_gray":
+        # Just simple denoise and contrast, no threshold
+        denoised = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        final_image = clahe.apply(denoised)
+    elif variant == "adaptive":
+        # No denoising, just adaptive thresholding
+        binary = cv2.adaptiveThreshold(
+            gray,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY,
+            31,  
+            11,  
+        )
+        final_image = binary
+    else:
+        # standard
+        denoised = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        contrast = clahe.apply(denoised)
+        binary = cv2.adaptiveThreshold(
+            contrast,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY,
+            31,  
+            11,  
+        )
+        kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+        final_image = cv2.filter2D(binary, -1, kernel)
 
     # 7. Save the processed image
     ok = cv2.imwrite(output_path, final_image)
@@ -58,11 +78,11 @@ def preprocess_image(input_path, output_path):
 
     final_h, final_w = final_image.shape[:2]
     final_dims = f"{final_w}x{final_h}"
-    print(f"OpenCV preprocess OK: {original_dims} -> {final_dims}")
+    print(f"OpenCV preprocess OK: {original_dims} -> {final_dims} (variant: {variant})")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python3 preprocess.py <input_path> <output_path>", file=sys.stderr)
+    if len(sys.argv) < 3:
+        print("Usage: python3 preprocess.py <input_path> <output_path> [variant]", file=sys.stderr)
         sys.exit(1)
 
     input_path = sys.argv[1]

@@ -1,27 +1,16 @@
 import { IsString, IsOptional, IsUrl, IsIn, IsNotEmpty } from "class-validator";
-import { Expose } from "class-transformer";
 
 export class UpdateProfileDto {
   @IsString()
   @IsNotEmpty()
   @IsOptional()
-  @Expose({ name: "full_name" })
-  fullName?: string;
+  full_name?: string;
 
   @IsUrl()
   @IsOptional()
-  @Expose({ name: "avatar_url" })
-  avatarUrl?: string;
+  avatar_url?: string;
 
-  @IsString()
-  @IsOptional()
-  @Expose({ name: "username" })
-  username?: string;
-
-  @IsString()
-  @IsOptional()
-  @Expose({ name: "website" })
-  website?: string;
+  // NOTE: username, website do NOT exist in identity.profiles schema — removed
 }
 
 export class UpdateUserSettingsDto {
@@ -37,7 +26,5 @@ export class UpdateUserSettingsDto {
   @IsOptional()
   theme?: "light" | "dark";
 
-  @IsString()
-  @IsOptional()
-  currency?: string;
+  // NOTE: currency does NOT exist in identity.user_settings schema — removed
 }

@@ -4,19 +4,19 @@ import { Session, User } from "@supabase/supabase-js";
 interface AuthState {
   session: Session | null;
   user: User | null;
-  isReady: boolean;
+  is_ready: boolean;
   setSession: (session: Session | null) => void;
-  setReady: (isReady: boolean) => void;
+  setReady: (is_ready: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()((set) => ({
   session: null,
   user: null,
-  isReady: false,
+  is_ready: false,
   setSession: (session: Session | null) =>
     set({
       session,
       user: session?.user ?? null,
     }),
-  setReady: (isReady: boolean) => set({ isReady }),
+  setReady: (is_ready: boolean) => set({ is_ready }),
 }));

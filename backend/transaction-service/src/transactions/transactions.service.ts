@@ -40,19 +40,19 @@ export class TransactionsService {
 
   async create(user_id: string, dto: CreateTransactionDto) {
     const category = await this.categoriesRepository.findById(
-      dto.categoryId,
+      dto.category_id,
       user_id,
     );
     if (!category) {
       throw new AppError("Category not found", ERROR_CODES.VALIDATION_ERROR, {
-        field: "categoryId",
+        field: "category_id",
       });
     }
     if (category.type !== dto.type) {
       throw new AppError(
         `Category type "${category.type}" does not match transaction type "${dto.type}"`,
         ERROR_CODES.VALIDATION_ERROR,
-        { field: "categoryId" },
+        { field: "category_id" },
       );
     }
 
@@ -90,14 +90,14 @@ export class TransactionsService {
       throw new AppError("Transaction not found", ERROR_CODES.NOT_FOUND);
     }
 
-    if (dto.categoryId) {
+    if (dto.category_id) {
       const category = await this.categoriesRepository.findById(
-        dto.categoryId,
+        dto.category_id,
         user_id,
       );
       if (!category) {
         throw new AppError("Category not found", ERROR_CODES.VALIDATION_ERROR, {
-          field: "categoryId",
+          field: "category_id",
         });
       }
       const transactionType = dto.type || existingTransaction.type;
@@ -105,7 +105,7 @@ export class TransactionsService {
         throw new AppError(
           `Category type "${category.type}" does not match transaction type "${transactionType}"`,
           ERROR_CODES.VALIDATION_ERROR,
-          { field: "categoryId" },
+          { field: "category_id" },
         );
       }
     }

@@ -25,7 +25,7 @@ export class ImagePreprocessorService {
     }
   }
 
-  async preprocess(inputBuffer: Buffer): Promise<Buffer> {
+  async preprocess(inputBuffer: Buffer, variant: string = "standard"): Promise<Buffer> {
     if (!this.isEnabled) {
       this.logger.log("Skipping OpenCV preprocessing (disabled).");
       return inputBuffer;
@@ -39,10 +39,10 @@ export class ImagePreprocessorService {
       this.logger.log(`Writing temporary input file to ${inputPath}`);
       await fs.writeFile(inputPath, inputBuffer);
 
-      this.logger.log(`Executing OpenCV script: ${this.scriptPath}`);
+      this.logger.log(`Executing OpenCV script: ${this.scriptPath} with variant: ${variant}`);
       const { stdout, stderr } = await execFileAsync(
         "python3",
-        [this.scriptPath, inputPath, outputPath],
+        [this.scriptPath, inputPath, outputPath, variant],
         { timeout: 20000 }, // 20 seconds timeout
       );
 

@@ -14,12 +14,12 @@ export function RegisterScreen({
   navigation,
 }: Readonly<NativeStackScreenProps<AuthStackParamList, "Register">>) {
   const setSession = useAuthStore((state) => state.setSession);
-  const [fullName, setFullName] = useState("");
+  const [full_name, setfull_name] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [fullNameError, setFullNameError] = useState("");
+  const [full_nameError, setfull_nameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
@@ -27,16 +27,16 @@ export function RegisterScreen({
 
   const handleRegister = async () => {
     setError("");
-    setFullNameError("");
+    setfull_nameError("");
     setEmailError("");
     setPasswordError("");
     setConfirmPasswordError("");
 
-    const normalizedFullName = fullName.trim();
+    const normalizedfull_name = full_name.trim();
     const normalizedEmail = email.trim();
 
-    if (!normalizedFullName) {
-      setFullNameError("Vui lòng nhập họ và tên.");
+    if (!normalizedfull_name) {
+      setfull_nameError("Vui lòng nhập họ và tên.");
       return;
     }
 
@@ -58,7 +58,7 @@ export function RegisterScreen({
     setLoading(true);
     try {
       const result = await signUp({
-        fullName: normalizedFullName,
+        full_name: normalizedfull_name,
         email: normalizedEmail,
         password,
         confirmPassword,
@@ -99,13 +99,13 @@ export function RegisterScreen({
       <AppCard style={styles.card}>
         <AppInput
           label="Họ và tên"
-          value={fullName}
+          value={full_name}
           onChangeText={(value) => {
-            setFullName(value);
-            if (fullNameError) setFullNameError("");
+            setfull_name(value);
+            if (full_nameError) setfull_nameError("");
           }}
           placeholder="Nguyễn Văn A"
-          error={fullNameError}
+          error={full_nameError}
         />
         <AppInput
           label="Email"

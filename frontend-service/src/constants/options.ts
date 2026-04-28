@@ -5,12 +5,12 @@ export const transactionTypeOptions = [
   { label: "Thu nhập", value: "income" },
 ] as const;
 
-export const budgetPeriodOptions = [
+export const budget_periodOptions = [
   { label: "Theo tuần", value: "weekly" },
   { label: "Theo tháng", value: "monthly" },
 ] as const;
 
-export const sourceTypeOptions = [
+export const source_typeOptions = [
   { label: "Camera", value: "camera" },
   { label: "Thư viện ảnh", value: "gallery" },
 ] as const;

@@ -16,7 +16,7 @@ export class BudgetsService {
     private readonly notificationsService: NotificationsService,
     private readonly eventPublisher: EventPublisher,
     private readonly metrics: AppMetrics,
-  ) {}
+  ) { }
 
   async create(user_id: string, createBudgetDto: CreateBudgetDto) {
     const budget = await this.budgetsRepository.create(
@@ -42,22 +42,22 @@ export class BudgetsService {
 
     const summary = await this.transactionClient.getTransactionSummary(
       user_id,
-      budget.start_date.toISOString(),
-      budget.end_date.toISOString(),
+      budget.start_date as string,
+      budget.end_date as string,
     );
 
-    const spentAmount = summary.totalSpent || 0;
+    const spent_amount = summary.totalSpent || 0;
     const budget_amount = budget.budget_amount;
-    const remainingAmount = budget_amount - spentAmount;
-    const percentUsed =
-      budget_amount > 0 ? (spentAmount / budget_amount) * 100 : 0;
+    const remaining_amount = budget_amount - spent_amount;
+    const percent_used =
+      budget_amount > 0 ? (spent_amount / budget_amount) * 100 : 0;
 
     const status = {
-      budgetId: budget.id,
+      budget_id: budget.id,
       budget_amount,
-      spentAmount,
-      remainingAmount,
-      percentUsed,
+      spent_amount: spent_amount,
+      remaining_amount: remaining_amount,
+      percent_used: Math.round(percent_used * 100) / 100,
       status: budget.status,
       start_date: budget.start_date,
       end_date: budget.end_date,
@@ -93,11 +93,11 @@ export class BudgetsService {
 
   private async checkBudgetThresholds(budget, status) {
     // 100% threshold
-    if (status.percentUsed >= 100 && !budget.alert100Sent) {
+    if (status.percent_used >= 100 && !budget.alert_100_sent) {
       await this.notificationsService.createBudgetAlert(
         budget.user_id,
         budget,
-        status.spentAmount,
+        status.spent_amount,
         100,
       );
       await this.budgetsRepository.updateAlertSent(budget.id, "100");
@@ -110,11 +110,11 @@ export class BudgetsService {
       this.metrics.budgetThresholdReachedTotal.inc({ threshold: "100" });
     }
     // 80% threshold
-    else if (status.percentUsed >= 80 && !budget.alert80Sent) {
+    else if (status.percent_used >= 80 && !budget.alert_80_sent) {
       await this.notificationsService.createBudgetAlert(
         budget.user_id,
         budget,
-        status.spentAmount,
+        status.spent_amount,
         80,
       );
       await this.budgetsRepository.updateAlertSent(budget.id, "80");

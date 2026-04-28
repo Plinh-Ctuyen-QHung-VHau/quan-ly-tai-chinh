@@ -4,6 +4,8 @@ import { Category } from "../types/category";
 import { endpoints } from "./endpoints";
 import {
   Transaction,
+  CreateTransactionPayload,
+  UpdateTransactionPayload,
   TransactionFilters,
   TransactionListResponse,
   TransactionSummary,
@@ -26,14 +28,14 @@ export async function getTransactionById(id: string) {
   return handleApiResponse<Transaction>(response);
 }
 
-export async function createTransaction(payload: Partial<Transaction>) {
+export async function createTransaction(payload: CreateTransactionPayload) {
   const response = await apiClient.post(endpoints.transactions.create, payload);
   return handleApiResponse<Transaction>(response);
 }
 
 export async function updateTransaction(
   id: string,
-  payload: Partial<Transaction>,
+  payload: UpdateTransactionPayload,
 ) {
   const response = await apiClient.put(
     endpoints.transactions.update(id),

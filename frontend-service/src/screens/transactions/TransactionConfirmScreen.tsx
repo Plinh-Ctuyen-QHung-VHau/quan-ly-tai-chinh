@@ -36,7 +36,7 @@ function formatDisplayDate(value: string) {
 }
 
 function getParsedFields(draftOcr: OcrResult | null) {
-  const parsed = draftOcr?.parsedFieldsJson ?? draftOcr?.parsed_fields_json;
+  const parsed = draftOcr?.parsed_fields_json ?? draftOcr?.parsed_fields_json;
   if (!parsed) return {};
   if (typeof parsed === "string") {
     try {
@@ -69,7 +69,7 @@ function pickDraftValue<T>(...values: Array<T | null | undefined>) {
   return undefined;
 }
 
-function getValidImageUrl(value?: string | null) {
+function getValidimage_url(value?: string | null) {
   return value && (value.startsWith("http://") || value.startsWith("https://")) ? value : undefined;
 }
 
@@ -77,7 +77,7 @@ function isCategorySelected(items: Category[], id: string) {
   return items.some((item) => item.id === id);
 }
 
-function resolveCategoryId(items: Category[], currentId: string, preferredId: string) {
+function resolvecategory_id(items: Category[], currentId: string, preferredId: string) {
   if (isCategorySelected(items, currentId)) return currentId;
   if (isCategorySelected(items, preferredId)) return preferredId;
   return items[0]?.id ?? "";
@@ -97,42 +97,32 @@ export function TransactionConfirmScreen() {
 
   const draftOcr = useTransactionStore((state) => state.draftOcrResult);
   const draftReceiptPath = useTransactionStore((state) => state.draftReceiptPath);
-  const draftSourceType = useTransactionStore((state) => state.draftSourceType);
+  const draftsource_type = useTransactionStore((state) => state.draftsource_type);
   const clearDraft = useTransactionStore((state) => state.clearDraft);
 
   // State initialization
   const parsedFields = getParsedFields(draftOcr);
 
   const initialAmount =
-    draftOcr?.suggestedAmount ??
     draftOcr?.suggested_amount ??
-    parsedFields?.suggestedAmount ??
     parsedFields?.suggested_amount ??
-    draftOcr?.total_amount ??
     "";
 
   const rawInitialType =
-    draftOcr?.suggestedType ??
     draftOcr?.suggested_type ??
-    parsedFields?.suggestedType ??
     parsedFields?.suggested_type ??
     "expense";
 
   const initialType: TransactionType = isTransactionType(rawInitialType) ? rawInitialType : "expense";
 
   const initialDate =
-    draftOcr?.suggestedDate ??
     draftOcr?.suggested_date ??
-    parsedFields?.suggestedDate ??
     parsedFields?.suggested_date ??
-    draftOcr?.transaction_date ??
     null;
 
-  const initialCategoryId =
-    draftOcr?.suggestedCategoryId ??
-    draftOcr?.suggested_category_id ??
-    parsedFields?.suggestedCategoryId ??
-    parsedFields?.suggested_category_id ??
+  const initialcategory_id =
+    draftOcr?.suggestedcategory_id ??
+    parsedFields?.suggestedcategory_id ??
     "";
 
   const suggestedCategoryText =
@@ -140,10 +130,10 @@ export function TransactionConfirmScreen() {
 
   const [amount, setAmount] = useState(toAmountString(initialAmount));
   const [type, setType] = useState<TransactionType>(initialType);
-  const [transactionDate, setTransactionDate] = useState(toDateInput(initialDate));
-  const [categoryId, setCategoryId] = useState(initialCategoryId ?? "");
-  const [merchantName, setMerchantName] = useState(
-    draftOcr?.merchantName ?? draftOcr?.merchant_name ?? parsedFields?.merchantName ?? parsedFields?.merchant_name ?? "",
+  const [transaction_date, settransaction_date] = useState(toDateInput(initialDate));
+  const [category_id, setcategory_id] = useState(initialcategory_id ?? "");
+  const [merchant_name, setmerchant_name] = useState(
+    draftOcr?.merchant_name ?? parsedFields?.merchant_name ?? "",
   );
   const [note, setNote] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
@@ -169,11 +159,11 @@ export function TransactionConfirmScreen() {
         // Prefer suggested category text if it matches
         const found = findCategoryByText(safeList, suggestedCategoryText);
         if (found) {
-          setCategoryId(found.id);
+          setcategory_id(found.id);
           return;
         }
 
-        setCategoryId((prev) => resolveCategoryId(safeList, prev, initialCategoryId));
+        setcategory_id((prev) => resolvecategory_id(safeList, prev, initialcategory_id));
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : "Không thể tải danh mục.");
       } finally {
@@ -186,15 +176,15 @@ export function TransactionConfirmScreen() {
     return () => {
       active = false;
     };
-  }, [type, initialCategoryId, suggestedCategoryText]);
+  }, [type, initialcategory_id, suggestedCategoryText]);
 
   const safeCategories = Array.isArray(categories) ? categories : [];
 
-  const previewImage = useMemo(() => draftOcr?.imageUrl ?? draftOcr?.image_url ?? draftReceiptPath ?? "", [draftOcr?.imageUrl, draftOcr?.image_url, draftReceiptPath]);
+  const previewImage = useMemo(() => draftOcr?.image_url ?? draftReceiptPath ?? "", [draftOcr?.image_url, draftReceiptPath]);
 
-  const validImageUrl = useMemo(() => (getValidImageUrl(previewImage) ? previewImage : undefined), [previewImage]);
+  const validimage_url = useMemo(() => (getValidimage_url(previewImage) ? previewImage : undefined), [previewImage]);
 
-  const dateHint = useMemo(() => `Định dạng: năm-tháng-ngày · ${formatDisplayDate(transactionDate)}`, [transactionDate]);
+  const dateHint = useMemo(() => `Định dạng: năm-tháng-ngày · ${formatDisplayDate(transaction_date)}`, [transaction_date]);
 
   const handleSave = async () => {
     setError("");
@@ -204,17 +194,17 @@ export function TransactionConfirmScreen() {
       return;
     }
 
-    if (!categoryId) {
+    if (!category_id) {
       setError("Vui lòng chọn danh mục.");
       return;
     }
 
-    if (!transactionDate) {
+    if (!transaction_date) {
       setError("Vui lòng chọn ngày giao dịch.");
       return;
     }
 
-    if (!draftSourceType) {
+    if (!draftsource_type) {
       setError("Thiếu nguồn ảnh giao dịch.");
       Alert.alert("Lỗi", "Thiếu nguồn ảnh giao dịch (camera/gallery).");
       return;
@@ -226,12 +216,12 @@ export function TransactionConfirmScreen() {
       await createTransaction({
         amount: Number(amount),
         type,
-        categoryId,
+        category_id,
         note: note.trim() || undefined,
-        transactionDate,
-        merchantName: merchantName.trim() || undefined,
-        imageUrl: validImageUrl,
-        source: draftSourceType,
+        transaction_date,
+        merchant_name: merchant_name.trim() || undefined,
+        image_url: validimage_url,
+        source: draftsource_type,
       });
 
       clearDraft();
@@ -266,23 +256,23 @@ export function TransactionConfirmScreen() {
 
         <View style={styles.typeRow}>
           {transactionTypeOptions.map((option) => (
-            <AppButton key={option.value} title={option.label} variant={type === option.value ? "primary" : "secondary"} onPress={() => { setType(option.value); setCategoryId(""); }} style={styles.typeButton} />
+            <AppButton key={option.value} title={option.label} variant={type === option.value ? "primary" : "secondary"} onPress={() => { setType(option.value); setcategory_id(""); }} style={styles.typeButton} />
           ))}
         </View>
 
         <AppInput label="Số tiền" value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="0" error={amount && !isPositiveAmount(amount) ? "Vui lòng nhập số tiền lớn hơn 0." : undefined} />
 
-        <AppInput label="Ngày giao dịch" value={transactionDate} onChangeText={setTransactionDate} placeholder="YYYY-MM-DD" helperText={dateHint} />
+        <AppInput label="Ngày giao dịch" value={transaction_date} onChangeText={settransaction_date} placeholder="YYYY-MM-DD" helperText={dateHint} />
 
         <View style={styles.inlineActions}>
-          <AppButton title="Hôm nay" variant="ghost" onPress={() => setTransactionDate(new Date().toISOString().slice(0, 10))} style={styles.inlineButton} />
+          <AppButton title="Hôm nay" variant="ghost" onPress={() => settransaction_date(new Date().toISOString().slice(0, 10))} style={styles.inlineButton} />
         </View>
 
-        <AppInput label="Cửa hàng / Người nhận" value={merchantName} onChangeText={setMerchantName} placeholder="VD: Coopmart, Grab, Shopee..." />
+        <AppInput label="Cửa hàng / Người nhận" value={merchant_name} onChangeText={setmerchant_name} placeholder="VD: Coopmart, Grab, Shopee..." />
 
         <Text style={styles.label}>Danh mục</Text>
 
-        <CategoryPicker items={safeCategories} selectedId={categoryId} onSelect={setCategoryId} loading={loading} />
+        <CategoryPicker items={safeCategories} selectedId={category_id} onSelect={setcategory_id} loading={loading} />
 
         <AppInput label="Ghi chú" value={note} onChangeText={setNote} placeholder="Ghi chú thêm nếu cần" multiline />
 

@@ -1,13 +1,13 @@
 import { apiClient } from "./apiClient";
 import { handleApiResponse } from "../utils/responseHandler";
-import { Budget, BudgetPeriod, BudgetStatus } from "../types/budget";
+import { Budget, budget_period, BudgetStatus } from "../types/budget";
 import { endpoints } from "./endpoints";
 
 export type CreateBudgetPayload = {
   budget_amount: number;
-  budget_period: BudgetPeriod;
+  budget_period: budget_period;
   start_date: string;
-  end_date?: string;
+  end_date: string; // NOT NULL in DB — required
 };
 
 export type UpdateBudgetPayload = Partial<CreateBudgetPayload>;

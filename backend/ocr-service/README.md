@@ -15,7 +15,7 @@ This service is responsible for processing receipt images using Optical Characte
 ## API Endpoints
 
 - `POST /ocr/scan`: Initiates an OCR scan for a given image.
-  - Body: `{ "imageUrl": "..." }` or `{ "storagePath": "..." }`
+  - Body: `{ "image_url": "..." }` or `{ "storagePath": "..." }`
 - `GET /ocr/result/:id`: Retrieves the result of a completed OCR scan.
 - `POST /ocr/retry/:id`: Retries a failed OCR scan request.
 - `GET /health`: Health check endpoint.

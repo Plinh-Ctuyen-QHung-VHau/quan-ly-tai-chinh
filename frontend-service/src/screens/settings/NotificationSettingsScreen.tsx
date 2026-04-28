@@ -23,8 +23,6 @@ import { NotificationSettings } from "../../types/notification";
 const defaultSettings: NotificationSettings = {
   enable_all: true,
   enable_budget_alert: true,
-  alert_80_sent: false,
-  alert_100_sent: false,
   enable_anomaly_alert: true,
   enable_daily_reminder: false,
   reminder_time: "08:00",

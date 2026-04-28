@@ -58,22 +58,22 @@ export function BudgetScreen() {
     budgetStatus && budgetStatus.status !== "no-budget",
   );
 
-  const budgetAmount = Number(budgetStatus?.budget_amount ?? 0);
-  const spentAmount = Number(budgetStatus?.spent_amount ?? 0);
-  const remainingAmount = Number(
-    budgetStatus?.remaining_amount ?? Math.max(0, budgetAmount - spentAmount),
+  const budget_amount = Number(budgetStatus?.budget_amount ?? 0);
+  const spent_amount = Number(budgetStatus?.spent_amount ?? 0);
+  const remaining_amount = Number(
+    budgetStatus?.remaining_amount ?? Math.max(0, budget_amount - spent_amount),
   );
 
   const budgetPercent = useMemo(() => {
-    if (!hasBudget || budgetAmount <= 0) return 0;
+    if (!hasBudget || budget_amount <= 0) return 0;
 
     const percent =
       typeof budgetStatus?.percent_used === "number"
         ? budgetStatus.percent_used
-        : (spentAmount / budgetAmount) * 100;
+        : (spent_amount / budget_amount) * 100;
 
     return clampPercent(percent);
-  }, [budgetAmount, budgetStatus?.percent_used, hasBudget, spentAmount]);
+  }, [budget_amount, budgetStatus?.percent_used, hasBudget, spent_amount]);
 
   if (loading) {
     return <LoadingView label="Đang tải ngân sách..." />;
@@ -130,7 +130,7 @@ export function BudgetScreen() {
               <View style={styles.moneyBox}>
                 <Text style={styles.moneyLabel}>Ngân sách</Text>
                 <Text style={styles.moneyValue} numberOfLines={1}>
-                  {formatCurrency(budgetAmount)}
+                  {formatCurrency(budget_amount)}
                 </Text>
               </View>
 
@@ -140,7 +140,7 @@ export function BudgetScreen() {
                   style={[styles.moneyValue, styles.expense]}
                   numberOfLines={1}
                 >
-                  {formatCurrency(spentAmount)}
+                  {formatCurrency(spent_amount)}
                 </Text>
               </View>
             </View>
@@ -148,7 +148,7 @@ export function BudgetScreen() {
             <View style={styles.moneyBoxWide}>
               <Text style={styles.moneyLabel}>Còn lại</Text>
               <Text style={[styles.moneyValue, styles.income]} numberOfLines={1}>
-                {formatCurrency(remainingAmount)}
+                {formatCurrency(remaining_amount)}
               </Text>
             </View>
 

@@ -10,8 +10,8 @@ import { SectionHeader } from "../../components/SectionHeader";
 import { getMyProfile, updateMyProfile } from "../../services/identityApi";
 import { UserProfile } from "../../types/user";
 
-function getInitials(name: string, username: string) {
-  const text = name.trim() || username.trim() || "U";
+function getInitials(name: string) {
+  const text = name.trim() || "U";
 
   return text
     .split(" ")
@@ -23,10 +23,8 @@ function getInitials(name: string, username: string) {
 
 export function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [fullName, setFullName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [username, setUsername] = useState("");
-  const [website, setWebsite] = useState("");
+  const [full_name, setfull_name] = useState("");
+  const [avatar_url, setavatar_url] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -39,10 +37,8 @@ export function ProfileScreen() {
       const result = await getMyProfile();
 
       setProfile(result);
-      setFullName(result.full_name ?? "");
-      setAvatarUrl(result.avatar_url ?? "");
-      setUsername(result.username ?? "");
-      setWebsite(result.website ?? "");
+      setfull_name(result.full_name ?? "");
+      setavatar_url(result.avatar_url ?? "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải hồ sơ.");
     } finally {
@@ -62,10 +58,8 @@ export function ProfileScreen() {
 
     try {
       const result = await updateMyProfile({
-        full_name: fullName.trim(),
-        avatar_url: avatarUrl.trim() || undefined,
-        username: username.trim() || undefined,
-        website: website.trim() || undefined,
+        full_name: full_name.trim(),
+        avatar_url: avatar_url.trim() || undefined,
       });
 
       setProfile(result);
@@ -91,22 +85,18 @@ export function ProfileScreen() {
       <AppCard style={styles.profileCard}>
         <View style={styles.profileRow}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitials(fullName, username)}</Text>
+            <Text style={styles.avatarText}>{getInitials(full_name)}</Text>
           </View>
 
           <View style={styles.profileInfo}>
             <Text style={styles.name} numberOfLines={1}>
-              {fullName || "Người dùng"}
-            </Text>
-
-            <Text style={styles.username} numberOfLines={1}>
-              {username ? `@${username}` : "Chưa có tên người dùng"}
+              {full_name || "Người dùng"}
             </Text>
           </View>
         </View>
 
         {profile ? (
-          <Text style={styles.userId} numberOfLines={1}>
+          <Text style={styles.user_id} numberOfLines={1}>
             Mã người dùng: {profile.id}
           </Text>
         ) : null}
@@ -122,31 +112,15 @@ export function ProfileScreen() {
 
         <AppInput
           label="Họ và tên"
-          value={fullName}
-          onChangeText={setFullName}
+          value={full_name}
+          onChangeText={setfull_name}
           placeholder="VD: Nguyễn Văn A"
         />
 
         <AppInput
-          label="Tên người dùng"
-          value={username}
-          onChangeText={setUsername}
-          placeholder="VD: quangtran"
-          autoCapitalize="none"
-        />
-
-        <AppInput
           label="Ảnh đại diện"
-          value={avatarUrl}
-          onChangeText={setAvatarUrl}
-          placeholder="https://..."
-          autoCapitalize="none"
-        />
-
-        <AppInput
-          label="Website"
-          value={website}
-          onChangeText={setWebsite}
+          value={avatar_url}
+          onChangeText={setavatar_url}
           placeholder="https://..."
           autoCapitalize="none"
         />
@@ -223,7 +197,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  userId: {
+  user_id: {
     marginTop: 14,
     padding: 12,
     borderRadius: 16,

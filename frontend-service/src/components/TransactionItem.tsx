@@ -28,7 +28,7 @@ export function TransactionItem({
       <View style={styles.row}>
         <View style={styles.content}>
           <Text style={styles.category}>
-            {transaction.categoryName ?? "Danh mục"}
+            {transaction.category_name ?? "Danh mục"}
           </Text>
           <Text style={styles.meta}>
             {formatDate(transaction.transaction_date)}

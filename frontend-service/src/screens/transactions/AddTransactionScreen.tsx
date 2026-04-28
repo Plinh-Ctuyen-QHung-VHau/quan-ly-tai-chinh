@@ -17,8 +17,8 @@ function isNumericOverflowError(message: string) {
   return message.toLowerCase().includes("numeric field overflow");
 }
 
-async function selectReceiptImage(sourceType: "camera" | "gallery") {
-  if (sourceType === "camera") {
+async function selectReceiptImage(source_type: "camera" | "gallery") {
+  if (source_type === "camera") {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
 
     if (!permission.granted) {
@@ -52,17 +52,17 @@ async function selectReceiptImage(sourceType: "camera" | "gallery") {
 
 async function processReceiptImage(params: {
   imageUri: string;
-  userId: string;
-  sourceType: "camera" | "gallery";
+  user_id: string;
+  source_type: "camera" | "gallery";
 }) {
-  const imageUrl = await uploadReceiptImage(params.imageUri, params.userId);
+  const image_url = await uploadReceiptImage(params.imageUri, params.user_id);
 
-  const validImageUrl =
-    imageUrl && (imageUrl.startsWith("http://") || imageUrl.startsWith("https://"))
-      ? imageUrl
+  const validimage_url =
+    image_url && (image_url.startsWith("http://") || image_url.startsWith("https://"))
+      ? image_url
       : null;
 
-  if (!validImageUrl) {
+  if (!validimage_url) {
     throw new Error("Ảnh tải lên không hợp lệ.");
   }
 
@@ -70,8 +70,8 @@ async function processReceiptImage(params: {
 
   try {
     ocrResult = await scanReceipt({
-      sourceType: params.sourceType,
-      imageUrl: validImageUrl,
+      source_type: params.source_type,
+      image_url: validimage_url,
     });
   } catch (error) {
     const normalized = normalizeAxiosError(error);
@@ -89,7 +89,7 @@ async function processReceiptImage(params: {
     }
   }
 
-  return { imageUrl: validImageUrl, ocrResult };
+  return { image_url: validimage_url, ocrResult };
 }
 
 export function AddTransactionScreen() {
@@ -104,15 +104,15 @@ export function AddTransactionScreen() {
     (state) => state.setDraftOcrResult,
   );
 
-  const setDraftSourceType = useTransactionStore(
-    (state) => state.setDraftSourceType,
+  const setDraftsource_type = useTransactionStore(
+    (state) => state.setDraftsource_type,
   );
 
   const [loadingSource, setLoadingSource] = useState<
     "camera" | "gallery" | null
   >(null);
 
-  const pickImage = async (sourceType: "camera" | "gallery") => {
+  const pickImage = async (source_type: "camera" | "gallery") => {
     if (loadingSource !== null) {
       return;
     }
@@ -123,9 +123,9 @@ export function AddTransactionScreen() {
     }
 
     try {
-      setLoadingSource(sourceType);
+      setLoadingSource(source_type);
 
-      const result = await selectReceiptImage(sourceType);
+      const result = await selectReceiptImage(source_type);
 
       if (!result) {
         return;
@@ -135,15 +135,15 @@ export function AddTransactionScreen() {
         return;
       }
 
-      const { imageUrl, ocrResult } = await processReceiptImage({
+      const { image_url, ocrResult } = await processReceiptImage({
         imageUri: result.assets[0].uri,
-        userId: user.id,
-        sourceType,
+        user_id: user.id,
+        source_type,
       });
 
-      setDraftReceiptPath(imageUrl);
+      setDraftReceiptPath(image_url);
       setDraftOcrResult(ocrResult);
-      setDraftSourceType(sourceType);
+      setDraftsource_type(source_type);
 
       navigation.navigate("TransactionConfirm");
     } catch (error) {

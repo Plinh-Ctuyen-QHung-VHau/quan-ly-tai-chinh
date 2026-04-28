@@ -24,12 +24,12 @@ import {
 } from "../../services/budgetApi";
 import { COLORS, shadow } from "../../constants/ui";
 import { useBudgetStore } from "../../store/budgetStore";
-import { Budget, BudgetPeriod } from "../../types/budget";
-import { isPositiveAmount, validateBudgetPeriod } from "../../utils/validators";
+import { Budget, budget_period } from "../../types/budget";
+import { isPositiveAmount, validatebudget_period } from "../../utils/validators";
 
 type DateField = "start" | "end";
 
-const PERIODS: { label: string; value: BudgetPeriod }[] = [
+const PERIODS: { label: string; value: budget_period }[] = [
   { label: "Theo tuần", value: "weekly" },
   { label: "Theo tháng", value: "monthly" },
 ];
@@ -86,11 +86,11 @@ function formatVND(value: string | number) {
   }).format(number);
 }
 
-function getPeriodLabel(period: BudgetPeriod) {
+function getPeriodLabel(period: budget_period) {
   return period === "weekly" ? "Theo tuần" : "Theo tháng";
 }
 
-function getPeriodDescription(period: BudgetPeriod) {
+function getPeriodDescription(period: budget_period) {
   return period === "weekly"
     ? "Chu kỳ tuần: nên đặt từ đầu tuần đến cuối tuần để dễ theo dõi."
     : "Chu kỳ tháng: tự động từ ngày đầu đến cuối tháng.";
@@ -141,24 +141,24 @@ export function BudgetFormScreen() {
   const mode = (route.params?.mode ?? "create") as "create" | "edit";
   const budget = route.params?.budget as Budget | undefined;
 
-  const [budget_amount, setBudgetAmount] = useState(
+  const [budget_amount, setbudget_amount] = useState(
     String(budget?.budget_amount ?? ""),
   );
-  const [budgetPeriod, setBudgetPeriod] = useState<BudgetPeriod>(
+  const [budget_period, setbudget_period] = useState<budget_period>(
     budget?.budget_period ?? "monthly",
   );
-  const [start_date, setStartDate] = useState(
+  const [start_date, setstart_date] = useState(
     normalizeDate(budget?.start_date) || startOfMonth(),
   );
-  const [end_date, setEndDate] = useState(
+  const [end_date, setend_date] = useState(
     normalizeDate(budget?.end_date) || endOfMonth(),
   );
   const [showIosPicker, setShowIosPicker] = useState<DateField | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const periodLabel = getPeriodLabel(budgetPeriod);
-  const periodDescription = getPeriodDescription(budgetPeriod);
+  const periodLabel = getPeriodLabel(budget_period);
+  const periodDescription = getPeriodDescription(budget_period);
 
   const dayCount = useMemo(() => {
     if (!start_date || !end_date) return 0;
@@ -178,20 +178,20 @@ export function BudgetFormScreen() {
 
   const setDateValue = (field: DateField, date: Date) => {
     const value = formatDate(date);
-    field === "start" ? setStartDate(value) : setEndDate(value);
+    field === "start" ? setstart_date(value) : setend_date(value);
   };
 
-  const applyPeriod = (period: BudgetPeriod) => {
-    setBudgetPeriod(period);
+  const applyPeriod = (period: budget_period) => {
+    setbudget_period(period);
 
     if (period === "weekly") {
-      setStartDate(startOfWeek());
-      setEndDate(endOfWeek());
+      setstart_date(startOfWeek());
+      setend_date(endOfWeek());
       return;
     }
 
-    setStartDate(startOfMonth());
-    setEndDate(endOfMonth());
+    setstart_date(startOfMonth());
+    setend_date(endOfMonth());
   };
 
   const openDatePicker = (field: DateField) => {
@@ -229,7 +229,7 @@ export function BudgetFormScreen() {
   const validateForm = () => {
     if (!budget_amount.trim()) return "Vui lòng nhập số tiền ngân sách.";
     if (!isPositiveAmount(budget_amount)) return "Số tiền ngân sách phải lớn hơn 0.";
-    if (!validateBudgetPeriod(budgetPeriod)) return "Vui lòng chọn chu kỳ ngân sách.";
+    if (!validatebudget_period(budget_period)) return "Vui lòng chọn chu kỳ ngân sách.";
     if (!start_date.trim()) return "Vui lòng chọn ngày bắt đầu.";
     if (!end_date.trim()) return "Vui lòng chọn ngày kết thúc.";
     if (parseDate(end_date) < parseDate(start_date)) {
@@ -250,7 +250,7 @@ export function BudgetFormScreen() {
     try {
       const payload = {
         budget_amount: Number(budget_amount),
-        budget_period: budgetPeriod,
+        budget_period: budget_period,
         start_date,
         end_date: end_date || undefined,
       };
@@ -332,7 +332,7 @@ export function BudgetFormScreen() {
           <AppInput
             label=""
             value={budget_amount}
-            onChangeText={setBudgetAmount}
+            onChangeText={setbudget_amount}
             keyboardType="numeric"
             placeholder="VD: 5000000"
           />
@@ -346,7 +346,7 @@ export function BudgetFormScreen() {
 
         <View style={styles.segment}>
           {PERIODS.map((item) => {
-            const active = budgetPeriod === item.value;
+            const active = budget_period === item.value;
 
             return (
               <Pressable
@@ -367,9 +367,9 @@ export function BudgetFormScreen() {
         <View style={styles.dateHeader}>
           <Text style={styles.label}>Khoảng thời gian</Text>
 
-          <Pressable onPress={() => applyPeriod(budgetPeriod)}>
+          <Pressable onPress={() => applyPeriod(budget_period)}>
             <Text style={styles.quickText}>
-              {budgetPeriod === "weekly" ? "Tuần này" : "Tháng này"}
+              {budget_period === "weekly" ? "Tuần này" : "Tháng này"}
             </Text>
           </Pressable>
         </View>

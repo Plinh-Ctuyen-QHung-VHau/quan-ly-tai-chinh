@@ -27,8 +27,8 @@ export type RootStackParamList = {
   MainTabs: undefined;
   AddTransaction: undefined;
   TransactionConfirm: undefined;
-  TransactionDetail: { transactionId: string };
-  TransactionEdit: { transactionId: string };
+  TransactionDetail: { transaction_id: string };
+  TransactionEdit: { transaction_id: string };
   BudgetForm: { mode?: "create" | "edit"; budgetId?: string } | undefined;
   Profile: undefined;
   NotificationSettings: undefined;
@@ -40,7 +40,7 @@ export function AppNavigator() {
   const session = useAuthStore((state) => state.session);
   const setSession = useAuthStore((state) => state.setSession);
   const setReady = useAuthStore((state) => state.setReady);
-  const isReady = useAuthStore((state) => state.isReady);
+  const is_ready = useAuthStore((state) => state.is_ready);
   const [bootstrapped, setBootstrapped] = useState(false);
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export function AppNavigator() {
 
   const isAuthenticated = Boolean(session?.access_token);
 
-  if (!bootstrapped || !isReady) {
+  if (!bootstrapped || !is_ready) {
     return <LoadingView label="Khởi tạo phiên đăng nhập..." />;
   }
 

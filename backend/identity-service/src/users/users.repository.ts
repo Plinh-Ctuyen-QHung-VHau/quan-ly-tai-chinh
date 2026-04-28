@@ -8,7 +8,7 @@ const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "identity";
 
 @Injectable()
 export class UsersRepository {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   private get supabase() {
     return this.supabaseService.getClient().schema(SCHEMA);
@@ -17,9 +17,7 @@ export class UsersRepository {
   async findProfileById(user_id: string) {
     const { data, error } = await this.supabase
       .from("profiles")
-      .select(
-        "id, full_name, avatar_url, username, website, created_at, updated_at",
-      )
+      .select("id, full_name, avatar_url, created_at, updated_at")
       .eq("id", user_id)
       .maybeSingle();
 
@@ -33,11 +31,8 @@ export class UsersRepository {
     const { data, error } = await this.supabase
       .from("profiles")
       .update({
-        full_name: dto.fullName,
-        avatar_url: dto.avatarUrl,
-        username: dto.username,
-        website: dto.website,
-        updated_at: new Date(),
+        full_name: dto.full_name,
+        avatar_url: dto.avatar_url,
       })
       .eq("id", user_id)
       .select()
@@ -52,9 +47,7 @@ export class UsersRepository {
   async findSettingsByuser_id(user_id: string) {
     const { data, error } = await this.supabase
       .from("user_settings")
-      .select(
-        "id, user_id, timezone, language, theme, currency, created_at, updated_at",
-      )
+      .select("id, user_id, timezone, language, theme, created_at, updated_at")
       .eq("user_id", user_id)
       .maybeSingle();
 
@@ -74,8 +67,6 @@ export class UsersRepository {
         timezone: dto.timezone,
         language: dto.language,
         theme: dto.theme,
-        currency: dto.currency,
-        updated_at: new Date(),
       })
       .eq("user_id", user_id)
       .select()
@@ -92,10 +83,6 @@ export class UsersRepository {
       .from("user_settings")
       .insert({
         user_id: user_id,
-        timezone: "UTC",
-        language: "vi",
-        theme: "light",
-        currency: "VND",
       })
       .select()
       .single();

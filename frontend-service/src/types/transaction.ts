@@ -1,32 +1,54 @@
 import { TransactionType } from "./category";
 
 export type TransactionSource = "camera" | "gallery" | "ocr";
+
+/** Shape nhận từ API (snake_case — Supabase trả nguyên bản) */
 export interface Transaction {
   id: string;
+  user_id?: string;
   amount: number;
   type: TransactionType;
   category_id: string;
-  categoryName?: string | null;
+  category_name?: string | null;
+  category_icon?: string | null;
+
   note?: string | null;
   transaction_date: string;
   merchant_name?: string | null;
   image_url?: string | null;
-  is_anomaly?: boolean;
+  isAnomaly?: boolean;
+  anomaly_score?: number | null;
+  ocr_result_id?: string | null;
+  source?: TransactionSource | null;
   created_at?: string;
   updated_at?: string;
-  source?: TransactionSource | null;
 }
 
+/** Payload gửi lên backend (camelCase → DTO) */
+export interface CreateTransactionPayload {
+  amount: number;
+  type: TransactionType;
+  category_id: string;
+  transaction_date: string;
+  source: TransactionSource;
+  note?: string;
+  image_url?: string;
+  merchant_name?: string;
+  ocr_result_id?: string;
+}
+
+export type UpdateTransactionPayload = Partial<CreateTransactionPayload>;
+
+/** Backend trả camelCase từ JS object (bukan Supabase raw) */
 export interface TransactionSummary {
-  total_income: number;
-  total_expense: number;
+  totalIncome: number;
+  totalExpense: number;
   balance: number;
-  currency?: string;
 }
 
 export interface TransactionFilters {
   type?: TransactionType;
-  categoryId?: string;
+  category_id?: string;
   fromDate?: string;
   toDate?: string;
   page?: number;
@@ -34,17 +56,6 @@ export interface TransactionFilters {
 }
 
 export interface TransactionListResponse {
-  items: Transaction[];
+  data: Transaction[];
   meta: import("./api").PaginatedMeta | null;
-}
-
-export interface TransactionDraft {
-  amount: number;
-  type: TransactionType;
-  category_id: string;
-  note?: string;
-  transaction_date: string;
-  merchant_name?: string;
-  image_url?: string;
-  source: TransactionSource;
 }

@@ -85,9 +85,9 @@ function getTypeLabel(type: TransactionType) {
   return type === "income" ? "Thu nhập" : "Chi tiêu";
 }
 
-async function loadHistoryCategories(type: TransactionType, categoryId: string) {
+async function loadHistoryCategories(type: TransactionType, category_id: string) {
   if (type !== "income" && type !== "expense") {
-    return { safeList: [], nextCategoryId: "" };
+    return { safeList: [], nextcategory_id: "" };
   }
 
   const data = await getCategories(type);
@@ -95,8 +95,8 @@ async function loadHistoryCategories(type: TransactionType, categoryId: string) 
 
   return {
     safeList,
-    nextCategoryId: safeList.some((item) => item.id === categoryId)
-      ? categoryId
+    nextcategory_id: safeList.some((item) => item.id === category_id)
+      ? category_id
       : "",
   };
 }
@@ -180,7 +180,7 @@ export function TransactionHistoryScreen() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState("10");
   const [type, setType] = useState<TransactionType>("expense");
-  const [categoryId, setCategoryId] = useState("");
+  const [category_id, setcategory_id] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [totalPages, setTotalPages] = useState(1);
@@ -208,21 +208,21 @@ export function TransactionHistoryScreen() {
 
   const loadCategories = useCallback(async () => {
     try {
-      const { safeList, nextCategoryId } = await loadHistoryCategories(
+      const { safeList, nextcategory_id } = await loadHistoryCategories(
         type,
-        categoryId,
+        category_id,
       );
 
       setCategories(safeList);
 
-      if (nextCategoryId !== categoryId) {
-        setCategoryId(nextCategoryId);
+      if (nextcategory_id !== category_id) {
+        setcategory_id(nextcategory_id);
       }
     } catch (error) {
       console.log("Load categories error:", error);
       setCategories([]);
     }
-  }, [categoryId, type]);
+  }, [category_id, type]);
 
   const loadTransactions = useCallback(async () => {
     setLoading(true);
@@ -233,14 +233,14 @@ export function TransactionHistoryScreen() {
         page,
         limit: Number(limit) || 10,
         type,
-        categoryId: categoryId || undefined,
+        category_id: category_id || undefined,
         fromDate: fromDate || undefined,
         toDate: toDate || undefined,
       };
 
       const result = await getTransactions(filters);
 
-      setTransactions(Array.isArray(result.items) ? result.items : []);
+      setTransactions(Array.isArray(result.data) ? result.data : []);
       setTotalPages(Math.max(1, result.meta?.totalPages ?? 1));
     } catch (err) {
       setError(
@@ -249,7 +249,7 @@ export function TransactionHistoryScreen() {
     } finally {
       setLoading(false);
     }
-  }, [categoryId, fromDate, limit, page, toDate, type]);
+  }, [category_id, fromDate, limit, page, toDate, type]);
 
   useFocusEffect(
     useCallback(() => {
@@ -304,7 +304,7 @@ export function TransactionHistoryScreen() {
 
   const clearFilters = () => {
     setType("expense");
-    setCategoryId("");
+    setcategory_id("");
     setFromDate("");
     setToDate("");
     setLimit("10");
@@ -356,8 +356,8 @@ export function TransactionHistoryScreen() {
       <TransactionHistoryFiltersCard
         type={type}
         setType={setType}
-        categoryId={categoryId}
-        setCategoryId={setCategoryId}
+        category_id={category_id}
+        setcategory_id={setcategory_id}
         categories={safeCategories}
         fromDate={fromDate}
         toDate={toDate}
@@ -413,7 +413,7 @@ export function TransactionHistoryScreen() {
             transaction={transaction}
             onPress={() =>
               navigation.navigate("TransactionDetail", {
-                transactionId: transaction.id,
+                transaction_id: transaction.id,
               })
             }
           />

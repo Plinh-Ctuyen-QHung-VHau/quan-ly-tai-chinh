@@ -19,7 +19,6 @@ export enum TransactionType {
 export enum TransactionSource {
   CAMERA = "camera",
   GALLERY = "gallery",
-  OCR = "ocr",
 }
 
 export class CreateTransactionDto {
@@ -31,44 +30,37 @@ export class CreateTransactionDto {
   amount: number;
 
   @IsUUID()
-  @Expose({ name: "category_id" })
-  categoryId: string;
+  category_id: string;
 
   @IsOptional()
   @IsString()
   note?: string;
 
   @IsDateString()
-  @Expose({ name: "transaction_date" })
-  transactionDate: string;
+  transaction_date: string;
 
   @IsEnum(TransactionSource)
   source: TransactionSource;
 
   @IsOptional()
   @IsUrl()
-  @Expose({ name: "image_url" })
-  imageUrl?: string;
+  image_url?: string;
 
   @IsOptional()
   @IsString()
-  @Expose({ name: "merchant_name" })
-  merchantName?: string;
+  merchant_name?: string;
 
   @IsOptional()
   @IsUUID()
-  @Expose({ name: "ocr_result_id" })
-  ocrResultId?: string;
+  ocr_result_id?: string;
 
   @IsOptional()
   @IsBoolean()
-  @Expose({ name: "is_anomaly" })
   isAnomaly?: boolean;
 
   @IsOptional()
   @IsNumber()
-  @Expose({ name: "anomaly_score" })
-  anomalyScore?: number;
+  anomaly_score?: number;
 }
 
 export class UpdateTransactionDto {
@@ -83,8 +75,7 @@ export class UpdateTransactionDto {
 
   @IsOptional()
   @IsUUID()
-  @Expose({ name: "category_id" })
-  categoryId?: string;
+  category_id?: string;
 
   @IsOptional()
   @IsString()
@@ -92,21 +83,17 @@ export class UpdateTransactionDto {
 
   @IsOptional()
   @IsDateString()
-  @Expose({ name: "transaction_date" })
-  transactionDate?: string;
+  transaction_date?: string;
 
   @IsOptional()
   @IsString()
-  @Expose({ name: "merchant_name" })
-  merchantName?: string;
+  merchant_name?: string;
 
   @IsOptional()
   @IsBoolean()
-  @Expose({ name: "is_anomaly" })
   isAnomaly?: boolean;
 
   @IsOptional()
   @IsNumber()
-  @Expose({ name: "anomaly_score" })
-  anomalyScore?: number;
+  anomaly_score?: number;
 }

@@ -13,11 +13,11 @@ export class NotificationsService {
   constructor(
     private readonly notificationsRepository: NotificationsRepository,
     private readonly metrics: AppMetrics,
-  ) {}
+  ) { }
 
   async createBudgetAlert(
     user_id: string,
-    budget: { budget_amount: number; budgetPeriod: "weekly" | "monthly" },
+    budget: { budget_amount: number; budget_period: "weekly" | "monthly" },
     spent: number,
     threshold: 80 | 100,
   ) {
@@ -27,7 +27,7 @@ export class NotificationsService {
     }
 
     const title = `Budget Alert: ${threshold}% Threshold Reached`;
-    const content = `You have spent ${spent} of your ${budget.budgetPeriod} budget of ${budget.budget_amount}. That's over ${threshold}%!`;
+    const content = `You have spent ${spent} of your ${budget.budget_period} budget of ${budget.budget_amount}. That's over ${threshold}%!`;
 
     const notification = await this.notificationsRepository.create({
       user_id,

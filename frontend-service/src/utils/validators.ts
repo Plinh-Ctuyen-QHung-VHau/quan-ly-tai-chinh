@@ -1,4 +1,4 @@
-import { BudgetPeriod } from "../types/budget";
+import { budget_period } from "../types/budget";
 
 export function isEmail(value: string) {
   return /^\S+@\S+\.\S+$/.test(value.trim());
@@ -13,7 +13,7 @@ export function isPositiveAmount(value: string | number) {
   return isFinite(parsed) && parsed > 0;
 }
 
-export function validateBudgetPeriod(value: string): value is BudgetPeriod {
+export function validatebudget_period(value: string): value is budget_period {
   return value === "weekly" || value === "monthly";
 }
 

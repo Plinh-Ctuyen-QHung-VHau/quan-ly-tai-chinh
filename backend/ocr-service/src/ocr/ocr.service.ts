@@ -29,13 +29,13 @@ export class OcrService {
     private readonly imagePreprocessor: ImagePreprocessorService,
     @Inject(configuration.KEY)
     private readonly appConfig: ConfigType<typeof configuration>,
-  ) {}
+  ) { }
 
   async scan(user_id: string, scanOcrDto: ScanOcrDto) {
     this.metrics.ocrRequestsTotal.inc();
     const startTime = Date.now();
 
-    const { imageUrl, sourceType } = scanOcrDto;
+    const { image_url, source_type } = scanOcrDto;
 
     const ocrRequest = await this.ocrRepository.createRequest(
       user_id,
@@ -44,7 +44,7 @@ export class OcrService {
 
     try {
       // Wrap the async operation in `from` to convert the Promise to an Observable
-      const ocrPromise = from(this.performOcrWithPreprocessing(imageUrl));
+      const ocrPromise = from(this.performOcrWithPreprocessing(image_url));
 
       const timeout$ = timer(this.appConfig.ocr.timeoutMs).pipe(
         map(() => {
@@ -72,9 +72,9 @@ export class OcrService {
       this.metrics.ocrProcessingDurationSeconds.observe(duration);
 
       return {
-        ocrRequestId: finalResult.request_id,
-        ocrResultId: finalResult.id,
-        imageUrl,
+        ocrrequest_id: finalResult.request_id,
+        ocr_result_id: finalResult.id,
+        image_url,
         ...finalResult,
       };
     } catch (error) {
@@ -104,34 +104,57 @@ export class OcrService {
     }
   }
 
-  private async performOcrWithPreprocessing(imageUrl: string) {
-    this.logger.log(`Starting OCR process for image: ${imageUrl}`);
-    // FIX: Use the correct method 'downloadImage' instead of 'getImageBuffer'
-    const imageBuffer = await this.storageReader.downloadImage(imageUrl);
+  private async performOcrWithPreprocessing(image_url: string) {
+    this.logger.log(`Starting OCR process for image: ${image_url}`);
+    const imageBuffer = await this.storageReader.downloadImage(image_url);
 
-    // Preprocess the image buffer using OpenCV
-    const processedBuffer =
-      await this.imagePreprocessor.preprocess(imageBuffer);
+    const variants = ["standard", "upscale_gray", "adaptive"];
+    let bestResult = null;
+    let highestScore = -1;
 
-    // The ocrEngine.recognize method returns the raw text string.
-    const rawText = await this.ocrEngine.recognize(processedBuffer);
+    for (const variant of variants) {
+      try {
+        const processedBuffer = await this.imagePreprocessor.preprocess(imageBuffer, variant);
+        const ocrResult = await this.ocrEngine.recognize(processedBuffer);
+        const rawText = ocrResult.text;
 
-    if (!rawText || rawText.trim().length < 5) {
+        if (!rawText || rawText.trim().length < 5) {
+          continue;
+        }
+
+        const parsedResult = this.ocrParser.parse(
+          rawText,
+          ocrResult,
+          this.appConfig.ocr.engine,
+          this.appConfig.ocr.lang,
+        );
+
+        parsedResult.parsed_fields_json.preprocessing_variant = variant;
+
+        if (parsedResult.confidence_score > highestScore) {
+          highestScore = parsedResult.confidence_score;
+          bestResult = parsedResult;
+        }
+
+        // If we found a very good score, we can short-circuit
+        if (highestScore > 85) {
+          break;
+        }
+      } catch (err) {
+        this.logger.warn(`OCR Variant ${variant} failed: ${err.message}`);
+      }
+    }
+
+    if (!bestResult) {
       throw new AppError(
         "OCR_NO_TEXT_DETECTED",
-        "Could not detect sufficient text in the image.",
+        "Could not detect sufficient text in the image across all variants.",
       );
     }
 
-    const parsedResult = this.ocrParser.parse(
-      rawText,
-      this.appConfig.ocr.engine,
-      this.appConfig.ocr.lang,
-    );
-
     return {
-      ...parsedResult,
-      imageUrl,
+      ...bestResult,
+      image_url,
     };
   }
 
@@ -153,8 +176,8 @@ export class OcrService {
     }
 
     return this.scan(user_id, {
-      imageUrl: originalRequest.image_url,
-      sourceType: originalRequest.source_type,
+      image_url: originalRequest.image_url,
+      source_type: originalRequest.source_type,
     });
   }
 }

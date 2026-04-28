@@ -11,18 +11,18 @@ export interface Budget {
   user_id: string;
   budget_amount: number;
   budget_period: "weekly" | "monthly";
-  start_date: Date;
-  end_date: Date;
+  start_date: string; // DB type: date → Supabase returns "YYYY-MM-DD" string
+  end_date: string;   // DB type: date → Supabase returns "YYYY-MM-DD" string
   status: "active" | "completed" | "exceeded" | "deleted";
   alert_80_sent: boolean;
   alert_100_sent: boolean;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string; // timestamptz → ISO string
+  updated_at: string;
 }
 
 @Injectable()
 export class BudgetsRepository {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   private get supabase() {
     return this.supabaseService.getClient().schema(SCHEMA);
@@ -32,16 +32,16 @@ export class BudgetsRepository {
     user_id: string,
     createBudgetDto: CreateBudgetDto,
   ): Promise<Budget> {
-    const { budget_amount, budgetPeriod, start_date, end_date } =
+    const { budget_amount, budget_period, start_date, end_date } =
       createBudgetDto;
     const { data, error } = await this.supabase
       .from("budgets")
       .insert({
         user_id: user_id,
-        budget_amount: budget_amount,
-        budget_period: budgetPeriod,
-        start_date: start_date,
-        end_date: end_date,
+        budget_amount,
+        budget_period,
+        start_date,
+        end_date,
       })
       .select()
       .single();
@@ -64,14 +64,14 @@ export class BudgetsRepository {
   }
 
   async findCurrentActive(user_id: string): Promise<Budget | null> {
-    const now = new Date().toISOString();
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD" for date comparison
     const { data, error } = await this.supabase
       .from("budgets")
       .select("*")
       .eq("user_id", user_id)
       .eq("status", "active")
-      .lte("start_date", now)
-      .gte("end_date", now)
+      .lte("start_date", today)
+      .gte("end_date", today)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -89,7 +89,7 @@ export class BudgetsRepository {
       .from("budgets")
       .update({
         budget_amount: updateBudgetDto.budget_amount,
-        budget_period: updateBudgetDto.budgetPeriod,
+        budget_period: updateBudgetDto.budget_period,
         start_date: updateBudgetDto.start_date,
         end_date: updateBudgetDto.end_date,
       })
@@ -106,7 +106,7 @@ export class BudgetsRepository {
   async softDelete(id: string, user_id: string): Promise<boolean> {
     const { error, count } = await this.supabase
       .from("budgets")
-      .update({ status: "deleted" })
+      .update({ status: "deleted" }, { count: "exact" })
       .eq("id", id)
       .eq("user_id", user_id);
 

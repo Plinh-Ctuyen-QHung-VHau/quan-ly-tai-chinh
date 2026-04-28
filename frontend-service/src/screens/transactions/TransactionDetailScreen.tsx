@@ -20,7 +20,7 @@ import { formatDate } from "../../utils/formatDate";
 export function TransactionDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const transactionId = route.params?.transactionId as string;
+  const transaction_id = route.params?.transaction_id as string;
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -28,12 +28,12 @@ export function TransactionDetailScreen() {
   const loadTransaction = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getTransactionById(transactionId);
+      const result = await getTransactionById(transaction_id);
       setTransaction(result);
     } finally {
       setLoading(false);
     }
-  }, [transactionId]);
+  }, [transaction_id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -50,7 +50,7 @@ export function TransactionDetailScreen() {
         onPress: async () => {
           setDeleting(true);
           try {
-            await deleteTransaction(transactionId);
+            await deleteTransaction(transaction_id);
             navigation.goBack();
           } finally {
             setDeleting(false);
@@ -87,7 +87,7 @@ export function TransactionDetailScreen() {
         <View style={styles.row}>
           <Text style={styles.label}>Danh mục</Text>
           <Text style={styles.value}>
-            {transaction.categoryName ?? transaction.category_id}
+            {transaction.category_name ?? transaction.category_id}
           </Text>
         </View>
         <View style={styles.row}>
@@ -107,7 +107,7 @@ export function TransactionDetailScreen() {
         <View style={styles.row}>
           <Text style={styles.label}>Bất thường</Text>
           <Text style={styles.value}>
-            {transaction.is_anomaly ? "Có" : "Không"}
+            {transaction.isAnomaly ? "Có" : "Không"}
           </Text>
         </View>
         {transaction.image_url ? (
@@ -123,7 +123,7 @@ export function TransactionDetailScreen() {
         <AppButton
           title="Sửa"
           onPress={() =>
-            navigation.navigate("TransactionEdit", { transactionId })
+            navigation.navigate("TransactionEdit", { transaction_id })
           }
         />
         <AppButton

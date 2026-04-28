@@ -7,21 +7,20 @@ const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "ocr";
 
 @Injectable()
 export class OcrRepository {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   private get supabase() {
     return this.supabaseService.getClient().schema(SCHEMA);
   }
 
   async createRequest(user_id: string, dto: ScanOcrDto) {
-    const { imageUrl, sourceType } = dto;
+    const { image_url, source_type } = dto;
     const { data, error } = await this.supabase
       .from("ocr_requests")
       .insert({
         user_id: user_id,
-        image_url: imageUrl,
-        source_type: sourceType,
-        status: "pending",
+        image_url: image_url,
+        source_type: source_type,
       })
       .select("id, image_url, source_type, status, created_at")
       .single();
@@ -50,10 +49,8 @@ export class OcrRepository {
     const updatePayload: {
       status: "processed" | "failed";
       failure_reason?: string;
-      updated_at: string;
     } = {
       status,
-      updated_at: new Date().toISOString(),
     };
 
     if (failureReason) {
@@ -69,30 +66,30 @@ export class OcrRepository {
     if (error) throw new Error(error.message);
   }
 
-  async createResult(requestId: string, parsedResult: ParsedOcrResult) {
+  async createResult(request_id: string, parsedResult: ParsedOcrResult) {
     const {
-      extractedText,
-      suggestedAmount,
-      suggestedDate,
-      suggestedType,
-      suggestedCategoryId,
-      merchantName,
-      confidenceScore,
-      parsedFieldsJson,
+      extracted_text,
+      suggested_amount,
+      suggested_date,
+      suggested_type,
+      suggested_category_id,
+      merchant_name,
+      confidence_score,
+      parsed_fields_json,
     } = parsedResult;
 
     const { data, error } = await this.supabase
       .from("ocr_results")
       .insert({
-        request_id: requestId,
-        extracted_text: extractedText,
-        suggested_amount: suggestedAmount,
-        suggested_date: suggestedDate,
-        suggested_type: suggestedType,
-        suggested_category_id: suggestedCategoryId,
-        merchant_name: merchantName,
-        confidence_score: confidenceScore,
-        parsed_fields_json: parsedFieldsJson,
+        request_id: request_id,
+        extracted_text: extracted_text,
+        suggested_amount: suggested_amount,
+        suggested_date: suggested_date,
+        suggested_type: suggested_type,
+        suggested_category_id: suggested_category_id,
+        merchant_name: merchant_name,
+        confidence_score: confidence_score,
+        parsed_fields_json: parsed_fields_json,
       })
       .select()
       .single();
@@ -129,11 +126,11 @@ export class OcrRepository {
     return result;
   }
 
-  async findResultByRequestId(requestId: string) {
+  async findResultByrequest_id(request_id: string) {
     const { data, error } = await this.supabase
       .from("ocr_results")
       .select("*")
-      .eq("request_id", requestId)
+      .eq("request_id", request_id)
       .maybeSingle();
 
     if (error) throw new Error(error.message);

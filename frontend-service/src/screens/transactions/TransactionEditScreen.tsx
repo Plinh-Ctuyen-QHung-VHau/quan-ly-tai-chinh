@@ -23,7 +23,7 @@ import { isPositiveAmount } from "../../utils/validators";
 export function TransactionEditScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const transactionId = route.params?.transactionId as string;
+  const transaction_id = route.params?.transaction_id as string;
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,26 +31,26 @@ export function TransactionEditScreen() {
   const [error, setError] = useState("");
   const [type, setType] = useState<TransactionType>("expense");
   const [amount, setAmount] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [category_id, setcategory_id] = useState("");
   const [note, setNote] = useState("");
-  const [transactionDate, setTransactionDate] = useState("");
-  const [merchantName, setMerchantName] = useState("");
+  const [transaction_date, settransaction_date] = useState("");
+  const [merchant_name, setmerchant_name] = useState("");
 
   const loadTransaction = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getTransactionById(transactionId);
+      const result = await getTransactionById(transaction_id);
       setTransaction(result);
       setType(result.type);
       setAmount(String(result.amount));
-      setCategoryId(result.category_id);
+      setcategory_id(result.category_id);
       setNote(result.note ?? "");
-      setTransactionDate(result.transaction_date);
-      setMerchantName(result.merchant_name ?? "");
+      settransaction_date(result.transaction_date);
+      setmerchant_name(result.merchant_name ?? "");
     } finally {
       setLoading(false);
     }
-  }, [transactionId]);
+  }, [transaction_id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -78,25 +78,25 @@ export function TransactionEditScreen() {
       return;
     }
 
-    if (!categoryId) {
+    if (!category_id) {
       setError("Danh mục là bắt buộc.");
       return;
     }
 
-    if (!transactionDate) {
+    if (!transaction_date) {
       setError("Ngày giao dịch là bắt buộc.");
       return;
     }
 
     setSaving(true);
     try {
-      await updateTransaction(transactionId, {
+      await updateTransaction(transaction_id, {
         amount: Number(amount),
         type,
-        category_id: categoryId,
+        category_id: category_id,
         note: note.trim() || undefined,
-        transaction_date: transactionDate,
-        merchant_name: merchantName.trim() || undefined,
+        transaction_date: transaction_date,
+        merchant_name: merchant_name.trim() || undefined,
       });
       Alert.alert("Đã cập nhật", "Giao dịch đã được sửa thành công.");
       navigation.goBack();
@@ -136,14 +136,14 @@ export function TransactionEditScreen() {
         />
         <AppInput
           label="Ngày giao dịch"
-          value={transactionDate}
-          onChangeText={setTransactionDate}
+          value={transaction_date}
+          onChangeText={settransaction_date}
           placeholder="YYYY-MM-DD"
         />
         <AppInput
           label="Merchant"
-          value={merchantName}
-          onChangeText={setMerchantName}
+          value={merchant_name}
+          onChangeText={setmerchant_name}
         />
         <AppInput
           label="Ghi chú"
@@ -154,8 +154,8 @@ export function TransactionEditScreen() {
         <Text style={styles.label}>Danh mục</Text>
         <CategoryPicker
           items={categories}
-          selectedId={categoryId}
-          onSelect={setCategoryId}
+          selectedId={category_id}
+          onSelect={setcategory_id}
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <AppButton
