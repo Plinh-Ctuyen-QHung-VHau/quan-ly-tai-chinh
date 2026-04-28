@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   useFocusEffect,
   useNavigation,
@@ -61,7 +61,8 @@ export function TransactionEditScreen() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        setCategories(await getCategories(type));
+        const list = await getCategories(type);
+        setCategories(Array.isArray(list) ? list : []);
       } catch {
         setCategories([]);
       }
@@ -117,22 +118,30 @@ export function TransactionEditScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <AppCard>
         <Text style={styles.title}>Sửa giao dịch</Text>
-        <AppButton
-          title="Expense"
-          variant={type === "expense" ? "primary" : "secondary"}
-          onPress={() => setType("expense")}
-        />
-        <Text style={styles.spacer} />
-        <AppButton
-          title="Income"
-          variant={type === "income" ? "primary" : "secondary"}
-          onPress={() => setType("income")}
-        />
+
+        {/* Loại giao dịch */}
+        <Text style={styles.label}>Loại giao dịch</Text>
+        <View style={styles.typeRow}>
+          <AppButton
+            title="Chi tiêu"
+            variant={type === "expense" ? "primary" : "secondary"}
+            onPress={() => setType("expense")}
+            style={styles.typeButton}
+          />
+          <AppButton
+            title="Thu nhập"
+            variant={type === "income" ? "primary" : "secondary"}
+            onPress={() => setType("income")}
+            style={styles.typeButton}
+          />
+        </View>
+
         <AppInput
           label="Số tiền"
           value={amount}
           onChangeText={setAmount}
           keyboardType="numeric"
+          placeholder="0"
         />
         <AppInput
           label="Ngày giao dịch"
@@ -141,15 +150,17 @@ export function TransactionEditScreen() {
           placeholder="YYYY-MM-DD"
         />
         <AppInput
-          label="Merchant"
+          label="Cửa hàng / Người nhận"
           value={merchant_name}
           onChangeText={setmerchant_name}
+          placeholder="VD: Coopmart, Grab, Shopee..."
         />
         <AppInput
           label="Ghi chú"
           value={note}
           onChangeText={setNote}
           multiline
+          placeholder="Ghi chú thêm nếu cần"
         />
         <Text style={styles.label}>Danh mục</Text>
         <CategoryPicker
@@ -164,9 +175,6 @@ export function TransactionEditScreen() {
           loading={saving}
         />
       </AppCard>
-      {transaction ? (
-        <Text style={styles.muted}>ID: {transaction.id}</Text>
-      ) : null}
     </ScrollView>
   );
 }
@@ -193,6 +201,14 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: 10,
+  },
+  typeRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 14,
+  },
+  typeButton: {
+    flex: 1,
   },
   muted: {
     textAlign: "center",

@@ -36,6 +36,7 @@ function clampPercent(value: number) {
 
 function formatShortDate(date: Date) {
   return date.toLocaleDateString("vi-VN", {
+    weekday: "long",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -142,7 +143,7 @@ export function HomeScreen() {
       <ScreenHero
         kicker="Tổng quan"
         title="Số dư hiện tại"
-        subtitle={`Thứ Hai, ${formatShortDate(new Date())}`}
+        subtitle={formatShortDate(new Date())}
         rightSlot={
           <View style={styles.currencyBadge}><Text style={styles.currencyBadgeText}>VND</Text></View>
         }
@@ -309,7 +310,7 @@ export function HomeScreen() {
       </View>
 
       <Text style={styles.footerNote}>
-        Kéo xuống để làm mới · Thứ Hai, {formatShortDate(new Date())}
+        Kéo xuống để làm mới · {formatShortDate(new Date())}
       </Text>
     </ScrollView>
   );

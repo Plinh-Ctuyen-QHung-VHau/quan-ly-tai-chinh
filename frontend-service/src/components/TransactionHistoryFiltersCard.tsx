@@ -1,23 +1,19 @@
 import React from "react";
 import {
-  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 
-import { AppButton } from "./AppButton";
 import { AppCard } from "./AppCard";
-import { AppInput } from "./AppInput";
 import { CategoryPicker } from "./CategoryPicker";
+import { DatePickerModal } from "./DatePickerModal";
 import { SectionHeader } from "./SectionHeader";
 import { SegmentedChips } from "./SegmentedChips";
 import { transactionTypeOptions } from "../constants/options";
 import { Category, TransactionType } from "../types/category";
+import { COLORS } from "../constants/ui";
 
 type DateField = "from" | "to";
 type RangePreset = "today" | "7days" | "month" | "custom";
@@ -34,9 +30,9 @@ type Props = Readonly<{
   showIosPicker: DateField | null;
   onApplyPreset: (preset: RangePreset) => void;
   onClearDates: () => void;
-  onCloseIosPicker: () => void;
+  onCloseDatePicker: () => void;
   onOpenDatePicker: (field: DateField) => void;
-  onIosDateChange: (event: DateTimePickerEvent, selectedDate?: Date) => void;
+  onConfirmDate: (field: DateField, date: Date) => void;
   limit: string;
   setLimit: (value: string) => void;
   page: number;
@@ -56,6 +52,12 @@ function DateBox({ label, value, active, onPress }: Readonly<{ label: string; va
   );
 }
 
+const PRESET_CHIPS: [RangePreset, string][] = [
+  ["today", "Hôm nay"],
+  ["7days", "7 ngày"],
+  ["month", "Tháng này"],
+];
+
 export function TransactionHistoryFiltersCard({
   type,
   setType,
@@ -68,117 +70,159 @@ export function TransactionHistoryFiltersCard({
   showIosPicker,
   onApplyPreset,
   onClearDates,
-  onCloseIosPicker,
+  onCloseDatePicker,
   onOpenDatePicker,
-  onIosDateChange,
-  limit,
-  setLimit,
-  page,
-  totalPages,
-  loading,
-  onLoadTransactions,
+  onConfirmDate,
+  limit: _limit,
+  setLimit: _setLimit,
+  page: _page,
+  totalPages: _totalPages,
+  loading: _loading,
+  onLoadTransactions: _onLoadTransactions,
   onClearFilters,
   onSetPage,
 }: Props) {
+  const hasActiveFilters = Boolean(
+    fromDate || toDate || category_id || rangePreset !== "custom"
+  );
+
   return (
     <AppCard style={styles.filterCard}>
-      <SectionHeader title="Bộ lọc giao dịch" subtitle="Chọn điều kiện để xem đúng dữ liệu cần tìm" />
+      {/* Header */}
+      <View style={styles.cardHeader}>
+        <View>
+          <Text style={styles.sectionTitle}>Bộ lọc</Text>
+          <Text style={styles.sectionSubtitle}>Chọn để lọc ngay, bấm lại để bỏ lọc</Text>
+        </View>
+        {hasActiveFilters && (
+          <Pressable
+            onPress={onClearFilters}
+            style={({ pressed }) => [styles.clearAllBtn, pressed && styles.clearAllBtnPressed]}
+          >
+            <Text style={styles.clearAllText}>✕ Xóa lọc</Text>
+          </Pressable>
+        )}
+      </View>
 
+      {/* Loại giao dịch */}
       <Text style={styles.label}>Loại giao dịch</Text>
-      <SegmentedChips options={transactionTypeOptions} value={type} onChange={(nextType) => { setType(nextType as TransactionType); setcategory_id(""); onSetPage(1); }} />
+      <SegmentedChips
+        options={transactionTypeOptions}
+        value={type}
+        onChange={(nextType) => {
+          setType(nextType as TransactionType);
+          setcategory_id("");
+          onSetPage(1);
+        }}
+      />
 
+      {/* Danh mục */}
       <Text style={styles.label}>Danh mục</Text>
-      <CategoryPicker items={categories} selectedId={category_id} onSelect={setcategory_id} />
+      <CategoryPicker
+        items={categories}
+        selectedId={category_id}
+        onSelect={(id) => {
+          // Toggle: nếu bấm lại cùng category thì bỏ lọc
+          setcategory_id(id === category_id ? "" : id);
+        }}
+      />
 
+      {/* Khoảng thời gian */}
       <View style={styles.rangeHeader}>
         <Text style={styles.label}>Khoảng thời gian</Text>
-        <Pressable onPress={onClearDates}><Text style={styles.clearDateText}>Xóa ngày</Text></Pressable>
-      </View>
-
-      <View style={styles.presetRow}>
-        {([
-          ["today", "Hôm nay"],
-          ["7days", "7 ngày"],
-          ["month", "Tháng này"],
-        ] as const).map(([preset, label]) => (
-          <Pressable key={preset} onPress={() => onApplyPreset(preset)} style={[styles.presetChip, rangePreset === preset && styles.presetChipActive]}>
-            <Text style={[styles.presetText, rangePreset === preset && styles.presetTextActive]}>{label}</Text>
+        {(fromDate || toDate) && (
+          <Pressable onPress={onClearDates}>
+            <Text style={styles.clearDateText}>Xóa ngày</Text>
           </Pressable>
-        ))}
+        )}
       </View>
 
+      {/* Preset chips — bấm lại sẽ bỏ lọc */}
+      <View style={styles.presetRow}>
+        {PRESET_CHIPS.map(([preset, label]) => {
+          const active = rangePreset === preset;
+          return (
+            <Pressable
+              key={preset}
+              onPress={() => active ? onClearDates() : onApplyPreset(preset)}
+              style={({ pressed }) => [
+                styles.presetChip,
+                active && styles.presetChipActive,
+                pressed && styles.presetChipPressed,
+              ]}
+            >
+              {active && <Text style={styles.presetCheckmark}>✓ </Text>}
+              <Text style={[styles.presetText, active && styles.presetTextActive]}>
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* Date boxes */}
       <View style={styles.dateRow}>
-        <DateBox label="Từ ngày" value={fromDate} active={showIosPicker === "from"} onPress={() => onOpenDatePicker("from")} />
-        <DateBox label="Đến ngày" value={toDate} active={showIosPicker === "to"} onPress={() => onOpenDatePicker("to")} />
+        <DateBox
+          label="Từ ngày"
+          value={fromDate}
+          active={showIosPicker === "from"}
+          onPress={() => onOpenDatePicker("from")}
+        />
+        <DateBox
+          label="Đến ngày"
+          value={toDate}
+          active={showIosPicker === "to"}
+          onPress={() => onOpenDatePicker("to")}
+        />
       </View>
 
-      {Platform.OS === "ios" && showIosPicker ? (
-        <View style={styles.pickerWrap}>
-          <DateTimePicker value={new Date(showIosPicker === "from" ? fromDate || Date.now() : toDate || Date.now())} mode="date" display="spinner" onChange={onIosDateChange} />
-          <Pressable onPress={onCloseIosPicker} style={styles.doneButton}><Text style={styles.doneButtonText}>Xong</Text></Pressable>
-        </View>
-      ) : null}
 
-      <View style={styles.limitRow}>
-        <View style={styles.limitInputWrap}>
-          <AppInput label="Số mục mỗi trang" value={limit} onChangeText={setLimit} keyboardType="numeric" placeholder="10" />
-        </View>
 
-        <View style={styles.pageInfoBox}>
-          <Text style={styles.pageInfoLabel}>Trang</Text>
-          <Text style={styles.pageInfoValue}>{page}/{totalPages}</Text>
-        </View>
-      </View>
-
-      <View style={styles.filterActions}>
-        <AppButton title="Áp dụng bộ lọc" onPress={onLoadTransactions} loading={loading} />
-        <AppButton title="Xóa lọc" variant="ghost" onPress={onClearFilters} disabled={loading} style={styles.clearButton} />
-      </View>
-
-      <View style={styles.paginationRow}>
-        <AppButton title="Trước" variant="secondary" onPress={() => onSetPage(Math.max(1, page - 1))} style={styles.pageButton} disabled={page <= 1} />
-        <AppButton title="Sau" variant="secondary" onPress={() => onSetPage(page + 1)} style={styles.pageButton} disabled={page >= totalPages} />
-      </View>
+      <DatePickerModal
+        visible={Boolean(showIosPicker)}
+        title={showIosPicker === "to" ? "Chọn ngày kết thúc" : "Chọn ngày bắt đầu"}
+        value={
+          new Date(
+            showIosPicker === "to"
+              ? toDate || Date.now()
+              : fromDate || Date.now(),
+          )
+        }
+        onClose={onCloseDatePicker}
+        onConfirm={(date) => {
+          if (!showIosPicker) return;
+          onConfirmDate(showIosPicker, date);
+          onCloseDatePicker();
+        }}
+      />
     </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
   filterCard: { borderRadius: 28, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: "#FFFFFF", padding: 18, marginBottom: 16 },
-  cardHeader: { marginBottom: 16 },
-  sectionTitle: { color: "#0F172A", fontSize: 21, fontWeight: "900" },
-  sectionSubtitle: { color: "#64748B", fontSize: 14, lineHeight: 20, marginTop: 4 },
-  label: { color: "#0F172A", fontWeight: "900", fontSize: 15, marginBottom: 8 },
-  segment: { flexDirection: "row", padding: 4, borderRadius: 18, backgroundColor: "#F1F5F9", marginBottom: 18 },
-  segmentButton: { flex: 1, minHeight: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  segmentButtonActive: { backgroundColor: "#0F172A" },
-  segmentText: { color: "#64748B", fontSize: 15, fontWeight: "900" },
-  segmentTextActive: { color: "#FFFFFF" },
-  rangeHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 18 },
-  clearDateText: { color: "#2563EB", fontWeight: "800" },
-  presetRow: { flexDirection: "row", gap: 10, marginTop: 12, marginBottom: 12 },
-  presetChip: { flex: 1, minHeight: 40, borderRadius: 999, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
-  presetChipActive: { backgroundColor: "#0F172A", borderColor: "#0F172A" },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
+  sectionTitle: { color: "#0F172A", fontSize: 19, fontWeight: "900" },
+  sectionSubtitle: { color: "#64748B", fontSize: 13, marginTop: 2 },
+  clearAllBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: COLORS.expenseSoft, borderWidth: 1, borderColor: COLORS.expenseBorder },
+  clearAllBtnPressed: { opacity: 0.75 },
+  clearAllText: { color: COLORS.expense, fontWeight: "800", fontSize: 12 },
+  label: { color: "#0F172A", fontWeight: "900", fontSize: 14, marginBottom: 8 },
+  rangeHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 14 },
+  clearDateText: { color: COLORS.blue, fontWeight: "800", fontSize: 13 },
+  presetRow: { flexDirection: "row", gap: 8, marginTop: 10, marginBottom: 12 },
+  presetChip: { flex: 1, minHeight: 40, borderRadius: 999, borderWidth: 1.5, borderColor: "#E2E8F0", backgroundColor: "#F8FAFC", alignItems: "center", justifyContent: "center", flexDirection: "row" },
+  presetChipActive: { backgroundColor: COLORS.dark, borderColor: COLORS.dark },
+  presetChipPressed: { opacity: 0.75 },
+  presetCheckmark: { color: "#FFFFFF", fontWeight: "900", fontSize: 12 },
   presetText: { color: "#334155", fontWeight: "800", fontSize: 13 },
   presetTextActive: { color: "#FFFFFF" },
-  dateRow: { flexDirection: "row", gap: 10, marginBottom: 8 },
+  dateRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
   dateBox: { flex: 1, borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 18, padding: 12, backgroundColor: "#FFFFFF" },
-  dateBoxActive: { borderColor: "#2563EB", backgroundColor: "#EFF6FF" },
+  dateBoxActive: { borderColor: COLORS.blue, backgroundColor: COLORS.blueLight },
   dateBoxLabel: { color: "#64748B", fontSize: 12, fontWeight: "800", marginBottom: 5 },
-  dateBoxValue: { color: "#0F172A", fontSize: 15, fontWeight: "900" },
-  dateBoxPlaceholder: { color: "#94A3B8", fontSize: 15, fontWeight: "700" },
-  pickerWrap: { marginBottom: 12, padding: 12, borderRadius: 18, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0" },
-  doneButton: { marginTop: 10, minHeight: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#0F172A" },
-  doneButtonText: { color: "#FFFFFF", fontWeight: "900" },
-  limitRow: { flexDirection: "row", gap: 10, alignItems: "flex-end", marginTop: 6 },
-  limitInputWrap: { flex: 1 },
-  pageInfoBox: { width: 96, padding: 12, borderRadius: 18, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0" },
-  pageInfoLabel: { color: "#64748B", fontSize: 12, fontWeight: "800", marginBottom: 5 },
-  pageInfoValue: { color: "#0F172A", fontSize: 18, fontWeight: "900" },
-  filterActions: { marginTop: 14 },
-  clearButton: { marginTop: 10 },
-  paginationRow: { flexDirection: "row", gap: 10, marginTop: 12 },
-  pageButton: { flex: 1 },
+  dateBoxValue: { color: "#0F172A", fontSize: 14, fontWeight: "900" },
+  dateBoxPlaceholder: { color: "#94A3B8", fontSize: 14, fontWeight: "700" },
 });
 
 export default TransactionHistoryFiltersCard;

@@ -3,14 +3,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Platform,
   Text,
   View,
 } from "react-native";
-import {
-  DateTimePickerAndroid,
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 
 import { EmptyState } from "../../components/EmptyState";
@@ -32,13 +27,6 @@ function formatInputDate(date: Date) {
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
-}
-
-function parseInputDate(value: string) {
-  if (!value) return new Date();
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
 function formatCurrency(value: number) {
@@ -127,56 +115,13 @@ function setHistoryDate(
   setRangePreset("custom");
 }
 
-function openHistoryDatePicker(
-  field: DateField,
-  fromDate: string,
-  toDate: string,
-  setShowIosPicker: (
-    value: DateField | null | ((current: DateField | null) => DateField | null),
-  ) => void,
-  setDateValue: (field: DateField, date: Date) => void,
-) {
-  const currentValue = field === "from" ? fromDate : toDate;
-  const currentDate = parseInputDate(currentValue);
-
-  if (Platform.OS === "android") {
-    DateTimePickerAndroid.open({
-      value: currentDate,
-      mode: "date",
-      display: "calendar",
-      onChange: (event: DateTimePickerEvent, selectedDate?: Date) => {
-        if (event.type === "dismissed" || !selectedDate) return;
-        setDateValue(field, selectedDate);
-      },
-    });
-
-    return;
-  }
-
-  setShowIosPicker((current) => (current === field ? null : field));
-}
-
-function handleHistoryIosDateChange(
-  event: DateTimePickerEvent,
-  selectedDate: Date | undefined,
-  showIosPicker: DateField | null,
-  setShowIosPicker: (value: DateField | null) => void,
-  setDateValue: (field: DateField, date: Date) => void,
-) {
-  if (event.type === "dismissed" || !selectedDate || !showIosPicker) {
-    setShowIosPicker(null);
-    return;
-  }
-
-  setDateValue(showIosPicker, selectedDate);
-}
-
 export function TransactionHistoryScreen() {
   const navigation = useNavigation<any>();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState("10");
   const [type, setType] = useState<TransactionType>("expense");
@@ -224,13 +169,17 @@ export function TransactionHistoryScreen() {
     }
   }, [category_id, type]);
 
-  const loadTransactions = useCallback(async () => {
-    setLoading(true);
+  const loadTransactions = useCallback(async (nextPage = 1, append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
     setError("");
 
     try {
       const filters: TransactionFilters = {
-        page,
+        page: nextPage,
         limit: Number(limit) || 10,
         type,
         category_id: category_id || undefined,
@@ -239,22 +188,33 @@ export function TransactionHistoryScreen() {
       };
 
       const result = await getTransactions(filters);
+      const incoming = Array.isArray(result.data) ? result.data : [];
 
-      setTransactions(Array.isArray(result.data) ? result.data : []);
+      setTransactions((prev) => {
+        if (!append) return incoming;
+        const merged = [...prev, ...incoming];
+        const uniqueMap = new Map(merged.map((item) => [item.id, item]));
+        return Array.from(uniqueMap.values());
+      });
+      setPage(nextPage);
       setTotalPages(Math.max(1, result.meta?.totalPages ?? 1));
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Không thể tải lịch sử giao dịch.",
       );
     } finally {
-      setLoading(false);
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
-  }, [category_id, fromDate, limit, page, toDate, type]);
+  }, [category_id, fromDate, limit, toDate, type]);
 
   useFocusEffect(
     useCallback(() => {
       void loadCategories();
-      void loadTransactions();
+      void loadTransactions(1);
     }, [loadCategories, loadTransactions]),
   );
 
@@ -262,34 +222,21 @@ export function TransactionHistoryScreen() {
     void loadCategories();
   }, [loadCategories]);
 
+  // Auto-reload khi filter thay đổi
+  useEffect(() => {
+    void loadTransactions(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, category_id, fromDate, toDate, limit]);
+
   const setDateValue = useCallback((field: DateField, date: Date) => {
     setHistoryDate(field, date, setFromDate, setToDate, setRangePreset);
   }, []);
 
   const openDatePicker = useCallback(
     (field: DateField) => {
-      openHistoryDatePicker(
-        field,
-        fromDate,
-        toDate,
-        setShowIosPicker,
-        setDateValue,
-      );
+      setShowIosPicker(field);
     },
-    [fromDate, setDateValue, toDate],
-  );
-
-  const handleIosDateChange = useCallback(
-    (event: DateTimePickerEvent, selectedDate?: Date) => {
-      handleHistoryIosDateChange(
-        event,
-        selectedDate,
-        showIosPicker,
-        setShowIosPicker,
-        setDateValue,
-      );
-    },
-    [setDateValue, showIosPicker],
+    [],
   );
 
   const applyPreset = (preset: RangePreset) => {
@@ -370,18 +317,15 @@ export function TransactionHistoryScreen() {
           setRangePreset("custom");
           setShowIosPicker(null);
         }}
-        onCloseIosPicker={() => setShowIosPicker(null)}
+        onCloseDatePicker={() => setShowIosPicker(null)}
         onOpenDatePicker={openDatePicker}
-        onIosDateChange={handleIosDateChange}
+        onConfirmDate={setDateValue}
         limit={limit}
         setLimit={setLimit}
         page={page}
         totalPages={safeTotalPages}
         loading={loading}
-        onLoadTransactions={() => {
-          setPage(1);
-          void loadTransactions();
-        }}
+        onLoadTransactions={() => void loadTransactions(1)}
         onClearFilters={clearFilters}
         onSetPage={setPage}
       />
@@ -407,17 +351,34 @@ export function TransactionHistoryScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {safeTransactions.length ? (
-        safeTransactions.map((transaction) => (
-          <TransactionItem
-            key={transaction.id}
-            transaction={transaction}
-            onPress={() =>
-              navigation.navigate("TransactionDetail", {
-                transaction_id: transaction.id,
-              })
-            }
-          />
-        ))
+        <>
+          {safeTransactions.map((transaction) => (
+            <TransactionItem
+              key={transaction.id}
+              transaction={transaction}
+              onPress={() =>
+                navigation.navigate("TransactionDetail", {
+                  transaction_id: transaction.id,
+                })
+              }
+            />
+          ))}
+
+          {page < safeTotalPages ? (
+            <Pressable
+              onPress={() => void loadTransactions(page + 1, true)}
+              disabled={loadingMore}
+              style={({ pressed }) => [
+                styles.loadMoreButton,
+                (pressed || loadingMore) && styles.loadMoreButtonPressed,
+              ]}
+            >
+              <Text style={styles.loadMoreButtonText}>
+                {loadingMore ? "Đang tải..." : "Xem thêm giao dịch"}
+              </Text>
+            </Pressable>
+          ) : null}
+        </>
       ) : (
         <EmptyState
           title="Chưa có giao dịch nào"
@@ -442,4 +403,7 @@ const styles = StyleSheet.create({
   addButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, backgroundColor: COLORS.dark },
   addButtonText: { color: COLORS.white, fontWeight: "900", fontSize: 13 },
   error: { color: COLORS.expense, backgroundColor: COLORS.expenseSoft, padding: 12, borderRadius: 14, marginBottom: 10, fontWeight: "700" },
+  loadMoreButton: { minHeight: 50, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.white, alignItems: "center", justifyContent: "center", marginTop: 6 },
+  loadMoreButtonPressed: { opacity: 0.75 },
+  loadMoreButtonText: { color: COLORS.text, fontSize: 15, fontWeight: "900" },
 });

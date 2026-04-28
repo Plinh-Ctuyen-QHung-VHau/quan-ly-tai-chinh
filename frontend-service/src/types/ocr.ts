@@ -27,7 +27,6 @@ export interface OcrResultRaw {
   suggested_category_id?: string | null;
   merchant_name?: string | null;
   image_url?: string | null;
-  image_url?: string | null;
   parsed_fields_json?: Record<string, any> | string | null;
 }
 

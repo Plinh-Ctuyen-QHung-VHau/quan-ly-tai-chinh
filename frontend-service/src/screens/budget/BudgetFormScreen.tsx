@@ -1,21 +1,17 @@
 import React, { useMemo, useState } from "react";
 import {
   Alert,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import DateTimePicker, {
-  DateTimePickerAndroid,
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
+import { DatePickerModal } from "../../components/DatePickerModal";
 import { AppInput } from "../../components/AppInput";
 import {
   createBudget,
@@ -140,20 +136,36 @@ export function BudgetFormScreen() {
 
   const mode = (route.params?.mode ?? "create") as "create" | "edit";
   const budget = route.params?.budget as Budget | undefined;
+  const initialPeriodFromRoute = route.params?.initial_budget_period as
+    | budget_period
+    | undefined;
+  const initialStartDateFromRoute = route.params?.initial_start_date as
+    | string
+    | undefined;
+  const initialEndDateFromRoute = route.params?.initial_end_date as
+    | string
+    | undefined;
+
+  const initialPeriod =
+    mode === "create"
+      ? initialPeriodFromRoute ?? "monthly"
+      : budget?.budget_period ?? "monthly";
+  const initialStartDate =
+    mode === "create"
+      ? initialStartDateFromRoute || (initialPeriod === "weekly" ? startOfWeek() : startOfMonth())
+      : normalizeDate(budget?.start_date) || startOfMonth();
+  const initialEndDate =
+    mode === "create"
+      ? initialEndDateFromRoute || (initialPeriod === "weekly" ? endOfWeek() : endOfMonth())
+      : normalizeDate(budget?.end_date) || endOfMonth();
 
   const [budget_amount, setbudget_amount] = useState(
     String(budget?.budget_amount ?? ""),
   );
-  const [budget_period, setbudget_period] = useState<budget_period>(
-    budget?.budget_period ?? "monthly",
-  );
-  const [start_date, setstart_date] = useState(
-    normalizeDate(budget?.start_date) || startOfMonth(),
-  );
-  const [end_date, setend_date] = useState(
-    normalizeDate(budget?.end_date) || endOfMonth(),
-  );
-  const [showIosPicker, setShowIosPicker] = useState<DateField | null>(null);
+  const [budget_period, setbudget_period] = useState<budget_period>(initialPeriod);
+  const [start_date, setstart_date] = useState(initialStartDate);
+  const [end_date, setend_date] = useState(initialEndDate);
+  const [activeDateField, setActiveDateField] = useState<DateField | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -195,35 +207,7 @@ export function BudgetFormScreen() {
   };
 
   const openDatePicker = (field: DateField) => {
-    const currentDate = parseDate(field === "start" ? start_date : end_date);
-
-    if (Platform.OS === "android") {
-      DateTimePickerAndroid.open({
-        value: currentDate,
-        mode: "date",
-        display: "calendar",
-        onChange: (event: DateTimePickerEvent, selectedDate?: Date) => {
-          if (event.type === "dismissed" || !selectedDate) return;
-          setDateValue(field, selectedDate);
-        },
-      });
-
-      return;
-    }
-
-    setShowIosPicker((current) => (current === field ? null : field));
-  };
-
-  const handleIosPickDate = (
-    event: DateTimePickerEvent,
-    selectedDate?: Date,
-  ) => {
-    if (event.type === "dismissed" || !selectedDate || !showIosPicker) {
-      setShowIosPicker(null);
-      return;
-    }
-
-    setDateValue(showIosPicker, selectedDate);
+    setActiveDateField(field);
   };
 
   const validateForm = () => {
@@ -252,7 +236,7 @@ export function BudgetFormScreen() {
         budget_amount: Number(budget_amount),
         budget_period: budget_period,
         start_date,
-        end_date: end_date || undefined,
+        end_date,
       };
 
       console.log("[BUDGET PAYLOAD]", payload);
@@ -389,35 +373,17 @@ export function BudgetFormScreen() {
           <DateCard
             label="Bắt đầu"
             value={start_date}
-            active={showIosPicker === "start"}
+            active={activeDateField === "start"}
             onPress={() => openDatePicker("start")}
           />
 
           <DateCard
             label="Kết thúc"
             value={end_date}
-            active={showIosPicker === "end"}
+            active={activeDateField === "end"}
             onPress={() => openDatePicker("end")}
           />
         </View>
-
-        {Platform.OS === "ios" && showIosPicker ? (
-          <View style={styles.pickerBox}>
-            <DateTimePicker
-              value={parseDate(showIosPicker === "start" ? start_date : end_date)}
-              mode="date"
-              display="spinner"
-              onChange={handleIosPickDate}
-            />
-
-            <Pressable
-              onPress={() => setShowIosPicker(null)}
-              style={styles.doneButton}
-            >
-              <Text style={styles.doneButtonText}>Xong</Text>
-            </Pressable>
-          </View>
-        ) : null}
 
         <Text style={styles.dateHelperText}>
           Ngày bắt đầu và ngày kết thúc có thể tự động đồng bộ theo chu kỳ,
@@ -443,6 +409,18 @@ export function BudgetFormScreen() {
           <Text style={styles.cancelText}>Quay lại</Text>
         </Pressable>
       </AppCard>
+
+      <DatePickerModal
+        visible={Boolean(activeDateField)}
+        title={activeDateField === "end" ? "Chọn ngày kết thúc" : "Chọn ngày bắt đầu"}
+        value={parseDate(activeDateField === "end" ? end_date : start_date)}
+        onClose={() => setActiveDateField(null)}
+        onConfirm={(date) => {
+          if (!activeDateField) return;
+          setDateValue(activeDateField, date);
+          setActiveDateField(null);
+        }}
+      />
     </ScrollView>
   );
 }
@@ -494,9 +472,6 @@ const styles = StyleSheet.create({
   dateCardLabel: { color: COLORS.muted, fontSize: 12, fontWeight: "900", textTransform: "uppercase", marginBottom: 7 },
   dateCardValue: { color: COLORS.text, fontSize: 17, fontWeight: "900", marginBottom: 5 },
   dateCardHint: { color: COLORS.blue, fontSize: 12, fontWeight: "900" },
-  pickerBox: { marginBottom: 16, borderRadius: 20, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: COLORS.border, overflow: "hidden" },
-  doneButton: { height: 46, alignItems: "center", justifyContent: "center", borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.white },
-  doneButtonText: { color: COLORS.blue, fontSize: 15, fontWeight: "900" },
   dateHelperText: { color: COLORS.muted, fontSize: 13, lineHeight: 20, marginBottom: 16 },
 
   error: { color: COLORS.expense, backgroundColor: COLORS.expenseSoft, borderWidth: 1, borderColor: COLORS.expenseBorder, padding: 12, borderRadius: 16, fontSize: 14, lineHeight: 20, fontWeight: "700", marginBottom: 14 },
