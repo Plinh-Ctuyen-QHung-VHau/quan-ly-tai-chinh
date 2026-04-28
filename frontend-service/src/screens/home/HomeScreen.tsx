@@ -147,23 +147,9 @@ export function HomeScreen() {
           <View style={styles.currencyBadge}><Text style={styles.currencyBadgeText}>VND</Text></View>
         }
       >
-        <Text style={styles.heroBalance} numberOfLines={1}>{formatCurrency(balance)}</Text>
-
-        <View style={styles.heroStatsRow}>
-          <View style={styles.heroStatBox}><Text style={styles.heroStatDot}>●</Text>
-            <View>
-              <Text style={styles.heroStatLabel}>Thu vào</Text>
-              <Text style={[styles.heroStatValue, { color: "#86EFAC" }]}>+{formatCurrency(income)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.heroStatBox}><Text style={[styles.heroStatDot, { color: "#FCA5A5" }]}>●</Text>
-            <View>
-              <Text style={styles.heroStatLabel}>Chi ra</Text>
-              <Text style={[styles.heroStatValue, { color: "#FCA5A5" }]}>-{formatCurrency(expense)}</Text>
-            </View>
-          </View>
-        </View>
+        <Text style={styles.heroBalance} numberOfLines={1}>
+          {formatCurrency(balance)}
+        </Text>
       </ScreenHero>
 
       <View style={styles.quickActionRow}>
@@ -334,12 +320,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
   currencyBadge: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.12)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   currencyBadgeText: { color: "#E2E8F0", fontSize: 12, fontWeight: "900" },
-  heroBalance: { color: COLORS.white, fontSize: 34, lineHeight: 40, fontWeight: "900", letterSpacing: -0.8, marginBottom: 18 },
-  heroStatsRow: { flexDirection: "row", gap: 10 },
-  heroStatBox: { flex: 1, flexDirection: "row", alignItems: "center", borderRadius: 16, padding: 12, backgroundColor: "rgba(255,255,255,0.07)" },
-  heroStatDot: { color: "#86EFAC", fontSize: 12, marginRight: 8 },
-  heroStatLabel: { color: "#94A3B8", fontSize: 11, fontWeight: "700", marginBottom: 3 },
-  heroStatValue: { fontSize: 13, fontWeight: "900" },
+  heroBalance: { color: COLORS.white, fontSize: 34, lineHeight: 40, fontWeight: "900", letterSpacing: -0.8, marginBottom: 4 },
   quickActionRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
   quickActionPrimary: { ...shadow, flex: 1, height: 66, borderRadius: 16, backgroundColor: COLORS.dark, alignItems: "center", justifyContent: "center" },
   quickActionSecondary: { ...shadow, flex: 1, height: 66, borderRadius: 16, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center" },
