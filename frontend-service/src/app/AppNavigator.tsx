@@ -21,6 +21,7 @@ import { getSession, signOut } from "../services/authService";
 import { useAuthStore } from "../store/authStore";
 import { setUnauthorizedHandler } from "../services/apiClient";
 import { useNotificationStore } from "../store/notificationStore";
+import { Budget } from "../types/budget";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -29,7 +30,7 @@ export type RootStackParamList = {
   TransactionConfirm: undefined;
   TransactionDetail: { transactionId: string };
   TransactionEdit: { transactionId: string };
-  BudgetForm: { mode?: "create" | "edit"; budgetId?: string } | undefined;
+  BudgetForm: { mode?: "create" | "edit"; budget?: Budget } | undefined;
   Profile: undefined;
   NotificationSettings: undefined;
 };

@@ -25,7 +25,7 @@ export class TransactionClient {
       const response = await firstValueFrom(
         this.httpService.get(url, {
           headers: { "x-user-id": user_id },
-          params: { start_date, end_date },
+          params: { fromDate: start_date, toDate: end_date },
         }),
       );
       // Assuming the actual summary is in response.data.data
