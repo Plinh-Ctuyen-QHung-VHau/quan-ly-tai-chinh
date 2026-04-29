@@ -5,7 +5,8 @@ import { endpoints } from "./endpoints";
 
 export async function getNotifications() {
   const response = await apiClient.get(endpoints.notifications.list);
-  return handleApiResponse<Notification[]>(response);
+  const data = handleApiResponse<{ items: Notification[]; meta: unknown }>(response);
+  return Array.isArray(data) ? data : (data?.items ?? []);
 }
 
 export async function markNotificationAsRead(id: string) {

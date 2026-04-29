@@ -40,7 +40,7 @@ export class NotificationsService {
     private readonly notificationsRepository: NotificationsRepository,
     private readonly metrics: AppMetrics,
     private readonly httpService: HttpService,
-  ) {}
+  ) { }
 
   // ═══════════════════════════════════════════════════════════════════
   // GENERIC CREATE (checks settings before creating)
@@ -127,7 +127,7 @@ export class NotificationsService {
 
   async createBudgetAlert(
     userId: string,
-    budgetId: string,
+    budget_id: string,
     threshold: 80 | 100,
   ) {
     const title = threshold >= 100 ? "Vượt ngân sách" : "Cảnh báo ngân sách";
@@ -142,7 +142,7 @@ export class NotificationsService {
       content,
       type: "budget_alert",
       relatedEntityType: "budget",
-      relatedEntityId: budgetId,
+      relatedEntityId: budget_id,
     });
   }
 

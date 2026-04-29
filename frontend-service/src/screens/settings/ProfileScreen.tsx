@@ -1,44 +1,70 @@
 import React, { useCallback, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
-import { AppCard } from "../../components/AppCard";
 import { AppInput } from "../../components/AppInput";
+import { LoadingView } from "../../components/LoadingView";
 import { ScreenHero } from "../../components/ScreenHero";
-import { SectionHeader } from "../../components/SectionHeader";
+import { COLORS, shadow } from "../../constants/ui";
+import { supabase } from "../../services/supabaseClient";
 import { getMyProfile, updateMyProfile } from "../../services/identityApi";
 import { UserProfile } from "../../types/user";
 
 function getInitials(name: string) {
   const text = name.trim() || "U";
-
   return text
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase())
+    .map((w) => w[0]?.toUpperCase())
     .join("");
+}
+
+function formatDate(iso?: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [full_name, setfull_name] = useState("");
-  const [avatar_url, setavatar_url] = useState("");
+  const [email, setEmail] = useState("");
+  const [emailConfirmed, setEmailConfirmed] = useState<string | null>(null);
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
+
+  const [full_name, setFullName] = useState("");
+  const [editName, setEditName] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState(false);
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
     setError("");
-
     try {
-      const result = await getMyProfile();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      setEmail(user?.email ?? "");
+      setEmailConfirmed(user?.email_confirmed_at ?? null);
+      setCreatedAt(user?.created_at ?? null);
 
+      const result = await getMyProfile();
       setProfile(result);
-      setfull_name(result.full_name ?? "");
-      setavatar_url(result.avatar_url ?? "");
+      setFullName(result.full_name ?? "");
+      setEditName(result.full_name ?? "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải hồ sơ.");
     } finally {
@@ -53,16 +79,17 @@ export function ProfileScreen() {
   );
 
   const handleSave = async () => {
+    if (!editName.trim()) {
+      setError("Họ và tên không được để trống.");
+      return;
+    }
     setError("");
     setSaving(true);
-
     try {
-      const result = await updateMyProfile({
-        full_name: full_name.trim(),
-        avatar_url: avatar_url.trim() || undefined,
-      });
-
+      const result = await updateMyProfile({ full_name: editName.trim() });
       setProfile(result);
+      setFullName(result.full_name ?? "");
+      setEditing(false);
       Alert.alert("Đã lưu", "Hồ sơ đã được cập nhật.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể cập nhật hồ sơ.");
@@ -70,6 +97,14 @@ export function ProfileScreen() {
       setSaving(false);
     }
   };
+
+  const handleCancelEdit = () => {
+    setEditing(false);
+    setEditName(full_name);
+    setError("");
+  };
+
+  if (loading) return <LoadingView label="Đang tải hồ sơ..." />;
 
   return (
     <ScrollView
@@ -79,158 +114,242 @@ export function ProfileScreen() {
       <ScreenHero
         kicker="Hồ sơ"
         title="Thông tin tài khoản"
-        subtitle="Cập nhật tên, ảnh đại diện và thông tin hiển thị của bạn."
+        subtitle="Xem và cập nhật thông tin cá nhân của bạn."
       />
 
-      <AppCard style={styles.profileCard}>
-        <View style={styles.profileRow}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitials(full_name)}</Text>
-          </View>
+      {error ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
 
-          <View style={styles.profileInfo}>
-            <Text style={styles.name} numberOfLines={1}>
-              {full_name || "Người dùng"}
-            </Text>
+      {/* Avatar card */}
+      <View style={styles.avatarCard}>
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarText}>{getInitials(full_name)}</Text>
+        </View>
+        <Text style={styles.avatarName}>{full_name || "Người dùng"}</Text>
+        <Text style={styles.avatarEmail}>{email}</Text>
+        {emailConfirmed ? (
+          <View style={styles.verifiedBadge}>
+            <Text style={styles.verifiedText}>✓ Email đã xác thực</Text>
+          </View>
+        ) : (
+          <View style={styles.unverifiedBadge}>
+            <Text style={styles.unverifiedText}>⚠ Chưa xác thực email</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Thông tin tài khoản */}
+      <View style={styles.card}>
+        {/* Header với nút Sửa */}
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardLabel}>Thông tin tài khoản</Text>
+          {!editing && (
+            <Pressable
+              style={styles.editBtn}
+              onPress={() => {
+                setEditName(full_name);
+                setEditing(true);
+              }}
+            >
+              <Text style={styles.editBtnText}>✏ Sửa</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* Họ và tên — có thể edit inline */}
+        <View style={styles.infoRow}>
+          <Text style={styles.infoIcon}>👤</Text>
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Họ và tên</Text>
+            {editing ? (
+              <AppInput
+                label=""
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="VD: Nguyễn Văn A"
+                autoFocus
+              />
+            ) : (
+              <Text style={styles.infoValue}>{full_name || "—"}</Text>
+            )}
           </View>
         </View>
 
-        {profile ? (
-          <Text style={styles.user_id} numberOfLines={1}>
-            Mã người dùng: {profile.id}
-          </Text>
-        ) : null}
-      </AppCard>
+        <View style={styles.divider} />
 
-      <AppCard style={styles.card}>
-        <SectionHeader
-          title="Thông tin hồ sơ"
-          subtitle="Các trường này sẽ được dùng ở tài khoản của bạn."
-        />
+        <InfoRow icon="📧" label="Email" value={email || "—"} />
+        <View style={styles.divider} />
+        <InfoRow icon="📅" label="Ngày tham gia" value={formatDate(createdAt)} />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <AppInput
-          label="Họ và tên"
-          value={full_name}
-          onChangeText={setfull_name}
-          placeholder="VD: Nguyễn Văn A"
-        />
-
-        <AppInput
-          label="Ảnh đại diện"
-          value={avatar_url}
-          onChangeText={setavatar_url}
-          placeholder="https://..."
-          autoCapitalize="none"
-        />
-
-        <AppButton
-          title={saving ? "Đang lưu..." : "Lưu hồ sơ"}
-          onPress={() => void handleSave()}
-          loading={saving}
-        />
-
-        {loading ? <Text style={styles.meta}>Đang tải hồ sơ...</Text> : null}
-      </AppCard>
+        {/* Action buttons khi editing */}
+        {editing && (
+          <View style={styles.editActions}>
+            <Pressable style={styles.cancelBtn} onPress={handleCancelEdit}>
+              <Text style={styles.cancelBtnText}>Hủy</Text>
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <AppButton
+                title="Lưu"
+                onPress={() => void handleSave()}
+                loading={saving}
+              />
+            </View>
+          </View>
+        )}
+      </View>
     </ScrollView>
+  );
+}
+
+type InfoRowProps = { icon: string; label: string; value: string };
+function InfoRow({ icon, label, value }: InfoRowProps) {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoIcon}>{icon}</Text>
+      <View style={styles.infoContent}>
+        <Text style={styles.infoLabel}>{label}</Text>
+        <Text style={styles.infoValue} numberOfLines={1}>{value}</Text>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 18,
-    paddingTop: 12,
+    padding: 16,
     paddingBottom: 120,
-    backgroundColor: "#EEF4FA",
+    backgroundColor: COLORS.bg,
   },
 
-  profileCard: {
-    borderRadius: 26,
-    padding: 18,
+  errorBanner: {
+    backgroundColor: COLORS.expenseSoft,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#D9E3EE",
-    marginBottom: 16,
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
-    elevation: 4,
+    borderColor: COLORS.expenseBorder,
   },
+  errorText: { color: COLORS.expense, fontWeight: "700", fontSize: 13 },
 
-  profileRow: {
-    flexDirection: "row",
+  // Avatar
+  avatarCard: {
+    ...shadow,
+    backgroundColor: COLORS.white,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 24,
     alignItems: "center",
+    marginBottom: 14,
   },
-
-  avatar: {
-    width: 68,
-    height: 68,
-    borderRadius: 22,
-    backgroundColor: "#DBEAFE",
+  avatarCircle: {
+    width: 84,
+    height: 84,
+    borderRadius: 28,
+    backgroundColor: COLORS.blueSoft,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
+    marginBottom: 14,
+    borderWidth: 3,
+    borderColor: COLORS.blue + "33",
   },
-
-  avatarText: {
-    color: "#2563EB",
-    fontSize: 24,
-    fontWeight: "900",
-  },
-
-  profileInfo: {
-    flex: 1,
-  },
-
-  name: {
-    color: "#0F172A",
+  avatarText: { color: COLORS.blue, fontSize: 30, fontWeight: "900" },
+  avatarName: {
+    color: COLORS.text,
     fontSize: 22,
     fontWeight: "900",
     marginBottom: 4,
-  },
-
-  username: {
-    color: "#64748B",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-
-  user_id: {
-    marginTop: 14,
-    padding: 12,
-    borderRadius: 16,
-    backgroundColor: "#F1F5F9",
-    color: "#64748B",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-
-  card: {
-    borderRadius: 26,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "#D9E3EE",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
-    elevation: 4,
-  },
-
-  error: {
-    color: "#B91C1C",
-    backgroundColor: "#FEE2E2",
-    padding: 12,
-    borderRadius: 14,
-    marginBottom: 12,
-    fontWeight: "700",
-  },
-
-  meta: {
-    marginTop: 10,
-    color: "#64748B",
     textAlign: "center",
   },
+  avatarEmail: {
+    color: COLORS.muted,
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  verifiedBadge: {
+    backgroundColor: COLORS.incomeSoft,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.incomeBorder,
+  },
+  verifiedText: { color: COLORS.income, fontSize: 12, fontWeight: "800" },
+  unverifiedBadge: {
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#FCD34D",
+  },
+  unverifiedText: { color: "#D97706", fontSize: 12, fontWeight: "800" },
+
+  // Card
+  card: {
+    ...shadow,
+    backgroundColor: COLORS.white,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 18,
+    marginBottom: 14,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  cardLabel: {
+    color: COLORS.muted,
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  editBtn: {
+    backgroundColor: COLORS.blueLight,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.blueSoft,
+  },
+  editBtnText: { color: COLORS.blue, fontWeight: "900", fontSize: 13 },
+
+  // Info rows
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  infoIcon: { fontSize: 20, marginRight: 14, width: 28, textAlign: "center" },
+  infoContent: { flex: 1 },
+  infoLabel: { color: COLORS.muted, fontSize: 11, fontWeight: "700", marginBottom: 2 },
+  infoValue: { color: COLORS.text, fontSize: 15, fontWeight: "700" },
+
+  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 2 },
+
+  // Edit actions
+  editActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+  cancelBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    justifyContent: "center",
+  },
+  cancelBtnText: { color: COLORS.muted, fontWeight: "700", fontSize: 14 },
 });

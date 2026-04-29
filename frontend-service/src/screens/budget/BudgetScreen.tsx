@@ -128,15 +128,15 @@ export function BudgetScreen() {
     try {
       const idFromStatus = budgetStatus?.id;
       const currentBudget = idFromStatus ? null : await getCurrentBudget();
-      const budgetId = idFromStatus || currentBudget?.id;
+      const budget_id = idFromStatus || currentBudget?.id;
 
-      if (!budgetId) {
+      if (!budget_id) {
         setCurrentBudgetStatus(null);
         Alert.alert("Đã xóa", "Ngân sách hiện tại không còn tồn tại.");
         return;
       }
 
-      await deleteBudget(budgetId);
+      await deleteBudget(budget_id);
       setCurrentBudgetStatus(null);
       Alert.alert("Đã xóa", "Ngân sách đã được xóa thành công.");
     } catch (error: any) {

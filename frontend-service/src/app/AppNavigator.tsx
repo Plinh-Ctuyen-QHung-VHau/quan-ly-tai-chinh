@@ -23,6 +23,7 @@ import { setUnauthorizedHandler } from "../services/apiClient";
 import { useNotificationStore } from "../store/notificationStore";
 import { Budget } from "../types/budget";
 import { setupPushNotifications } from "../utils/notificationHandler";
+import * as Notifications from "expo-notifications";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -31,7 +32,7 @@ export type RootStackParamList = {
   TransactionConfirm: undefined;
   TransactionDetail: { transaction_id: string };
   TransactionEdit: { transaction_id: string };
-  BudgetForm: { mode?: "create" | "edit"; budgetId?: string } | undefined;
+  BudgetForm: { mode?: "create" | "edit"; budget_id?: string } | undefined;
   Profile: undefined;
   NotificationSettings: undefined;
 };
@@ -59,7 +60,12 @@ export function AppNavigator() {
       setBootstrapped(true);
     });
 
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === "PASSWORD_RECOVERY") {
+        // Đang trong flow reset password — KHÔNG navigate vào app
+        // ForgotPasswordScreen sẽ tự gọi setSession sau khi đổi mật khẩu xong
+        return;
+      }
       setSession(nextSession);
       setBootstrapped(true);
     });
@@ -80,6 +86,22 @@ export function AppNavigator() {
     });
 
     return () => setUnauthorizedHandler(null);
+  }, []);
+
+  // Listener: user tap notification -> navigate đến tab Notifications
+  // Listener: foreground nhận push -> realtime đã tự prepend, không cần thêm
+  useEffect(() => {
+    const responseSub = Notifications.addNotificationResponseReceivedListener(() => {
+      setTimeout(() => {
+        // NavigationContainer chưa expose ref trực tiếp ở đây,
+        // realtime store sẽ prepend notification tự động
+        // TODO: nếu muốn navigate, dùng navigationRef pattern
+      }, 300);
+    });
+
+    return () => {
+      responseSub.remove();
+    };
   }, []);
 
   useEffect(() => {
