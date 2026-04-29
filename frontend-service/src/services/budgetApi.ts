@@ -21,8 +21,8 @@ function normalizeBudgetStatus(
   payload: BudgetStatusApiResponse,
 ): BudgetStatus {
   return {
-    id: payload.id ?? payload.budgetId,
-    budget_amount: Number(payload.budget_amount ?? 0),
+    id: payload.id ?? payload.budgetId ?? payload.budget_id,
+    budget_amount: Number(payload.budget_amount ?? payload.budget_amount ?? 0),
     spent_amount: Number(payload.spent_amount ?? payload.spentAmount ?? 0),
     remaining_amount: Number(
       payload.remaining_amount ?? payload.remainingAmount ?? 0,

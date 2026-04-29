@@ -11,7 +11,6 @@ import {
 } from "./adapters/ocr-engine.adapter";
 import { MockOcrEngineAdapter } from "./adapters/mock-ocr-engine.adapter";
 import { TesseractOcrEngineAdapter } from "./adapters/tesseract-ocr-engine.adapter";
-import { PaddleOcrEngineAdapter } from "./adapters/paddleocr-engine.adapter";
 import { OcrEngineSelector } from "./adapters/ocr-engine-selector";
 import { configuration } from "../config/configuration";
 import { ImagePreprocessorService } from "../preprocess/image-preprocessor.service";
@@ -29,9 +28,6 @@ const primaryEngineFactory = {
       const appConfig =
         configService.get<ConfigType<typeof configuration>>("app");
       return new TesseractOcrEngineAdapter(appConfig);
-    }
-    if (engine === "paddleocr") {
-      return new PaddleOcrEngineAdapter();
     }
     console.warn(
       `[OcrModule] engine="${engine}" not recognized — falling back to Mock`,
@@ -58,8 +54,6 @@ const allEnginesFactory = {
     for (const name of engineNames) {
       if (name === "tesseract") {
         engines.push(new TesseractOcrEngineAdapter(appConfig));
-      } else if (name === "paddleocr") {
-        engines.push(new PaddleOcrEngineAdapter());
       } else {
         console.warn(`[OcrModule] Unknown engine "${name}", skipping.`);
       }

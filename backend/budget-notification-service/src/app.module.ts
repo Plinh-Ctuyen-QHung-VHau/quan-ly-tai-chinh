@@ -8,6 +8,7 @@ import { BudgetsModule } from "./budgets/budgets.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { ClientsModule } from "./clients/clients.module";
 import { EventsModule } from "./events/events.module";
+import { SchedulerModule } from "./scheduler/scheduler.module";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { EventsModule } from "./events/events.module";
     NotificationsModule,
     ClientsModule,
     EventsModule,
+    SchedulerModule,
   ],
   controllers: [HealthController],
   providers: [],

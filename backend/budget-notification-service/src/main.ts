@@ -1,6 +1,12 @@
+import { webcrypto } from "crypto";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { loadEnv } from "@shared/config/envLoader";
+
+// Polyfill cho @nestjs/schedule trên Node 18 (crypto.randomUUID)
+if (!globalThis.crypto) {
+  (globalThis as any).crypto = webcrypto;
+}
 
 async function bootstrap() {
   loadEnv();

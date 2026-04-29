@@ -34,7 +34,7 @@ export class BudgetsRepository {
   ): Promise<Budget> {
     const budget_amount = Number(
       (createBudgetDto as any).budget_amount ??
-      (createBudgetDto as any).budgetAmount,
+      (createBudgetDto as any).budget_amount,
     );
     const budget_period =
       (createBudgetDto as any).budget_period ??
@@ -79,7 +79,7 @@ export class BudgetsRepository {
       .from("budgets")
       .select("*")
       .eq("user_id", user_id)
-      .eq("status", "active")
+      .in("status", ["active", "exceeded"])
       .lte("start_date", today)
       .gte("end_date", today)
       .order("created_at", { ascending: false })
@@ -97,7 +97,7 @@ export class BudgetsRepository {
   ): Promise<Budget | null> {
     const budget_amount = Number(
       (updateBudgetDto as any).budget_amount ??
-      (updateBudgetDto as any).budgetAmount,
+      (updateBudgetDto as any).budget_amount,
     );
     const budget_period =
       (updateBudgetDto as any).budget_period ??

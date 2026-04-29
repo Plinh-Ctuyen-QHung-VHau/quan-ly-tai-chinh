@@ -20,6 +20,7 @@ export interface NotificationSettings {
   enable_anomaly_alert: boolean;
   enable_daily_reminder: boolean;
   reminder_time?: string | null; // DB type: time, nullable
+  push_token?: string | null;
   created_at?: string;
   updated_at?: string;
   // NOTE: alert_80_sent / alert_100_sent belong to budget.budgets, NOT here

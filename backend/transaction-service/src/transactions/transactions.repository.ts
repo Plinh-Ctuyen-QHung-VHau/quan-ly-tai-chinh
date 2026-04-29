@@ -234,19 +234,19 @@ export class TransactionsRepository {
     const { data, error } = await query;
     if (error) throw new Error(error.message);
 
-    let totalIncome = 0;
-    let totalExpense = 0;
+    let total_income = 0;
+    let total_expense = 0;
 
     for (const row of data || []) {
       const amount = parseFloat(row.amount);
-      if (row.type === "income") totalIncome += amount;
-      else if (row.type === "expense") totalExpense += amount;
+      if (row.type === "income") total_income += amount;
+      else if (row.type === "expense") total_expense += amount;
     }
 
     return {
-      totalIncome,
-      totalExpense,
-      balance: totalIncome - totalExpense,
+      total_income,
+      total_expense,
+      balance: total_income - total_expense,
     };
   }
 }

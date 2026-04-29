@@ -27,7 +27,7 @@ function getProgressColor(percent: number) {
 }
 
 function getBudgetStatusTheme(status?: BudgetStatus["status"] | null) {
-  if (status === "danger") return { label: "Vượt ngưỡng", color: COLORS.expense, bg: COLORS.expenseSoft };
+  if (status === "danger" || status === "exceeded") return { label: "Đã vượt ngân sách", color: COLORS.expense, bg: COLORS.expenseSoft };
   if (status === "warning") return { label: "Cần chú ý", color: "#D97706", bg: "#FEF3C7" };
   if (status === "healthy") return { label: "Đang theo dõi", color: COLORS.income, bg: COLORS.incomeSoft };
   return { label: "Chưa có", color: COLORS.muted, bg: "#F1F5F9" };
@@ -128,15 +128,15 @@ export function BudgetScreen() {
     try {
       const idFromStatus = budgetStatus?.id;
       const currentBudget = idFromStatus ? null : await getCurrentBudget();
-      const budgetId = idFromStatus || currentBudget?.id;
+      const budget_id = idFromStatus || currentBudget?.id;
 
-      if (!budgetId) {
+      if (!budget_id) {
         setCurrentBudgetStatus(null);
         Alert.alert("Đã xóa", "Ngân sách hiện tại không còn tồn tại.");
         return;
       }
 
-      await deleteBudget(budgetId);
+      await deleteBudget(budget_id);
       setCurrentBudgetStatus(null);
       Alert.alert("Đã xóa", "Ngân sách đã được xóa thành công.");
     } catch (error: any) {

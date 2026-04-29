@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   View,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
@@ -245,9 +246,9 @@ export function TransactionConfirmScreen() {
       await createTransaction({
         amount: Number(amount),
         type,
-        category_id,
+        category_id: category_id,
         note: note.trim() || undefined,
-        transaction_date,
+        transaction_date: transaction_date,
         merchant_name: merchant_name.trim() || undefined,
         image_url: validimage_url,
         source: draftsource_type,
@@ -282,8 +283,11 @@ export function TransactionConfirmScreen() {
         </View>
 
         {previewImage ? (
-          <View style={styles.receiptBadge}>
-            <Text style={styles.receiptBadgeText}>Đã đính kèm hóa đơn</Text>
+          <View style={styles.previewImageContainer}>
+            <Image source={{ uri: previewImage }} style={styles.previewImage} resizeMode="cover" />
+            <View style={styles.receiptBadge}>
+              <Text style={styles.receiptBadgeText}>Đã đính kèm hóa đơn</Text>
+            </View>
           </View>
         ) : null}
       </View>
@@ -453,9 +457,11 @@ const styles = StyleSheet.create({
   heroKicker: { color: "#93C5FD", fontSize: 11, fontWeight: "900", letterSpacing: 2, marginBottom: 10 },
   heroTitle: { color: COLORS.white, fontSize: 34, fontWeight: "900", letterSpacing: -0.8, marginBottom: 8 },
   heroSubtitle: { color: "#94A3B8", fontSize: 14, lineHeight: 21 },
-  receiptBadge: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(22,163,74,0.2)", borderWidth: 1, borderColor: "rgba(22,163,74,0.35)", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, alignSelf: "flex-start" },
+  receiptBadge: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(22,163,74,0.8)", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, position: "absolute", bottom: 10, left: 10 },
   receiptBadgeIcon: { fontSize: 16 },
-  receiptBadgeText: { color: "#86EFAC", fontWeight: "800", fontSize: 13 },
+  receiptBadgeText: { color: "#FFFFFF", fontWeight: "800", fontSize: 13 },
+  previewImageContainer: { marginTop: 16, width: "100%", height: 200, borderRadius: 16, overflow: "hidden", position: "relative" },
+  previewImage: { width: "100%", height: "100%" },
 
   // Amount card
   amountCard: { borderRadius: 28, borderWidth: 1.5, padding: 22, marginBottom: 16, ...shadow },

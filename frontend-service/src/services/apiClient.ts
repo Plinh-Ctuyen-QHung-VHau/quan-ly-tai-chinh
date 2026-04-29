@@ -25,6 +25,31 @@ export const apiClient = axios.create({
   timeout: 30000,
 });
 
+// Retry helper cho Network Error (thiết bị treo, mạng yếu)
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function retryRequest(error: unknown, retries = 2): Promise<any> {
+  const isNetworkError =
+    axios.isAxiosError(error) && !error.response && error.code !== "ERR_CANCELED";
+
+  if (isNetworkError && retries > 0) {
+    await sleep(1000);
+    const config = (error as any).config;
+    if (config) {
+      config._retryCount = (config._retryCount || 0) + 1;
+      if (config._retryCount <= 2) {
+        // Use axios directly to bypass apiClient response interceptors if you want, or just let interceptor handle it via config flags
+        // Actually, since we use apiClient.request, it will hit the interceptor again. 
+        return await apiClient.request(config);
+      }
+    }
+  }
+
+  return Promise.reject(error);
+}
+
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     console.log(
@@ -59,6 +84,18 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: unknown) => {
+    // Retry tự động khi Network Error (thiết bị treo, mạng yếu)
+    const isNetworkError =
+      axios.isAxiosError(error) && !error.response && error.code !== "ERR_CANCELED";
+    
+    // Ngăn chặn infinite loop: interceptor bắt lại request đã retry và gọi retry lại từ đầu.
+    if (isNetworkError) {
+      const config = (error as any).config;
+      if (!config || !config._retryCount || config._retryCount < 2) {
+        return retryRequest(error);
+      }
+    }
+
     const shouldSkipBudgetStatus404Log =
       axios.isAxiosError(error) &&
       error.response?.status === 404 &&
@@ -70,7 +107,6 @@ apiClient.interceptors.response.use(
     const normalizedError = normalizeAxiosError(error);
 
     if (!shouldSkipBudgetStatus404Log) {
-      // Log response error
       console.error(
         `[API ERROR] ${normalizedError.statusCode || "UNKNOWN"} | Message: ${normalizedError.message} | Data:`,
         normalizedError.details,

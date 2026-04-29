@@ -1,5 +1,5 @@
 export interface TransactionSummary {
-  totalSpent: number;
-  start_date: string;
-  end_date: string;
+  total_expense?: number;
+  total_income?: number;
+  balance?: number;
 }

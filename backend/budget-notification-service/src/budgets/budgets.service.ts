@@ -46,19 +46,30 @@ export class BudgetsService {
       budget.end_date instanceof Date ? budget.end_date.toISOString().split('T')[0] : String(budget.end_date),
     );
 
-    const spent_amount = summary.totalSpent || 0;
+    const spent_amount = summary.total_expense || 0;
     const budget_amount = budget.budget_amount;
     const remaining_amount = budget_amount - spent_amount;
     const percent_used =
       budget_amount > 0 ? (spent_amount / budget_amount) * 100 : 0;
 
+    // Tính status theo percent_used để FE hiển thị đúng
+    let frontendStatus: "healthy" | "warning" | "danger";
+    if (percent_used >= 100) {
+      frontendStatus = "danger";
+    } else if (percent_used >= 80) {
+      frontendStatus = "warning";
+    } else {
+      frontendStatus = "healthy";
+    }
+
     const status = {
-      budget_id: budget.id,
+      id: budget.id,
       budget_amount,
-      spent_amount: spent_amount,
-      remaining_amount: remaining_amount,
+      spent_amount,
+      remaining_amount,
       percent_used: Math.round(percent_used * 100) / 100,
-      status: budget.status,
+      status: frontendStatus,
+      budget_period: budget.budget_period,
       start_date: budget.start_date,
       end_date: budget.end_date,
     };
@@ -94,36 +105,39 @@ export class BudgetsService {
   private async checkBudgetThresholds(budget, status) {
     // 100% threshold
     if (status.percent_used >= 100 && !budget.alert_100_sent) {
-      await this.notificationsService.createBudgetAlert(
+      const notification = await this.notificationsService.createBudgetAlert(
         budget.user_id,
-        budget,
-        status.spent_amount,
+        budget.id,
         100,
       );
-      await this.budgetsRepository.updateAlertSent(budget.id, "100");
-      await this.budgetsRepository.updateStatus(budget.id, "exceeded");
-      await this.eventPublisher.publish("budget.exceeded", {
-        budgetId: budget.id,
-        user_id: budget.user_id,
-      });
-      this.metrics.budgetExceededTotal.inc();
-      this.metrics.budgetThresholdReachedTotal.inc({ threshold: "100" });
+      // Only mark as sent if notification was actually created (not blocked by settings)
+      if (notification) {
+        await this.budgetsRepository.updateAlertSent(budget.id, "100");
+        await this.budgetsRepository.updateStatus(budget.id, "exceeded");
+        await this.eventPublisher.publish("budget.exceeded", {
+          budget_id: budget.id,
+          user_id: budget.user_id,
+        });
+        this.metrics.budgetExceededTotal.inc();
+        this.metrics.budgetThresholdReachedTotal.inc({ threshold: "100" });
+      }
     }
     // 80% threshold
     else if (status.percent_used >= 80 && !budget.alert_80_sent) {
-      await this.notificationsService.createBudgetAlert(
+      const notification = await this.notificationsService.createBudgetAlert(
         budget.user_id,
-        budget,
-        status.spent_amount,
+        budget.id,
         80,
       );
-      await this.budgetsRepository.updateAlertSent(budget.id, "80");
-      await this.eventPublisher.publish("budget.threshold.reached", {
-        budgetId: budget.id,
-        user_id: budget.user_id,
-        threshold: 80,
-      });
-      this.metrics.budgetThresholdReachedTotal.inc({ threshold: "80" });
+      if (notification) {
+        await this.budgetsRepository.updateAlertSent(budget.id, "80");
+        await this.eventPublisher.publish("budget.threshold.reached", {
+          budget_id: budget.id,
+          user_id: budget.user_id,
+          threshold: 80,
+        });
+        this.metrics.budgetThresholdReachedTotal.inc({ threshold: "80" });
+      }
     }
   }
 }
