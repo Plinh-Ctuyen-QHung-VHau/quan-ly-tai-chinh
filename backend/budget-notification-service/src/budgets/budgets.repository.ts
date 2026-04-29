@@ -79,7 +79,7 @@ export class BudgetsRepository {
       .from("budgets")
       .select("*")
       .eq("user_id", user_id)
-      .eq("status", "active")
+      .in("status", ["active", "exceeded"])
       .lte("start_date", today)
       .gte("end_date", today)
       .order("created_at", { ascending: false })
