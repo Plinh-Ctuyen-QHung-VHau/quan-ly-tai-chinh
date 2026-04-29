@@ -40,7 +40,7 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
         "postgres_changes",
         {
           event: "INSERT",
-          schema: "public",
+          schema: "budget",
           table: "notifications",
           filter: `user_id=eq.${user_id}`,
         },

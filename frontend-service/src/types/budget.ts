@@ -26,7 +26,7 @@ export interface BudgetStatus {
 
 export interface BudgetStatusApiResponse {
   id?: string;
-  budgetId?: string;
+  budget_id?: string;
   budget_amount?: number;
   budget_amount?: number;
   spent_amount?: number;

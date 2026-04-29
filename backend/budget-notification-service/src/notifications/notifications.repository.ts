@@ -212,6 +212,17 @@ export class NotificationsRepository {
     return this.mapToSettings(data);
   }
 
+  async getUsersWithDailyReminderEnabled(): Promise<string[]> {
+    const { data, error } = await this.supabase
+      .from("notification_settings")
+      .select("user_id")
+      .eq("enable_all", true)
+      .eq("enable_daily_reminder", true);
+
+    if (error) throw new Error(error.message);
+    return (data || []).map((row: any) => row.user_id);
+  }
+
   private mapToNotification(row: any): Notification {
     if (!row) return null;
     return {

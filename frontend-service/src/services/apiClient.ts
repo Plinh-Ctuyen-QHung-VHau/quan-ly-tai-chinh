@@ -22,8 +22,30 @@ export function setUnauthorizedHandler(
 
 export const apiClient = axios.create({
   baseURL: baseURL,
-  timeout: 30000,
+  timeout: 15000,
 });
+
+// Retry helper cho Network Error (thiết bị treo, mạng yếu)
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function retryRequest(error: unknown, retries = 2): Promise<any> {
+  const isNetworkError =
+    axios.isAxiosError(error) && !error.response && error.code !== "ERR_CANCELED";
+
+  if (isNetworkError && retries > 0) {
+    await sleep(1000);
+    try {
+      const config = (error as any).config;
+      return await apiClient.request(config);
+    } catch (retryError) {
+      return retryRequest(retryError, retries - 1);
+    }
+  }
+
+  return Promise.reject(error);
+}
 
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
@@ -59,6 +81,13 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: unknown) => {
+    // Retry tự động khi Network Error (thiết bị treo, mạng yếu)
+    const isNetworkError =
+      axios.isAxiosError(error) && !error.response && error.code !== "ERR_CANCELED";
+    if (isNetworkError) {
+      return retryRequest(error);
+    }
+
     const shouldSkipBudgetStatus404Log =
       axios.isAxiosError(error) &&
       error.response?.status === 404 &&
@@ -70,7 +99,6 @@ apiClient.interceptors.response.use(
     const normalizedError = normalizeAxiosError(error);
 
     if (!shouldSkipBudgetStatus404Log) {
-      // Log response error
       console.error(
         `[API ERROR] ${normalizedError.statusCode || "UNKNOWN"} | Message: ${normalizedError.message} | Data:`,
         normalizedError.details,

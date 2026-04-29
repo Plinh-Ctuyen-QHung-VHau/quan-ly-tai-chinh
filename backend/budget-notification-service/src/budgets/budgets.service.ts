@@ -52,13 +52,25 @@ export class BudgetsService {
     const percent_used =
       budget_amount > 0 ? (spent_amount / budget_amount) * 100 : 0;
 
+    // Tính status theo percent_used để FE hiển thị đúng
+    let displayStatus: "healthy" | "warning" | "danger";
+    if (percent_used >= 100) {
+      displayStatus = "danger";
+    } else if (percent_used >= 80) {
+      displayStatus = "warning";
+    } else {
+      displayStatus = "healthy";
+    }
+
     const status = {
+      id: budget.id,
       budget_id: budget.id,
       budget_amount,
-      spent_amount: spent_amount,
-      remaining_amount: remaining_amount,
+      spent_amount,
+      remaining_amount,
       percent_used: Math.round(percent_used * 100) / 100,
-      status: budget.status,
+      status: displayStatus,
+      budget_period: budget.budget_period,
       start_date: budget.start_date,
       end_date: budget.end_date,
     };
@@ -104,7 +116,7 @@ export class BudgetsService {
         await this.budgetsRepository.updateAlertSent(budget.id, "100");
         await this.budgetsRepository.updateStatus(budget.id, "exceeded");
         await this.eventPublisher.publish("budget.exceeded", {
-          budgetId: budget.id,
+          budget_id: budget.id,
           user_id: budget.user_id,
         });
         this.metrics.budgetExceededTotal.inc();
@@ -121,7 +133,7 @@ export class BudgetsService {
       if (notification) {
         await this.budgetsRepository.updateAlertSent(budget.id, "80");
         await this.eventPublisher.publish("budget.threshold.reached", {
-          budgetId: budget.id,
+          budget_id: budget.id,
           user_id: budget.user_id,
           threshold: 80,
         });

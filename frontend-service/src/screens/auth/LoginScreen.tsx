@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { AppButton } from "../../components/AppButton";
@@ -61,10 +61,10 @@ export function LoginScreen({
       <View style={styles.bgOrbBottom} />
 
       <View style={styles.hero}>
-        <Text style={styles.badge}>Tài chính cá nhân</Text>
+        <Text style={styles.badge}>QUẢN LÍ TÀI CHÍNH CÁ NHÂN THÔNG MINH</Text>
         <Text style={styles.title}>Đăng nhập</Text>
         <Text style={styles.subtitle}>
-          Theo dõi giao dịch, ngân sách và thông báo của bạn trong một nơi an toàn.
+          Theo dõi chi tiêu và thu nhập của bạn hiệu quả nhất  .
         </Text>
       </View>
 
@@ -96,7 +96,12 @@ export function LoginScreen({
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <AppButton title="Đăng nhập" onPress={handleLogin} loading={loading} />
-        <Text style={styles.helperText}>Bảo mật bởi Supabase Auth</Text>
+        <Pressable
+          style={styles.forgotBtn}
+          onPress={() => navigation.navigate("ForgotPassword")}
+        >
+          <Text style={styles.forgotText}>Quên mật khẩu?</Text>
+        </Pressable>
         <View style={styles.linkRow}>
           <Text style={styles.linkText}>Chưa có tài khoản?</Text>
           <AppButton
@@ -182,6 +187,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#64748b",
     fontSize: 13,
+  },
+  forgotBtn: {
+    alignSelf: "center",
+    marginTop: 12,
+    marginBottom: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  forgotText: {
+    color: "#2563EB",
+    fontSize: 14,
+    fontWeight: "700",
   },
   linkRow: {
     marginTop: 16,

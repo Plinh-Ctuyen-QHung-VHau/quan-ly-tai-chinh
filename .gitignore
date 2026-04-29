@@ -1,3 +1,12 @@
 node_modules/
 mobile/node_modules/
 .env
+.env.*
+!.env.example
+
+# Secret / credential files — KHÔNG bao giờ commit lên repo
+**/fcm-secret.json
+**/google-services-account.json
+**/service-account*.json
+**/*-credentials.json
+**/*-secret.json
