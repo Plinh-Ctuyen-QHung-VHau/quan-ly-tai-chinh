@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1079988946219",
+    "project_id": "ql-tai-chinh-db9d7",
+    "storage_bucket": "ql-tai-chinh-db9d7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1079988946219:android:3da4ffe834a2f7999d716e",
+        "android_client_info": {
+          "package_name": "com.hey129.qltaichinh"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcPWU7medPy0tZ6uIOg_qt93OjSOJWsGw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
