@@ -28,7 +28,7 @@ export interface BudgetStatusApiResponse {
   id?: string;
   budgetId?: string;
   budget_amount?: number;
-  budgetAmount?: number;
+  budget_amount?: number;
   spent_amount?: number;
   spentAmount?: number;
   remaining_amount?: number;

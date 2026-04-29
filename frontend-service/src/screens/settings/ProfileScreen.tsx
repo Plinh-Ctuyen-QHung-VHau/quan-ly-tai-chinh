@@ -58,8 +58,8 @@ export function ProfileScreen() {
 
     try {
       const result = await updateMyProfile({
-        fullName: full_name.trim(),
-        avatarUrl: avatar_url.trim() || undefined,
+        full_name: full_name.trim(),
+        avatar_url: avatar_url.trim() || undefined,
       });
 
       setProfile(result);

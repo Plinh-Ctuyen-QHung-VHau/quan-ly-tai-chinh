@@ -99,10 +99,10 @@ export function TransactionEditScreen() {
       await updateTransaction(transaction_id, {
         amount: Number(amount),
         type,
-        categoryId: category_id,
+        category_id: category_id,
         note: note.trim() || undefined,
-        transactionDate: transaction_date,
-        merchantName: merchant_name.trim() || undefined,
+        transaction_date: transaction_date,
+        merchant_name: merchant_name.trim() || undefined,
       });
       Alert.alert("Đã cập nhật", "Giao dịch đã được sửa thành công.");
       navigation.goBack();
@@ -240,7 +240,7 @@ export function TransactionEditScreen() {
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingBottom: 40 },
-  
+
   header: { marginTop: 24, marginBottom: 20 },
   screenKicker: { color: COLORS.blue, fontSize: 11, fontWeight: "900", letterSpacing: 2, marginBottom: 8 },
   screenTitle: { color: COLORS.text, fontSize: 32, fontWeight: "900", letterSpacing: -0.8 },

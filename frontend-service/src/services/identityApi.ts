@@ -9,8 +9,8 @@ export async function getMyProfile() {
 }
 
 export async function updateMyProfile(payload: {
-  fullName?: string;
-  avatarUrl?: string;
+  full_name?: string;
+  avatar_url?: string;
 }) {
   const response = await apiClient.put(endpoints.users.me, payload);
   return handleApiResponse<UserProfile>(response);

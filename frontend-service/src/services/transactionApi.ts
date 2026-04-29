@@ -14,8 +14,8 @@ import {
 type TransactionSummaryApiResponse = {
   total_income?: number;
   total_expense?: number;
-  totalIncome?: number;
-  totalExpense?: number;
+  total_income?: number;
+  total_expense?: number;
   balance?: number;
   currency?: string;
 };
@@ -24,8 +24,8 @@ function normalizeTransactionSummary(
   payload: TransactionSummaryApiResponse,
 ): TransactionSummary {
   return {
-    totalIncome: Number(payload.total_income ?? payload.totalIncome ?? 0),
-    totalExpense: Number(payload.total_expense ?? payload.totalExpense ?? 0),
+    total_income: Number(payload.total_income ?? payload.total_income ?? 0),
+    total_expense: Number(payload.total_expense ?? payload.total_expense ?? 0),
     balance: Number(payload.balance ?? 0),
   };
 }
@@ -41,7 +41,7 @@ export async function getTransactions(filters: TransactionFilters = {}) {
   const response = await apiClient.get(endpoints.transactions.list, {
     params: {
       ...restFilters,
-      ...(category_id ? { categoryId: category_id } : {}),
+      ...(category_id ? { category_id: category_id } : {}),
     },
   });
   return handleApiResponse<TransactionListResponse>(response);

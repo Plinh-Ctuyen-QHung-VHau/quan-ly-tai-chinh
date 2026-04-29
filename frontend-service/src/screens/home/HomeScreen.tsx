@@ -20,8 +20,8 @@ import { StatTile, SmallMetric } from "../../components/MetricTiles";
 import { COLORS, shadow } from "../../constants/ui";
 
 const EMPTY_SUMMARY: TransactionSummary = {
-  totalIncome: 0,
-  totalExpense: 0,
+  total_income: 0,
+  total_expense: 0,
   balance: 0,
 };
 
@@ -106,8 +106,8 @@ export function HomeScreen() {
     void loadData();
   }, [loadData]);
 
-  const income = Number(summary.totalIncome ?? 0);
-  const expense = Number(summary.totalExpense ?? 0);
+  const income = Number(summary.total_income ?? 0);
+  const expense = Number(summary.total_expense ?? 0);
   const balance = Number(summary.balance ?? 0);
   const netCashFlow = income - expense;
 

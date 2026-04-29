@@ -28,12 +28,12 @@ export interface Transaction {
 export interface CreateTransactionPayload {
   amount: number;
   type: TransactionType;
-  categoryId: string;
-  transactionDate: string;
+  category_id: string;
+  transaction_date: string;
   source: TransactionSource;
   note?: string;
-  imageUrl?: string;
-  merchantName?: string;
+  image_url?: string;
+  merchant_name?: string;
   ocr_result_id?: string;
 }
 
@@ -41,8 +41,8 @@ export type UpdateTransactionPayload = Partial<CreateTransactionPayload>;
 
 /** Backend trả camelCase từ JS object (bukan Supabase raw) */
 export interface TransactionSummary {
-  totalIncome: number;
-  totalExpense: number;
+  total_income: number;
+  total_expense: number;
   balance: number;
 }
 

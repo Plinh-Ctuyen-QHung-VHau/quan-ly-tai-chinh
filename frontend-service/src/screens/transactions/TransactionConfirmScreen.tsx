@@ -246,11 +246,11 @@ export function TransactionConfirmScreen() {
       await createTransaction({
         amount: Number(amount),
         type,
-        categoryId: category_id,
+        category_id: category_id,
         note: note.trim() || undefined,
-        transactionDate: transaction_date,
-        merchantName: merchant_name.trim() || undefined,
-        imageUrl: validimage_url,
+        transaction_date: transaction_date,
+        merchant_name: merchant_name.trim() || undefined,
+        image_url: validimage_url,
         source: draftsource_type,
       });
 
