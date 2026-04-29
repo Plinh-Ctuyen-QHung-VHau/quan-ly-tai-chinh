@@ -1,0 +1,5 @@
+{
+  "event_id": "1",
+  "event": "transaction.created",
+  "data": { "amount": 10000000, "category": "food" }
+}

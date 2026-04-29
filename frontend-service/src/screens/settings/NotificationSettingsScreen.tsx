@@ -132,7 +132,6 @@ export function NotificationSettingsScreen() {
       <View style={styles.card}>
         <View style={styles.masterRow}>
           <View style={styles.masterLeft}>
-            <Text style={styles.masterIcon}>🔔</Text>
             <View>
               <Text style={styles.masterLabel}>Bật thông báo</Text>
               <Text style={styles.masterSub}>
@@ -154,7 +153,6 @@ export function NotificationSettingsScreen() {
         <Text style={styles.groupLabel}>Loại thông báo</Text>
 
         <ToggleRow
-          icon="💰"
           label="Cảnh báo ngân sách"
           sub="Khi chi tiêu vượt 80% hoặc 100%"
           value={settings.enable_budget_alert}
@@ -165,7 +163,6 @@ export function NotificationSettingsScreen() {
         <View style={styles.divider} />
 
         <ToggleRow
-          icon="⚠️"
           label="Giao dịch bất thường"
           sub="Khi phát hiện chi tiêu bất thường"
           value={settings.enable_anomaly_alert}
@@ -176,7 +173,6 @@ export function NotificationSettingsScreen() {
         <View style={styles.divider} />
 
         <ToggleRow
-          icon="📅"
           label="Nhắc nhở hàng ngày"
           sub="Nhắc cập nhật giao dịch mỗi ngày"
           value={settings.enable_daily_reminder}
@@ -198,7 +194,6 @@ export function NotificationSettingsScreen() {
             onPress={() => setShowTimePicker(true)}
           >
             <View style={styles.timeLeft}>
-              <Text style={styles.timeIcon}>🕐</Text>
               <View>
                 <Text style={styles.timeLabel}>Giờ nhắc nhở</Text>
                 <Text style={styles.timeSub}>Nhấn để thay đổi</Text>
@@ -257,7 +252,6 @@ export function NotificationSettingsScreen() {
 }
 
 type ToggleRowProps = {
-  icon: string;
   label: string;
   sub: string;
   value: boolean;
@@ -265,10 +259,9 @@ type ToggleRowProps = {
   disabled?: boolean;
 };
 
-function ToggleRow({ icon, label, sub, value, onChange, disabled }: ToggleRowProps) {
+function ToggleRow({ label, sub, value, onChange, disabled }: ToggleRowProps) {
   return (
     <View style={styles.toggleRow}>
-      <Text style={styles.toggleIcon}>{icon}</Text>
       <View style={styles.toggleText}>
         <Text style={[styles.toggleLabel, disabled && styles.textDisabled]}>
           {label}
@@ -321,7 +314,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   masterLeft: { flexDirection: "row", alignItems: "center", gap: 14, flex: 1 },
-  masterIcon: { fontSize: 28 },
   masterLabel: { color: COLORS.text, fontSize: 16, fontWeight: "900" },
   masterSub: { color: COLORS.muted, fontSize: 12, marginTop: 2 },
 
@@ -340,7 +332,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 4,
   },
-  toggleIcon: { fontSize: 22, marginRight: 14 },
   toggleText: { flex: 1 },
   toggleLabel: { color: COLORS.text, fontSize: 15, fontWeight: "700" },
   toggleSub: { color: COLORS.muted, fontSize: 12, marginTop: 2 },
@@ -350,7 +341,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: COLORS.border,
     marginVertical: 12,
-    marginLeft: 36,
   },
 
   // Time picker row
@@ -362,7 +352,6 @@ const styles = StyleSheet.create({
   },
   timeRowPressed: { opacity: 0.75 },
   timeLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
-  timeIcon: { fontSize: 22 },
   timeLabel: { color: COLORS.text, fontSize: 15, fontWeight: "700" },
   timeSub: { color: COLORS.muted, fontSize: 12, marginTop: 2 },
   timeBadge: {

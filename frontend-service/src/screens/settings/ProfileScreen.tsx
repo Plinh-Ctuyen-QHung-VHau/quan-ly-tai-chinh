@@ -132,11 +132,11 @@ export function ProfileScreen() {
         <Text style={styles.avatarEmail}>{email}</Text>
         {emailConfirmed ? (
           <View style={styles.verifiedBadge}>
-            <Text style={styles.verifiedText}>✓ Email đã xác thực</Text>
+            <Text style={styles.verifiedText}>Email đã xác thực</Text>
           </View>
         ) : (
           <View style={styles.unverifiedBadge}>
-            <Text style={styles.unverifiedText}>⚠ Chưa xác thực email</Text>
+            <Text style={styles.unverifiedText}>Chưa xác thực email</Text>
           </View>
         )}
       </View>
@@ -154,14 +154,13 @@ export function ProfileScreen() {
                 setEditing(true);
               }}
             >
-              <Text style={styles.editBtnText}>✏ Sửa</Text>
+              <Text style={styles.editBtnText}>Sửa</Text>
             </Pressable>
           )}
         </View>
 
         {/* Họ và tên — có thể edit inline */}
         <View style={styles.infoRow}>
-          <Text style={styles.infoIcon}>👤</Text>
           <View style={styles.infoContent}>
             <Text style={styles.infoLabel}>Họ và tên</Text>
             {editing ? (
@@ -180,9 +179,9 @@ export function ProfileScreen() {
 
         <View style={styles.divider} />
 
-        <InfoRow icon="📧" label="Email" value={email || "—"} />
+        <InfoRow label="Email" value={email || "—"} />
         <View style={styles.divider} />
-        <InfoRow icon="📅" label="Ngày tham gia" value={formatDate(createdAt)} />
+        <InfoRow label="Ngày tham gia" value={formatDate(createdAt)} />
 
         {/* Action buttons khi editing */}
         {editing && (
@@ -204,11 +203,10 @@ export function ProfileScreen() {
   );
 }
 
-type InfoRowProps = { icon: string; label: string; value: string };
-function InfoRow({ icon, label, value }: InfoRowProps) {
+type InfoRowProps = { label: string; value: string };
+function InfoRow({ label, value }: InfoRowProps) {
   return (
     <View style={styles.infoRow}>
-      <Text style={styles.infoIcon}>{icon}</Text>
       <View style={styles.infoContent}>
         <Text style={styles.infoLabel}>{label}</Text>
         <Text style={styles.infoValue} numberOfLines={1}>{value}</Text>
@@ -330,7 +328,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
   },
-  infoIcon: { fontSize: 20, marginRight: 14, width: 28, textAlign: "center" },
   infoContent: { flex: 1 },
   infoLabel: { color: COLORS.muted, fontSize: 11, fontWeight: "700", marginBottom: 2 },
   infoValue: { color: COLORS.text, fontSize: 15, fontWeight: "700" },
