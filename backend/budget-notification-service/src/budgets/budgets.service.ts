@@ -53,23 +53,22 @@ export class BudgetsService {
       budget_amount > 0 ? (spent_amount / budget_amount) * 100 : 0;
 
     // Tính status theo percent_used để FE hiển thị đúng
-    let displayStatus: "healthy" | "warning" | "danger";
+    let frontendStatus: "healthy" | "warning" | "danger";
     if (percent_used >= 100) {
-      displayStatus = "danger";
+      frontendStatus = "danger";
     } else if (percent_used >= 80) {
-      displayStatus = "warning";
+      frontendStatus = "warning";
     } else {
-      displayStatus = "healthy";
+      frontendStatus = "healthy";
     }
 
     const status = {
       id: budget.id,
-      budget_id: budget.id,
       budget_amount,
       spent_amount,
       remaining_amount,
       percent_used: Math.round(percent_used * 100) / 100,
-      status: displayStatus,
+      status: frontendStatus,
       budget_period: budget.budget_period,
       start_date: budget.start_date,
       end_date: budget.end_date,

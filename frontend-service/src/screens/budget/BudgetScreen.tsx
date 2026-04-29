@@ -27,7 +27,7 @@ function getProgressColor(percent: number) {
 }
 
 function getBudgetStatusTheme(status?: BudgetStatus["status"] | null) {
-  if (status === "danger") return { label: "Vượt ngưỡng", color: COLORS.expense, bg: COLORS.expenseSoft };
+  if (status === "danger" || status === "exceeded") return { label: "Đã vượt ngân sách", color: COLORS.expense, bg: COLORS.expenseSoft };
   if (status === "warning") return { label: "Cần chú ý", color: "#D97706", bg: "#FEF3C7" };
   if (status === "healthy") return { label: "Đang theo dõi", color: COLORS.income, bg: COLORS.incomeSoft };
   return { label: "Chưa có", color: COLORS.muted, bg: "#F1F5F9" };
