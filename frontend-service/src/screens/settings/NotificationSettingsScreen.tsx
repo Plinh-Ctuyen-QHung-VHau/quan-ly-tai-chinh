@@ -20,6 +20,7 @@ import {
   updateNotificationSettings,
 } from "../../services/notificationApi";
 import { NotificationSettings } from "../../types/notification";
+import { LoadingView } from "src/components/LoadingView";
 
 const DEFAULT: NotificationSettings = {
   enable_all: true,
@@ -62,6 +63,7 @@ export function NotificationSettingsScreen() {
     setError("");
     try {
       const result = await getNotificationSettings();
+      console.log("[NotifSettings] loaded from API:", JSON.stringify(result));
       setSettings({ ...DEFAULT, ...result });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải cài đặt.");
@@ -106,6 +108,8 @@ export function NotificationSettingsScreen() {
     setSettings((s) => ({ ...s, [field]: value }));
 
   const isDisabled = !settings.enable_all;
+
+  if (loading) return <LoadingView label="Đang tải cài đặt..." />;
 
   return (
     <ScrollView

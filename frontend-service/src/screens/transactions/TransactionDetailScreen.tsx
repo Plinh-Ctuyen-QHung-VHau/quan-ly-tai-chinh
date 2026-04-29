@@ -75,7 +75,7 @@ export function TransactionDetailScreen() {
   const getSourceLabel = (source?: string | null) => {
     switch (source) {
       case "camera": return "Chụp ảnh";
-      case "gallery": return "Thư viện";
+      case "gallery": return "Thư viện ảnh";
       case "ocr": return "Hệ thống AI";
       default: return "Thủ công";
     }
@@ -167,9 +167,9 @@ export function TransactionDetailScreen() {
         >
           <Text style={styles.actionPillTextPrimary}>Chỉnh sửa</Text>
         </Pressable>
-        
+
         <View style={styles.actionDivider} />
-        
+
         <Pressable
           onPress={handleDelete}
           disabled={deleting}
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   headerWrap: { backgroundColor: COLORS.dark, paddingTop: 60, paddingBottom: 40, borderBottomLeftRadius: 40, borderBottomRightRadius: 40, position: "relative", overflow: "hidden", ...shadow },
   glowLeft: { position: "absolute", left: -40, top: -40, width: 200, height: 200, borderRadius: 999, backgroundColor: "rgba(37,99,235,0.15)" },
   glowRight: { position: "absolute", right: -20, bottom: -20, width: 150, height: 150, borderRadius: 999, backgroundColor: "rgba(124,58,237,0.12)" },
-  
+
   amountCard: { alignItems: "center", paddingHorizontal: 20 },
   typeBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, marginBottom: 12 },
   typeText: { fontSize: 12, fontWeight: "900", letterSpacing: 1 },
