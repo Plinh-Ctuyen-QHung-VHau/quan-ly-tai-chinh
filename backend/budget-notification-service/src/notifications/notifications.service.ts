@@ -1,65 +1,235 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import {
   NotificationsRepository,
   NotificationSettings,
+  CreateNotificationInput,
 } from "./notifications.repository";
 import { FindNotificationsDto } from "./dto/find-notifications.dto";
 import { UpdateNotificationSettingsDto } from "./dto/update-notification-settings.dto";
 import { AppMetrics } from "../metrics/app.metrics";
-import { AppError } from "@shared/errors/AppError";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
+
+type NotificationType = "reminder" | "budget_alert" | "anomaly_alert" | "financial_tip";
+
+export interface CreateNotificationParams {
+  userId: string;
+  title: string;
+  content: string;
+  type: NotificationType;
+  relatedEntityType?: string | null;
+  relatedEntityId?: string | null;
+}
+
+export interface AnomalyEvent {
+  anomalyId?: string;
+  transactionId?: string;
+  userId: string;
+  anomalyType?: string;
+  anomalyScore?: number;
+  severity?: string;
+  reason?: string;
+  actualValue?: number;
+}
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     private readonly notificationsRepository: NotificationsRepository,
     private readonly metrics: AppMetrics,
-  ) { }
+    private readonly httpService: HttpService,
+  ) {}
 
-  async createBudgetAlert(
-    user_id: string,
-    budget: { budget_amount: number; budget_period: "weekly" | "monthly" },
-    spent: number,
-    threshold: 80 | 100,
-  ) {
-    const settings = await this.getSettings(user_id);
-    if (!settings.enable_all || !settings.enable_budget_alert) {
-      return; // Do not create notification if disabled
+  // ═══════════════════════════════════════════════════════════════════
+  // GENERIC CREATE (checks settings before creating)
+  // ═══════════════════════════════════════════════════════════════════
+
+  async createNotification(params: CreateNotificationParams) {
+    const { userId, title, content, type, relatedEntityType, relatedEntityId } = params;
+
+    if (!title || !content || !type) {
+      this.logger.warn("createNotification called with missing title/content/type");
+      return null;
     }
 
-    const title = `Budget Alert: ${threshold}% Threshold Reached`;
-    const content = `You have spent ${spent} of your ${budget.budget_period} budget of ${budget.budget_amount}. That's over ${threshold}%!`;
+    // Check user settings
+    const settings = await this.getOrCreateSettings(userId);
 
-    const notification = await this.notificationsRepository.create({
-      user_id,
-      type: "budget_alert",
+    if (!settings.enable_all) {
+      this.logger.debug(`Notification blocked for user ${userId}: enable_all=false`);
+      return null;
+    }
+
+    if (type === "budget_alert" && !settings.enable_budget_alert) {
+      this.logger.debug(`budget_alert blocked for user ${userId}`);
+      return null;
+    }
+    if (type === "anomaly_alert" && !settings.enable_anomaly_alert) {
+      this.logger.debug(`anomaly_alert blocked for user ${userId}`);
+      return null;
+    }
+    if (type === "reminder" && !settings.enable_daily_reminder) {
+      this.logger.debug(`reminder blocked for user ${userId}`);
+      return null;
+    }
+
+    const input: CreateNotificationInput = {
+      user_id: userId,
       title,
       content,
-    });
+      type,
+      related_entity_type: relatedEntityType ?? null,
+      related_entity_id: relatedEntityId ?? null,
+    };
 
-    this.metrics.notificationsCreatedTotal.inc({ type: "budget_alert" });
+    const notification = await this.notificationsRepository.create(input);
+    this.metrics.notificationsCreatedTotal.inc({ type });
+
+    // Send push notification if push_token exists
+    if (settings.push_token) {
+      await this.sendPushNotification(settings.push_token, title, content, {
+        type,
+        relatedEntityType,
+        relatedEntityId,
+      });
+    }
+
     return notification;
   }
 
-  async find(user_id: string, findDto: FindNotificationsDto) {
-    return this.notificationsRepository.find(user_id, findDto);
+  private async sendPushNotification(
+    token: string,
+    title: string,
+    body: string,
+    data?: any,
+  ) {
+    try {
+      await firstValueFrom(
+        this.httpService.post("https://exp.host/--/api/v2/push/send", {
+          to: token,
+          sound: "default",
+          title,
+          body,
+          data,
+        }),
+      );
+      this.logger.debug(`Push notification sent to ${token}`);
+    } catch (error: any) {
+      this.logger.error("Failed to send push notification:", error.response?.data || error.message);
+    }
   }
 
-  async findById(id: string, user_id: string) {
-    const notification = await this.notificationsRepository.findById(
-      id,
-      user_id,
-    );
+  // ═══════════════════════════════════════════════════════════════════
+  // BUDGET ALERT
+  // ═══════════════════════════════════════════════════════════════════
+
+  async createBudgetAlert(
+    userId: string,
+    budgetId: string,
+    threshold: 80 | 100,
+  ) {
+    const title = threshold >= 100 ? "Vượt ngân sách" : "Cảnh báo ngân sách";
+    const content =
+      threshold >= 100
+        ? "Bạn đã vượt ngân sách kỳ này."
+        : "Bạn đã sử dụng hơn 80% ngân sách kỳ này.";
+
+    return this.createNotification({
+      userId,
+      title,
+      content,
+      type: "budget_alert",
+      relatedEntityType: "budget",
+      relatedEntityId: budgetId,
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ANOMALY ALERT
+  // ═══════════════════════════════════════════════════════════════════
+
+  async handleAnomalyDetected(event: AnomalyEvent) {
+    const content =
+      event.reason || "Khoản chi này cao hơn mức thông thường của bạn.";
+
+    const relatedEntityType = event.anomalyId ? "anomaly" : "transaction";
+    const relatedEntityId = event.anomalyId || event.transactionId || null;
+
+    return this.createNotification({
+      userId: event.userId,
+      title: "Cảnh báo chi tiêu bất thường",
+      content,
+      type: "anomaly_alert",
+      relatedEntityType,
+      relatedEntityId,
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // DAILY REMINDER (call via cron/scheduler)
+  // ═══════════════════════════════════════════════════════════════════
+
+  async runDailyReminderCheck(
+    userId: string,
+    hasTransactionsToday: boolean,
+  ) {
+    if (hasTransactionsToday) {
+      this.logger.debug(`User ${userId} already has transactions today, skip reminder`);
+      return null;
+    }
+
+    // Check if reminder already sent today
+    const alreadySent = await this.notificationsRepository.hasReminderToday(userId);
+    if (alreadySent) {
+      this.logger.debug(`Reminder already sent today for user ${userId}`);
+      return null;
+    }
+
+    return this.createNotification({
+      userId,
+      title: "Nhắc cập nhật giao dịch",
+      content: "Bạn chưa cập nhật giao dịch hôm nay.",
+      type: "reminder",
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // CRUD
+  // ═══════════════════════════════════════════════════════════════════
+
+  async find(userId: string, findDto: FindNotificationsDto) {
+    const { notifications, total } = await this.notificationsRepository.find(userId, findDto);
+    const page = findDto.page || 1;
+    const limit = findDto.limit || 10;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items: notifications,
+      meta: {
+        pagination: {
+          page,
+          limit,
+          totalItems: total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrevious: page > 1,
+        },
+      },
+    };
+  }
+
+  async findById(id: string, userId: string) {
+    const notification = await this.notificationsRepository.findById(id, userId);
     if (!notification) {
       throw new NotFoundException("Notification not found.");
     }
     return notification;
   }
 
-  async markAsRead(id: string, user_id: string) {
-    const notification = await this.notificationsRepository.markAsRead(
-      id,
-      user_id,
-    );
+  async markAsRead(id: string, userId: string) {
+    const notification = await this.notificationsRepository.markAsRead(id, userId);
     if (!notification) {
       throw new NotFoundException("Notification not found.");
     }
@@ -67,30 +237,35 @@ export class NotificationsService {
     return notification;
   }
 
-  async markAllAsRead(user_id: string) {
-    const count = await this.notificationsRepository.markAllAsRead(user_id);
+  async markAllAsRead(userId: string) {
+    const count = await this.notificationsRepository.markAllAsRead(userId);
     this.metrics.notificationsReadTotal.inc(count);
     return { markedAsReadCount: count };
   }
 
-  async getSettings(user_id: string): Promise<NotificationSettings> {
-    let settings = await this.notificationsRepository.getSettings(user_id);
+  // ═══════════════════════════════════════════════════════════════════
+  // SETTINGS
+  // ═══════════════════════════════════════════════════════════════════
+
+  async getSettings(userId: string): Promise<NotificationSettings> {
+    return this.getOrCreateSettings(userId);
+  }
+
+  async updateSettings(userId: string, updateDto: UpdateNotificationSettingsDto) {
+    return this.notificationsRepository.updateSettings(userId, updateDto);
+  }
+
+  private async getOrCreateSettings(userId: string): Promise<NotificationSettings> {
+    let settings = await this.notificationsRepository.getSettings(userId);
     if (!settings) {
-      // Create default settings if they don't exist
-      settings = await this.notificationsRepository.updateSettings(user_id, {
+      settings = await this.notificationsRepository.updateSettings(userId, {
         enable_all: true,
         enable_budget_alert: true,
         enable_anomaly_alert: true,
         enable_daily_reminder: true,
+        reminder_time: "20:00:00",
       });
     }
     return settings;
-  }
-
-  async updateSettings(
-    user_id: string,
-    updateDto: UpdateNotificationSettingsDto,
-  ) {
-    return this.notificationsRepository.updateSettings(user_id, updateDto);
   }
 }

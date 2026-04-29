@@ -14,7 +14,7 @@ export interface Notification {
   related_entity_type: string | null;
   related_entity_id: string | null;
   is_read: boolean;
-  created_at: Date;
+  created_at: string;
 }
 
 export type CreateNotificationInput = {
@@ -24,6 +24,7 @@ export type CreateNotificationInput = {
   type: "reminder" | "budget_alert" | "anomaly_alert" | "financial_tip";
   related_entity_type?: string | null;
   related_entity_id?: string | null;
+  push_token?: string | null;
 };
 
 export interface NotificationSettings {
@@ -34,8 +35,9 @@ export interface NotificationSettings {
   enable_anomaly_alert: boolean;
   enable_daily_reminder: boolean;
   reminder_time: string; // time
-  created_at: Date;
-  updated_at: Date;
+  push_token: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 @Injectable()
@@ -82,6 +84,7 @@ export class NotificationsRepository {
       sortBy = "created_at",
       sortOrder = "DESC",
       is_read,
+      type,
     } = findDto;
     const offset = (page - 1) * limit;
 
@@ -93,6 +96,9 @@ export class NotificationsRepository {
 
     if (is_read !== undefined) {
       countQuery = countQuery.eq("is_read", is_read);
+    }
+    if (type) {
+      countQuery = countQuery.eq("type", type);
     }
 
     const { count: total, error: countError } = await countQuery;
@@ -108,6 +114,9 @@ export class NotificationsRepository {
 
     if (is_read !== undefined) {
       dataQuery = dataQuery.eq("is_read", is_read);
+    }
+    if (type) {
+      dataQuery = dataQuery.eq("type", type);
     }
 
     const { data, error: dataError } = await dataQuery;
@@ -155,6 +164,20 @@ export class NotificationsRepository {
     return count || 0;
   }
 
+  async hasReminderToday(user_id: string): Promise<boolean> {
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const { count, error } = await this.supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user_id)
+      .eq("type", "reminder")
+      .gte("created_at", `${today}T00:00:00`)
+      .lt("created_at", `${today}T23:59:59`);
+
+    if (error) throw new Error(error.message);
+    return (count || 0) > 0;
+  }
+
   async getSettings(user_id: string): Promise<NotificationSettings | null> {
     const { data, error } = await this.supabase
       .from("notification_settings")
@@ -170,27 +193,18 @@ export class NotificationsRepository {
     user_id: string,
     settings: UpdateNotificationSettingsDto,
   ): Promise<NotificationSettings> {
-    const {
-      enable_all,
-      enable_budget_alert,
-      enable_anomaly_alert,
-      enable_daily_reminder,
-      reminder_time,
-    } = settings;
+    // Only include defined fields to avoid overwriting existing values
+    const payload: Record<string, any> = { user_id };
+    if (settings.enable_all !== undefined) payload.enable_all = settings.enable_all;
+    if (settings.enable_budget_alert !== undefined) payload.enable_budget_alert = settings.enable_budget_alert;
+    if (settings.enable_anomaly_alert !== undefined) payload.enable_anomaly_alert = settings.enable_anomaly_alert;
+    if (settings.enable_daily_reminder !== undefined) payload.enable_daily_reminder = settings.enable_daily_reminder;
+    if (settings.reminder_time !== undefined) payload.reminder_time = settings.reminder_time;
+    if (settings.push_token !== undefined) payload.push_token = settings.push_token;
 
     const { data, error } = await this.supabase
       .from("notification_settings")
-      .upsert(
-        {
-          user_id: user_id,
-          enable_all: enable_all,
-          enable_budget_alert: enable_budget_alert,
-          enable_anomaly_alert: enable_anomaly_alert,
-          enable_daily_reminder: enable_daily_reminder,
-          reminder_time: reminder_time,
-        },
-        { onConflict: "user_id" },
-      )
+      .upsert(payload, { onConflict: "user_id" })
       .select()
       .single();
 
@@ -223,6 +237,7 @@ export class NotificationsRepository {
       enable_anomaly_alert: row.enable_anomaly_alert,
       enable_daily_reminder: row.enable_daily_reminder,
       reminder_time: row.reminder_time,
+      push_token: row.push_token,
       created_at: row.created_at,
       updated_at: row.updated_at,
     };

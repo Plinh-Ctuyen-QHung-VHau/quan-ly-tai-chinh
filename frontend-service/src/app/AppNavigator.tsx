@@ -22,6 +22,7 @@ import { useAuthStore } from "../store/authStore";
 import { setUnauthorizedHandler } from "../services/apiClient";
 import { useNotificationStore } from "../store/notificationStore";
 import { Budget } from "../types/budget";
+import { setupPushNotifications } from "../utils/notificationHandler";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -91,6 +92,7 @@ export function AppNavigator() {
     }
 
     void notificationStore.startRealtime(user_id);
+    void setupPushNotifications(user_id);
     return () => {
       void notificationStore.stopRealtime();
     };

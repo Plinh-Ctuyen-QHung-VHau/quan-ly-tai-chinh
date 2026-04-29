@@ -3,9 +3,7 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
   Put,
   Query,
   UseInterceptors,
@@ -55,5 +53,16 @@ export class NotificationsController {
   @Put(":id/read")
   markAsRead(@Param("id") id: string, @Getuser_id() user_id: string) {
     return this.notificationsService.markAsRead(id, user_id);
+  }
+
+  // 🧪 Endpoint để test nhanh thông báo (Chỉ dùng trong development)
+  @Post("test-reminder/:userId")
+  async testReminder(@Param("userId") userId: string) {
+    return this.notificationsService.createNotification({
+      userId,
+      title: "🔔 Nhắc nhở trải nghiệm",
+      content: "Chào bạn! Đây là thông báo thử nghiệm để xác nhận hệ thống Push Notification đã hoạt động hoàn hảo. Đừng quên cập nhật chi tiêu hôm nay nhé!",
+      type: "reminder",
+    });
   }
 }

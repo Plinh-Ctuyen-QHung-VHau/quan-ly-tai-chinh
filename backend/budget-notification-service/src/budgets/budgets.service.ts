@@ -94,36 +94,39 @@ export class BudgetsService {
   private async checkBudgetThresholds(budget, status) {
     // 100% threshold
     if (status.percent_used >= 100 && !budget.alert_100_sent) {
-      await this.notificationsService.createBudgetAlert(
+      const notification = await this.notificationsService.createBudgetAlert(
         budget.user_id,
-        budget,
-        status.spent_amount,
+        budget.id,
         100,
       );
-      await this.budgetsRepository.updateAlertSent(budget.id, "100");
-      await this.budgetsRepository.updateStatus(budget.id, "exceeded");
-      await this.eventPublisher.publish("budget.exceeded", {
-        budgetId: budget.id,
-        user_id: budget.user_id,
-      });
-      this.metrics.budgetExceededTotal.inc();
-      this.metrics.budgetThresholdReachedTotal.inc({ threshold: "100" });
+      // Only mark as sent if notification was actually created (not blocked by settings)
+      if (notification) {
+        await this.budgetsRepository.updateAlertSent(budget.id, "100");
+        await this.budgetsRepository.updateStatus(budget.id, "exceeded");
+        await this.eventPublisher.publish("budget.exceeded", {
+          budgetId: budget.id,
+          user_id: budget.user_id,
+        });
+        this.metrics.budgetExceededTotal.inc();
+        this.metrics.budgetThresholdReachedTotal.inc({ threshold: "100" });
+      }
     }
     // 80% threshold
     else if (status.percent_used >= 80 && !budget.alert_80_sent) {
-      await this.notificationsService.createBudgetAlert(
+      const notification = await this.notificationsService.createBudgetAlert(
         budget.user_id,
-        budget,
-        status.spent_amount,
+        budget.id,
         80,
       );
-      await this.budgetsRepository.updateAlertSent(budget.id, "80");
-      await this.eventPublisher.publish("budget.threshold.reached", {
-        budgetId: budget.id,
-        user_id: budget.user_id,
-        threshold: 80,
-      });
-      this.metrics.budgetThresholdReachedTotal.inc({ threshold: "80" });
+      if (notification) {
+        await this.budgetsRepository.updateAlertSent(budget.id, "80");
+        await this.eventPublisher.publish("budget.threshold.reached", {
+          budgetId: budget.id,
+          user_id: budget.user_id,
+          threshold: 80,
+        });
+        this.metrics.budgetThresholdReachedTotal.inc({ threshold: "80" });
+      }
     }
   }
 }
