@@ -508,7 +508,7 @@ export class OcrParser {
   // ═══════════════════════════════════════════════════════════════════
 
   private detectType(foldedText: string, selectedLine: string): "income" | "expense" | null {
-    const incomeRe = /nhan tien|ghi co|\bcredit\b|\bluong\b|salary|thuc linh|net salary|\bthuong\b|\bbonus\b/;
+    const incomeRe = /nhan tien|ghi co|hoan tien|thu nhap|\bcredit\b|\bluong\b|salary|thuc linh|net salary|\bthuong\b|\bbonus\b/;
     const expenseRe = /thanh toan|mua hang|hoa don|ghi no|\bdebit\b|tru tien|\bpaid\b|\bpayment\b|tong cong|tong dich vu|thanh tien|phai thanh toan|\bphi\b/;
 
     // Check selected amount line first (stronger signal)
