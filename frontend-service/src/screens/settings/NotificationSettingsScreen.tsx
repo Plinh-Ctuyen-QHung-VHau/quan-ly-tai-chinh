@@ -14,6 +14,7 @@ import { useFocusEffect } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
 import { ScreenHero } from "../../components/ScreenHero";
+import { LoadingView } from "../../components/LoadingView";
 import { COLORS, shadow } from "../../constants/ui";
 import {
   getNotificationSettings,
@@ -62,6 +63,7 @@ export function NotificationSettingsScreen() {
     setError("");
     try {
       const result = await getNotificationSettings();
+      console.log("[NotifSettings] loaded from API:", JSON.stringify(result));
       setSettings({ ...DEFAULT, ...result });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải cài đặt.");
@@ -106,6 +108,8 @@ export function NotificationSettingsScreen() {
     setSettings((s) => ({ ...s, [field]: value }));
 
   const isDisabled = !settings.enable_all;
+
+  if (loading) return <LoadingView label="Đang tải cài đặt..." />;
 
   return (
     <ScrollView

@@ -124,26 +124,28 @@ export function NotificationsScreen() {
         subtitle="Theo dõi cảnh báo ngân sách và cập nhật quan trọng từ hệ thống."
       />
 
-      <AppCard style={styles.actionCard}>
-        <SectionHeader
-          title="Danh sách thông báo"
-          subtitle={
-            hasUnread
-              ? `${unreadCount} thông báo chưa đọc`
-              : "Tất cả đã được đọc"
-          }
-        />
+      {safeNotifications.length > 0 && (
+        <AppCard style={styles.actionCard}>
+          <SectionHeader
+            title="Danh sách thông báo"
+            subtitle={
+              hasUnread
+                ? `${unreadCount} thông báo chưa đọc`
+                : "Tất cả đã được đọc"
+            }
+          />
 
-        <AppButton
-          title="Đánh dấu tất cả đã đọc"
-          onPress={() => void handleReadAll()}
-          loading={savingId === "all"}
-          disabled={!hasUnread || savingId !== null}
-          variant={hasUnread ? "primary" : "secondary"}
-        />
+          <AppButton
+            title="Đánh dấu tất cả đã đọc"
+            onPress={() => void handleReadAll()}
+            loading={savingId === "all"}
+            disabled={!hasUnread || savingId !== null}
+            variant={hasUnread ? "primary" : "secondary"}
+          />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-      </AppCard>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+        </AppCard>
+      )}
 
       {safeNotifications.length ? (
         safeNotifications.map((notification) => {
