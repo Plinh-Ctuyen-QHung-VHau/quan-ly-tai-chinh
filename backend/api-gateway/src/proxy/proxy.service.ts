@@ -13,6 +13,14 @@ export class ProxyService {
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
   ) {
+    this.initializeServiceUrls();
+  }
+
+  public getServiceUrls() {
+    return this.serviceUrls;
+  }
+
+  private initializeServiceUrls() {
     this.serviceUrls = {
       "/api/api/users":
         this.configService.get<string>("services.identity") + "/users",
@@ -26,6 +34,25 @@ export class ProxyService {
         this.configService.get<string>("services.budget") + "/budgets",
       "/api/api/notifications":
         this.configService.get<string>("services.budget") + "/notifications",
+      "/api/api/chatbot":
+        this.configService.get<string>("services.finance") + "/chatbot",
+      "/api/api/anomalies":
+        this.configService.get<string>("services.finance") + "/anomalies",
+      "/api/api/insights":
+        this.configService.get<string>("services.finance") + "/insights",
+      // Fail-safe mappings for cases where one or more /api prefixes are stripped
+      "/api/chatbot":
+        this.configService.get<string>("services.finance") + "/chatbot",
+      "/api/anomalies":
+        this.configService.get<string>("services.finance") + "/anomalies",
+      "/api/insights":
+        this.configService.get<string>("services.finance") + "/insights",
+      "/chatbot":
+        this.configService.get<string>("services.finance") + "/chatbot",
+      "/anomalies":
+        this.configService.get<string>("services.finance") + "/anomalies",
+      "/insights":
+        this.configService.get<string>("services.finance") + "/insights",
     };
   }
 
@@ -46,8 +73,8 @@ export class ProxyService {
     const { method, body, headers, query } = req;
     const user = req["user"];
 
-    // req.path không chứa query string
-    const path = req.path;
+    // Dùng originalUrl để tránh việc req.path bị stripped prefix bởi NestJS
+    const path = req.originalUrl.split("?")[0];
 
     const target = this.getTargetUrl(path);
     if (!target) {
@@ -56,11 +83,11 @@ export class ProxyService {
 
     const { targetUrl } = target;
 
-    console.log("[PROXY METHOD]", method);
-    console.log("[PROXY PATH]", path);
-    console.log("[PROXY QUERY]", query);
-    console.log("[PROXY TARGET URL]", targetUrl);
-    console.log("[PROXY BODY]", body);
+    console.log("-----------------------------------------");
+    console.log("[PROXY] Method:", method);
+    console.log("[PROXY] Original Path:", path);
+    console.log("[PROXY] Target URL:", targetUrl);
+    console.log("-----------------------------------------");
 
     const config: AxiosRequestConfig = {
       method: method as any,

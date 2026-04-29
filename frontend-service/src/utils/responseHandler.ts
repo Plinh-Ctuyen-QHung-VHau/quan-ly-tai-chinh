@@ -65,7 +65,10 @@ function normalizeAxiosResponseError(error: AxiosError<unknown>): ApiError {
     "success" in responseData &&
     responseData.success === false
   ) {
-    return new ApiError(responseData.message || "Yêu cầu không thành công.", {
+    const debugInfo = (responseData as any).debug ? ` | Debug: ${JSON.stringify((responseData as any).debug)}` : '';
+    const errorDetails = (responseData as any).error ? ` | Details: ${JSON.stringify((responseData as any).error)}` : '';
+    
+    return new ApiError((responseData.message || "Yêu cầu không thành công.") + debugInfo + errorDetails, {
       code: responseData.error?.code,
       details: responseData.error?.details,
       statusCode,
@@ -87,7 +90,8 @@ function normalizeAxiosResponseError(error: AxiosError<unknown>): ApiError {
   }
 
   if (statusCode === 404) {
-    return new ApiError("Không tìm thấy dữ liệu yêu cầu.", {
+    const extraInfo = responseData ? ` | Data: ${JSON.stringify(responseData)}` : '';
+    return new ApiError("Không tìm thấy dữ liệu yêu cầu." + extraInfo, {
       code: "NOT_FOUND",
       statusCode,
     });

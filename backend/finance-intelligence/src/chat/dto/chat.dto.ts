@@ -1,8 +1,7 @@
 import { IsOptional, IsString } from "class-validator";
 
-export class ChatInputDto {
-  @IsString()
-  user_id: string;
+export class ChatInputSecureDto {
+  user_id?: string;
 
   @IsString()
   message: string;

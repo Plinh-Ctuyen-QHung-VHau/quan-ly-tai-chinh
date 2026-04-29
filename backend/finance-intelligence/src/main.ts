@@ -17,7 +17,7 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  const port = configService.get<number>("port");
+  const port = configService.get<number>("app.port");
   await app.listen(port);
   console.log(`Finance Intelligence Service is running on: ${await app.getUrl()}`);
 }

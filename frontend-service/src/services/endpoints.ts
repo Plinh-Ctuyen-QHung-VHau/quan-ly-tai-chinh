@@ -43,4 +43,20 @@ export const endpoints = {
     detail: (id: string) => `/api/api/notifications/${id}`,
     markRead: (id: string) => `/api/api/notifications/${id}/read`,
   },
+
+  chatbot: {
+    ask: "/api/api/chatbot/ask",
+    history: "/api/api/chatbot/history",
+    historyDetail: (id: string) => `/api/api/chatbot/history/${id}`,
+  },
+
+  anomalies: {
+    list: "/api/api/anomalies",
+    detail: (transactionId: string) => `/api/api/anomalies/${transactionId}`,
+    recheck: (transactionId: string) => `/api/api/anomalies/recheck/${transactionId}`,
+  },
+
+  insights: {
+    summary: "/api/api/insights",
+  },
 };

@@ -6,11 +6,14 @@ import { StatusBar } from "expo-status-bar";
 
 import { AppNavigator } from "./src/app/AppNavigator";
 
+import { ChatBubble } from "./src/components/ChatBubble";
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
       <AppNavigator />
+      <ChatBubble />
     </SafeAreaProvider>
   );
 }

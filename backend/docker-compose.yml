@@ -14,6 +14,7 @@ services:
       - transaction-service
       - ocr-service
       - budget-notification-service
+      - finance-intelligence
 
   identity-service:
     build:
@@ -56,6 +57,17 @@ services:
       - "3004:3004"
     env_file:
       - ./budget-notification-service/.env
+    networks:
+      - microservice-network
+
+  finance-intelligence:
+    build:
+      context: .
+      dockerfile: finance-intelligence/Dockerfile
+    ports:
+      - "3006:3006"
+    env_file:
+      - ./finance-intelligence/.env
     networks:
       - microservice-network
 

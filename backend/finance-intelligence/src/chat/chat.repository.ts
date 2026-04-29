@@ -58,4 +58,26 @@ export class ChatRepository {
     if (error) throw new Error(error.message);
     return data;
   }
+
+  async getUserSessions(user_id: string) {
+    const { data, error } = await this.supabase
+      .from("chat_sessions")
+      .select("*")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async getSessionMessages(session_id: string) {
+    const { data, error } = await this.supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("session_id", session_id)
+      .order("created_at", { ascending: true });
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
 }

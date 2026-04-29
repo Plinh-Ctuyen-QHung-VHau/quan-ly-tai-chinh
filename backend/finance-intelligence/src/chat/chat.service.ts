@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ChatRepository } from "./chat.repository";
-import { ChatInputDto, ChatResponseDto } from "./dto/chat.dto";
+import { ChatInputSecureDto, ChatResponseDto } from "./dto/chat.dto";
 import { NlpService } from "../nlp/nlp.service";
 import { AnalyticsService } from "../analytics/analytics.service";
 import { AnomalyService } from "../anomaly/anomaly.service";
@@ -20,7 +20,7 @@ export class ChatService {
     private readonly metrics: AppMetrics,
   ) {}
 
-  async chat(input: ChatInputDto): Promise<ChatResponseDto> {
+  async chat(input: ChatInputSecureDto): Promise<ChatResponseDto> {
     const session_id = await this.resolveSessionId(input.user_id, input.context);
 
     await this.chatRepository.saveMessage({
@@ -57,6 +57,14 @@ export class ChatService {
     await this.apiGatewayClient.notifyChatHandled(input.user_id, session_id);
 
     return { reply: formattedReply, data: response.data };
+  }
+
+  async getHistory(user_id: string) {
+    return this.chatRepository.getUserSessions(user_id);
+  }
+
+  async getSessionHistory(session_id: string) {
+    return this.chatRepository.getSessionMessages(session_id);
   }
 
   private async handleIntent(

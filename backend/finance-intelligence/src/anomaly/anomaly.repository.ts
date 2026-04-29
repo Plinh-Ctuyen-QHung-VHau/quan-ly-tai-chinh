@@ -43,4 +43,14 @@ export class AnomalyRepository {
     if (error) throw new Error(error.message);
     return data || [];
   }
+
+  async findByTransactionId(transaction_id: string) {
+    const { data, error } = await this.supabase
+      .from("anomaly_results")
+      .select("*")
+      .eq("transaction_id", transaction_id);
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
 }

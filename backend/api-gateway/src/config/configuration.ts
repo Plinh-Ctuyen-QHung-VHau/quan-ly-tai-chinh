@@ -9,6 +9,7 @@ export const configValidationSchema = Joi.object({
   TRANSACTION_SERVICE_URL: Joi.string().uri().required(),
   OCR_SERVICE_URL: Joi.string().uri().required(),
   BUDGET_NOTIFICATION_SERVICE_URL: Joi.string().uri().required(),
+  FINANCE_INTELLIGENCE_SERVICE_URL: Joi.string().uri().required(),
   RATE_LIMIT_TTL: Joi.number().default(60),
   RATE_LIMIT_MAX: Joi.number().default(100),
 });
@@ -24,6 +25,7 @@ export const configuration = () => ({
     transaction: process.env.TRANSACTION_SERVICE_URL,
     ocr: process.env.OCR_SERVICE_URL,
     budget: process.env.BUDGET_NOTIFICATION_SERVICE_URL,
+    finance: process.env.FINANCE_INTELLIGENCE_SERVICE_URL,
   },
   rateLimit: {
     ttl: parseInt(process.env.RATE_LIMIT_TTL, 10) || 60,
