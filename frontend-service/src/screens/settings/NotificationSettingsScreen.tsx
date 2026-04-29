@@ -14,13 +14,13 @@ import { useFocusEffect } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
 import { ScreenHero } from "../../components/ScreenHero";
-import { LoadingView } from "../../components/LoadingView";
 import { COLORS, shadow } from "../../constants/ui";
 import {
   getNotificationSettings,
   updateNotificationSettings,
 } from "../../services/notificationApi";
 import { NotificationSettings } from "../../types/notification";
+import { LoadingView } from "src/components/LoadingView";
 
 const DEFAULT: NotificationSettings = {
   enable_all: true,
