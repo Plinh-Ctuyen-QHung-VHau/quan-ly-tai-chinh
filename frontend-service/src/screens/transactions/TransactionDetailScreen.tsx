@@ -1,19 +1,11 @@
 import React, { useCallback, useState } from "react";
-import { Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
-import {
-  useFocusEffect,
-  useNavigation,
-  useRoute,
-} from "@react-navigation/native";
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 
 import { AppButton } from "../../components/AppButton";
-import { AppCard } from "../../components/AppCard";
 import { LoadingView } from "../../components/LoadingView";
-import { COLORS } from "../../constants/ui";
-import {
-  deleteTransaction,
-  getTransactionById,
-} from "../../services/transactionApi";
+import { COLORS, shadow } from "../../constants/ui";
+import { deleteTransaction, getTransactionById } from "../../services/transactionApi";
 import { Transaction } from "../../types/transaction";
 import { formatCurrency } from "../../utils/formatCurrency";
 import { formatDate } from "../../utils/formatDate";
@@ -69,128 +61,196 @@ export function TransactionDetailScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.error}>Không tìm thấy giao dịch.</Text>
+        <AppButton title="Quay lại" onPress={() => navigation.goBack()} style={{ marginTop: 20 }} />
       </View>
     );
   }
 
+  const isExpense = transaction.type === "expense";
+  const amountColor = isExpense ? COLORS.expense : COLORS.income;
+  const headerBg = isExpense ? COLORS.expenseSoft : COLORS.incomeSoft;
+  const badgeColor = isExpense ? COLORS.expense : COLORS.income;
+  const badgeBg = isExpense ? "rgba(225,29,72,0.1)" : "rgba(22,163,74,0.1)";
+
+  const getSourceLabel = (source?: string | null) => {
+    switch (source) {
+      case "camera": return "Chụp ảnh";
+      case "gallery": return "Thư viện";
+      case "ocr": return "Hệ thống AI";
+      default: return "Thủ công";
+    }
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <AppCard>
-        <Text style={styles.title}>Chi tiết giao dịch</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Số tiền</Text>
-          <Text style={styles.value}>{formatCurrency(transaction.amount)}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Loại</Text>
-          <Text style={styles.value}>
-            {transaction.type === "income" ? "Thu nhập" : "Chi tiêu"}
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Danh mục</Text>
-          <Text style={styles.value}>
-            {transaction.category_name ?? transaction.category_id}
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Ghi chú</Text>
-          <Text style={styles.value}>{transaction.note ?? "-"}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Ngày giao dịch</Text>
-          <Text style={styles.value}>
-            {formatDate(transaction.transaction_date)}
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Cửa hàng / Người nhận</Text>
-          <Text style={styles.value}>{transaction.merchant_name ?? "-"}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Bất thường</Text>
-          <Text style={styles.value}>
-            {transaction.isAnomaly ? "Có" : "Không"}
-          </Text>
-        </View>
-        {transaction.image_url?.startsWith("http") ? (
-          <View style={styles.row}>
-            <Text style={styles.label}>Hóa đơn</Text>
-            <Text style={[styles.value, styles.attachedText]}>Đã đính kèm ảnh</Text>
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Header / Amount Card */}
+        <View style={styles.headerWrap}>
+          <View style={styles.glowLeft} />
+          <View style={styles.glowRight} />
+          <View style={styles.amountCard}>
+            <View style={[styles.typeBadge, { backgroundColor: badgeBg }]}>
+              <Text style={[styles.typeText, { color: badgeColor }]}>
+                {isExpense ? "CHI TIÊU" : "THU NHẬP"}
+              </Text>
+            </View>
+            <Text style={[styles.amount, { color: amountColor }]} numberOfLines={1} adjustsFontSizeToFit>
+              {isExpense ? "-" : "+"}{formatCurrency(transaction.amount)}
+            </Text>
+            <Text style={styles.date}>{formatDate(transaction.transaction_date)}</Text>
           </View>
-        ) : null}
-      </AppCard>
+        </View>
 
-      {transaction.image_url?.startsWith("http") ? (
-        <Image source={{ uri: transaction.image_url }} style={styles.image} />
-      ) : null}
+        {/* Details Card */}
+        <View style={styles.detailsCard}>
+          <View style={styles.detailRow}>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Danh mục</Text>
+              <Text style={styles.detailValue}>{transaction.category_name ?? "Chưa phân loại"}</Text>
+            </View>
+          </View>
 
-      <View style={styles.actions}>
-        <AppButton
-          title="Sửa"
-          onPress={() =>
-            navigation.navigate("TransactionEdit", { transaction_id })
-          }
-        />
-        <AppButton
-          title="Xóa"
-          variant="danger"
+          <View style={styles.divider} />
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Cửa hàng / Người nhận</Text>
+              <Text style={styles.detailValue}>{transaction.merchant_name || "Không có thông tin"}</Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Ghi chú</Text>
+              <Text style={styles.detailValue}>{transaction.note || "Không có ghi chú"}</Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Nguồn nhập</Text>
+              <Text style={styles.detailValue}>{getSourceLabel(transaction.source)}</Text>
+            </View>
+          </View>
+
+          {transaction.isAnomaly && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.detailRow}>
+                <View style={styles.detailContent}>
+                  <Text style={[styles.detailLabel, { color: COLORS.expense }]}>Phát hiện bất thường</Text>
+                  <Text style={styles.detailValue}>Giao dịch này có dấu hiệu bất thường</Text>
+                </View>
+              </View>
+            </>
+          )}
+        </View>
+
+        {transaction.image_url?.startsWith("http") && (
+          <View style={styles.imageCard}>
+            <Text style={styles.imageTitle}>Hóa đơn đính kèm</Text>
+            <Image source={{ uri: transaction.image_url }} style={styles.receiptImage} resizeMode="cover" />
+          </View>
+        )}
+
+      </ScrollView>
+
+      {/* Floating Actions Footer */}
+      <View style={styles.floatingActionBar}>
+        <Pressable
+          onPress={() => navigation.navigate("TransactionEdit", { transaction_id })}
+          style={({ pressed }) => [styles.actionPill, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={styles.actionPillTextPrimary}>Chỉnh sửa</Text>
+        </Pressable>
+        
+        <View style={styles.actionDivider} />
+        
+        <Pressable
           onPress={handleDelete}
-          loading={deleting}
-        />
+          disabled={deleting}
+          style={({ pressed }) => [styles.actionPill, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={[styles.actionPillTextDanger, deleting && { opacity: 0.5 }]}>
+            {deleting ? "Đang xóa..." : "Xóa giao dịch"}
+          </Text>
+        </Pressable>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: "#f8fafc",
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  scrollContent: { paddingBottom: 120 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20 },
+  error: { color: COLORS.expense, fontSize: 16, fontWeight: "700" },
+
+  // Header Background
+  headerWrap: { backgroundColor: COLORS.dark, paddingTop: 60, paddingBottom: 40, borderBottomLeftRadius: 40, borderBottomRightRadius: 40, position: "relative", overflow: "hidden", ...shadow },
+  glowLeft: { position: "absolute", left: -40, top: -40, width: 200, height: 200, borderRadius: 999, backgroundColor: "rgba(37,99,235,0.15)" },
+  glowRight: { position: "absolute", right: -20, bottom: -20, width: 150, height: 150, borderRadius: 999, backgroundColor: "rgba(124,58,237,0.12)" },
+  
+  amountCard: { alignItems: "center", paddingHorizontal: 20 },
+  typeBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, marginBottom: 12 },
+  typeText: { fontSize: 12, fontWeight: "900", letterSpacing: 1 },
+  amount: { fontSize: 48, fontWeight: "900", letterSpacing: -1.5, marginBottom: 8, textAlign: "center" },
+  date: { color: "#94A3B8", fontSize: 15, fontWeight: "700" },
+
+  // Details Card
+  detailsCard: { backgroundColor: COLORS.white, borderRadius: 28, marginHorizontal: 16, marginTop: -20, padding: 24, borderWidth: 1, borderColor: COLORS.border, ...shadow },
+  detailRow: { flexDirection: "row", alignItems: "center" },
+  detailContent: { flex: 1 },
+  detailLabel: { color: COLORS.muted, fontSize: 13, fontWeight: "700", marginBottom: 4 },
+  detailValue: { color: COLORS.text, fontSize: 16, fontWeight: "800" },
+  divider: { height: 1, backgroundColor: "#F1F5F9", marginVertical: 16 },
+
+  // Image Card
+  imageCard: { backgroundColor: COLORS.white, borderRadius: 28, marginHorizontal: 16, marginTop: 16, padding: 20, borderWidth: 1, borderColor: COLORS.border, ...shadow },
+  imageTitle: { color: COLORS.text, fontSize: 16, fontWeight: "900", marginBottom: 16 },
+  receiptImage: { width: "100%", height: 300, borderRadius: 16, backgroundColor: "#F1F5F9" },
+
+  // Floating Action Bar
+  floatingActionBar: {
+    position: "absolute",
+    bottom: 34,
+    left: 24,
+    right: 24,
+    backgroundColor: COLORS.dark,
+    borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    shadowColor: COLORS.dark,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 12,
   },
-  center: {
+  actionPill: {
     flex: 1,
+    paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 12,
+  actionPillTextPrimary: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: "900",
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 10,
-  },
-  label: {
-    color: "#64748b",
-    flex: 1,
-  },
-  value: {
-    flex: 1,
-    textAlign: "right",
-    color: "#0f172a",
-    fontWeight: "600",
-  },
-  image: {
-    width: "100%",
-    height: 240,
-    borderRadius: 18,
-    marginTop: 12,
-    backgroundColor: "#e2e8f0",
-  },
-  attachedText: {
-    color: COLORS.income,
+  actionPillTextDanger: {
+    color: "#FCA5A5",
+    fontSize: 15,
     fontWeight: "800",
   },
-  actions: {
-    marginTop: 12,
-    gap: 10,
-  },
-  error: {
-    color: "#b91c1c",
+  actionDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
 });

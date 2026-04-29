@@ -24,10 +24,9 @@ function normalizeTransactionSummary(
   payload: TransactionSummaryApiResponse,
 ): TransactionSummary {
   return {
-    total_income: Number(payload.total_income ?? payload.totalIncome ?? 0),
-    total_expense: Number(payload.total_expense ?? payload.totalExpense ?? 0),
+    totalIncome: Number(payload.total_income ?? payload.totalIncome ?? 0),
+    totalExpense: Number(payload.total_expense ?? payload.totalExpense ?? 0),
     balance: Number(payload.balance ?? 0),
-    currency: payload.currency,
   };
 }
 

@@ -28,12 +28,12 @@ export interface Transaction {
 export interface CreateTransactionPayload {
   amount: number;
   type: TransactionType;
-  category_id: string;
-  transaction_date: string;
+  categoryId: string;
+  transactionDate: string;
   source: TransactionSource;
   note?: string;
-  image_url?: string;
-  merchant_name?: string;
+  imageUrl?: string;
+  merchantName?: string;
   ocr_result_id?: string;
 }
 
