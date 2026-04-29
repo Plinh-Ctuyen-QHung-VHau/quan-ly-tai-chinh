@@ -46,7 +46,7 @@ export class BudgetsService {
       budget.end_date instanceof Date ? budget.end_date.toISOString().split('T')[0] : String(budget.end_date),
     );
 
-    const spent_amount = summary.totalSpent || 0;
+    const spent_amount = summary.totalExpense || 0;
     const budget_amount = budget.budget_amount;
     const remaining_amount = budget_amount - spent_amount;
     const percent_used =
