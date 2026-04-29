@@ -106,6 +106,7 @@ export function AppNavigator() {
 
   useEffect(() => {
     const user_id = session?.user.id;
+    console.log("[AppNavigator] useEffect push notification triggered. user_id:", user_id);
     const notificationStore = useNotificationStore.getState();
 
     if (!user_id) {
@@ -116,6 +117,7 @@ export function AppNavigator() {
     void notificationStore.startRealtime(user_id);
     void setupPushNotifications(user_id);
     return () => {
+      console.log("[AppNavigator] useEffect push notification cleanup!");
       void notificationStore.stopRealtime();
     };
   }, [session?.user.id]);

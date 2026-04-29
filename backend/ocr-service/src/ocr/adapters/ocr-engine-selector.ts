@@ -20,7 +20,8 @@ export class OcrEngineSelector {
    */
   async selectBest(
     engines: OcrEngineAdapter[],
-    imageBuffer: Buffer,
+    rawBuffer: Buffer,
+    processedBuffer: Buffer,
     ocrLanguage: string,
   ): Promise<{ best: EngineParseResult; all: EngineParseResult[] }> {
     const results: EngineParseResult[] = [];
@@ -28,7 +29,8 @@ export class OcrEngineSelector {
     for (const engine of engines) {
       try {
         const t0 = Date.now();
-        const engineResult = await engine.recognize(imageBuffer);
+        const bufferToUse = engine.name === "tesseract" ? processedBuffer : rawBuffer;
+        const engineResult = await engine.recognize(bufferToUse);
         const durationMs = Date.now() - t0;
         engineResult.durationMs = durationMs;
 
@@ -37,7 +39,7 @@ export class OcrEngineSelector {
           continue;
         }
 
-        const parsedResult = this.parser.parse(
+        const parsedResult = await this.parser.parse(
           engineResult.rawText,
           engineResult,
           engine.name,

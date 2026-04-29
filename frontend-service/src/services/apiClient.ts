@@ -22,7 +22,7 @@ export function setUnauthorizedHandler(
 
 export const apiClient = axios.create({
   baseURL: baseURL,
-  timeout: 15000,
+  timeout: 30000,
 });
 
 // Retry helper cho Network Error (thiết bị treo, mạng yếu)
@@ -36,11 +36,14 @@ async function retryRequest(error: unknown, retries = 2): Promise<any> {
 
   if (isNetworkError && retries > 0) {
     await sleep(1000);
-    try {
-      const config = (error as any).config;
-      return await apiClient.request(config);
-    } catch (retryError) {
-      return retryRequest(retryError, retries - 1);
+    const config = (error as any).config;
+    if (config) {
+      config._retryCount = (config._retryCount || 0) + 1;
+      if (config._retryCount <= 2) {
+        // Use axios directly to bypass apiClient response interceptors if you want, or just let interceptor handle it via config flags
+        // Actually, since we use apiClient.request, it will hit the interceptor again. 
+        return await apiClient.request(config);
+      }
     }
   }
 
@@ -84,8 +87,13 @@ apiClient.interceptors.response.use(
     // Retry tự động khi Network Error (thiết bị treo, mạng yếu)
     const isNetworkError =
       axios.isAxiosError(error) && !error.response && error.code !== "ERR_CANCELED";
+    
+    // Ngăn chặn infinite loop: interceptor bắt lại request đã retry và gọi retry lại từ đầu.
     if (isNetworkError) {
-      return retryRequest(error);
+      const config = (error as any).config;
+      if (!config || !config._retryCount || config._retryCount < 2) {
+        return retryRequest(error);
+      }
     }
 
     const shouldSkipBudgetStatus404Log =
