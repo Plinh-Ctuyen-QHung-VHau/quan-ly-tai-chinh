@@ -134,7 +134,7 @@ export class OcrService {
 
     // 4. Choose engine strategy
     if (this.compareEngines && this.allEngines.length > 1) {
-      return this.runCompareMode(processedBuffer, image_url, t0);
+      return this.runCompareMode(imageBuffer, processedBuffer, image_url, t0);
     } else {
       return this.runSingleEngine(processedBuffer, image_url, t0);
     }
@@ -164,7 +164,7 @@ export class OcrService {
           continue;
         }
 
-        const parsedResult = this.ocrParser.parse(
+        const parsedResult = await this.ocrParser.parse(
           ocrResult.rawText,
           ocrResult,
           this.primaryEngine.name,
@@ -203,10 +203,11 @@ export class OcrService {
   /**
    * Compare mode: run all engines, parse each, pick the best by parse quality.
    */
-  private async runCompareMode(imageBuffer: Buffer, image_url: string, t0: number) {
+  private async runCompareMode(rawBuffer: Buffer, processedBuffer: Buffer, image_url: string, t0: number) {
     const selectorResult = await this.engineSelector.selectBest(
       this.allEngines,
-      imageBuffer,
+      rawBuffer,
+      processedBuffer,
       this.appConfig.ocr.lang,
     );
 
