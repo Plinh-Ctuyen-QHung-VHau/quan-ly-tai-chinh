@@ -124,100 +124,101 @@ export const ChatBubble = () => {
 
       {/* Chat modal */}
       <Modal visible={isOpen} animationType="slide" transparent statusBarTranslucent>
-        <KeyboardAvoidingView
-          style={styles.modalRoot}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={0}
-        >
+        <View style={styles.modalRoot}>
           <Pressable style={styles.backdrop} onPress={() => setIsOpen(false)} />
 
-          <View style={styles.sheet}>
-            {/* Handle bar */}
-            <View style={styles.handleBar} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={0}
+          >
+            <View style={styles.sheet}>
+              {/* Handle bar */}
+              <View style={styles.handleBar} />
 
-            {/* Header */}
-            <View style={styles.header}>
-              <View style={styles.headerLeft}>
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarIcon}>✨</Text>
+              {/* Header */}
+              <View style={styles.header}>
+                <View style={styles.headerLeft}>
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarIcon}>💬</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.headerTitle}>Trợ lý tài chính AI</Text>
+                    <Text style={styles.headerSub}>Luôn sẵn sàng hỗ trợ bạn</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.headerTitle}>Trợ lý tài chính AI</Text>
-                  <Text style={styles.headerSub}>Luôn sẵn sàng hỗ trợ bạn</Text>
-                </View>
+                <Pressable onPress={() => setIsOpen(false)} style={styles.closeBtn} hitSlop={10}>
+                  <Text style={styles.closeBtnText}>✕</Text>
+                </Pressable>
               </View>
-              <Pressable onPress={() => setIsOpen(false)} style={styles.closeBtn} hitSlop={10}>
-                <Text style={styles.closeBtnText}>✕</Text>
-              </Pressable>
-            </View>
 
-            {/* Messages */}
-            <ScrollView
-              ref={scrollRef}
-              style={styles.messages}
-              contentContainerStyle={styles.messagesContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {messages.length === 0 && (
-                <View style={styles.emptyWrap}>
-                  <Text style={styles.emptyIcon}>💬</Text>
-                  <Text style={styles.emptyTitle}>Xin chào!</Text>
-                  <Text style={styles.emptyText}>Hỏi tôi bất cứ điều gì về tài chính cá nhân của bạn.</Text>
-                </View>
-              )}
-              {messages.map((m) => (
-                <View key={m.id} style={m.sender === 'user' ? styles.rowUser : styles.rowBot}>
-                  {m.sender === 'bot' && (
-                    <View style={styles.botAvatar}>
-                      <Text style={styles.botAvatarIcon}>✨</Text>
-                    </View>
-                  )}
-                  <View style={[styles.bubble2, m.sender === 'user' ? styles.bubbleUser : styles.bubbleBot]}>
-                    <Text style={m.sender === 'user' ? styles.textUser : styles.textBot}>{m.text}</Text>
-                  </View>
-                </View>
-              ))}
-              {isSending && (
-                <View style={styles.rowBot}>
-                  <View style={styles.botAvatar}>
-                    <Text style={styles.botAvatarIcon}>✨</Text>
-                  </View>
-                  <View style={[styles.bubble2, styles.bubbleBot]}>
-                    <Text style={styles.textBot}>Đang trả lời...</Text>
-                  </View>
-                </View>
-              )}
-            </ScrollView>
-
-            {/* Input bar */}
-            <View style={styles.inputBar}>
-              <TextInput
-                style={styles.input}
-                value={message}
-                onChangeText={setMessage}
-                placeholder="Nhập câu hỏi..."
-                placeholderTextColor="#94A3B8"
-                editable={!isSending}
-                multiline
-                maxLength={500}
-                onSubmitEditing={handleSend}
-                returnKeyType="send"
-              />
-              <Pressable
-                onPress={handleSend}
-                disabled={isSending || !message.trim()}
-                style={({ pressed }) => [
-                  styles.sendBtn,
-                  (isSending || !message.trim()) && styles.sendBtnDisabled,
-                  pressed && styles.sendBtnPressed,
-                ]}
+              {/* Messages */}
+              <ScrollView
+                ref={scrollRef}
+                style={styles.messages}
+                contentContainerStyle={styles.messagesContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
               >
-                <Text style={styles.sendBtnText}>➤</Text>
-              </Pressable>
+                {messages.length === 0 && (
+                  <View style={styles.emptyWrap}>
+                    <Text style={styles.emptyIcon}>💬</Text>
+                    <Text style={styles.emptyTitle}>Xin chào!</Text>
+                    <Text style={styles.emptyText}>Hỏi tôi bất cứ điều gì về tài chính cá nhân của bạn.</Text>
+                  </View>
+                )}
+                {messages.map((m) => (
+                  <View key={m.id} style={m.sender === 'user' ? styles.rowUser : styles.rowBot}>
+                    {m.sender === 'bot' && (
+                      <View style={styles.botAvatar}>
+                        <Text style={styles.botAvatarIcon}>💬</Text>
+                      </View>
+                    )}
+                    <View style={[styles.bubble2, m.sender === 'user' ? styles.bubbleUser : styles.bubbleBot]}>
+                      <Text style={m.sender === 'user' ? styles.textUser : styles.textBot}>{m.text}</Text>
+                    </View>
+                  </View>
+                ))}
+                {isSending && (
+                  <View style={styles.rowBot}>
+                    <View style={styles.botAvatar}>
+                      <Text style={styles.botAvatarIcon}>💬</Text>
+                    </View>
+                    <View style={[styles.bubble2, styles.bubbleBot]}>
+                      <Text style={styles.textBot}>Đang trả lời...</Text>
+                    </View>
+                  </View>
+                )}
+              </ScrollView>
+
+              {/* Input bar */}
+              <View style={styles.inputBar}>
+                <TextInput
+                  style={styles.input}
+                  value={message}
+                  onChangeText={setMessage}
+                  placeholder="Nhập câu hỏi..."
+                  placeholderTextColor="#94A3B8"
+                  editable={!isSending}
+                  multiline
+                  maxLength={500}
+                  onSubmitEditing={handleSend}
+                  returnKeyType="send"
+                />
+                <Pressable
+                  onPress={handleSend}
+                  disabled={isSending || !message.trim()}
+                  style={({ pressed }) => [
+                    styles.sendBtn,
+                    (isSending || !message.trim()) && styles.sendBtnDisabled,
+                    pressed && styles.sendBtnPressed,
+                  ]}
+                >
+                  <Text style={styles.sendBtnText}>➤</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
     </>
   );
@@ -245,17 +246,21 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   bubbleIcon: { fontSize: 26, color: '#FFFFFF', lineHeight: 30 },
-
-  // Modal
-  modalRoot: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,23,42,0.45)' },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15,23,42,0.45)',
+  },
   sheet: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-    maxHeight: '85%',
-    minHeight: '60%',
+    maxHeight: SCREEN.height * 0.85,
+    minHeight: SCREEN.height * 0.60,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.12,
@@ -268,15 +273,15 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: '#CBD5E1',
     alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: 10,
+    marginBottom: 0,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
