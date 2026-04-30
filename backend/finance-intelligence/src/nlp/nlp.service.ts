@@ -66,6 +66,17 @@ export class NlpService {
           },
           required: ["type", "amount", "category_name"]
         }
+      },
+      {
+        name: "get_anomalies",
+        description: "Kiểm tra lịch sử chi tiêu bất thường CÁ NHÂN của người dùng. Chỉ dùng khi người dùng hỏi VỀ BẢN THÂN họ như: 'tôi có tiêu bất thường không', 'hôm nay tôi tiêu nhiều hơn bình thường không', 'gần đây tôi có tiêu hoang không'. KHÔNG dùng cho câu hỏi giải thích khái niệm như 'bất thường là gì', 'như thế nào là bất thường'.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            limit: { type: "NUMBER", description: "Số lượng bất thường muốn xem, mặc định 5" },
+          },
+          required: []
+        }
       }
     ];
   }
@@ -77,7 +88,13 @@ export class NlpService {
 
     const body = {
       contents: [
-        { role: "user", parts: [{ text: `Bạn là trợ lý tài chính. Hôm nay: ${currentDate}. Chỉ ghi giao dịch khi người dùng đề cập số tiền cụ thể. Phân biệt rõ thu nhập và chi tiêu.` }] },
+        { role: "user", parts: [{ text: `Bạn là trợ lý tài chính cá nhân. Hôm nay: ${currentDate}.
+
+NGUYÊN TẮC BẮT BUỘC:
+1. Chỉ trả lời các câu hỏi liên quan đến tài chính cá nhân (thu nhập, chi tiêu, ngân sách, tiết kiệm, giao dịch).
+2. Nếu người dùng hỏi chủ đề KHÔNG liên quan tài chính, hãy lịch sự từ chối và hướng họ quay lại chủ đề tài chính.
+3. CHỈ ghi giao dịch khi người dùng ĐÃ NÓI RÕ số tiền cụ thể VÀ có ý định ghi. KHÔNG được tự đề xuất số tiền hoặc hỏi dẫn dắt để ghi tiền.
+4. Phân biệt rõ thu nhập và chi tiêu.` }] },
         ...history,
         { role: "user", parts: [{ text: message }] }
       ],

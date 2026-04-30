@@ -6,7 +6,6 @@ import { TransactionHistoryDay } from "../clients/types";
 import { AnomalyRepository } from "./anomaly.repository";
 import {
   AnomalyDetectionResult,
-  detectAmountAnomaly,
   detectDailySpike,
   detectFrequency,
 } from "./anomaly.detector";
@@ -16,6 +15,7 @@ export interface TransactionEventData {
   transaction_id?: string;
   user_id?: string;
   amount?: number;
+  type?: string;
   category?: string;
   timestamp?: string;
 }
@@ -38,30 +38,37 @@ export class AnomalyService {
 
     const anomalies: AnomalyDetectionResult[] = [];
 
-    const amountAnomaly = detectAmountAnomaly(
-      amount,
-      this.appConfig.anomaly.amountThreshold,
-    );
-    if (amountAnomaly) {
-      anomalies.push(amountAnomaly);
-    }
-
     const history = await this.safeGetHistory(data.user_id);
     if (history.length > 0) {
-      const stats = this.computeDailyStats(history, timestamp, data.transaction_id, amount);
-      const dailySpike = detectDailySpike(
-        stats.dailyTotal,
-        stats.averageDaily,
-        this.appConfig.anomaly.dailySpikeMultiplier,
-      );
-      if (dailySpike) anomalies.push(dailySpike);
+      const dayKey = timestamp.toISOString().slice(0, 10);
+      const historicalDayCount = history.filter(d => d.date !== dayKey).length;
 
-      const frequencySpike = detectFrequency(
-        stats.dailyCount,
-        stats.averageCount,
-        this.appConfig.anomaly.frequencyMultiplier,
-      );
-      if (frequencySpike) anomalies.push(frequencySpike);
+      if (historicalDayCount >= 2) {
+        const stats = this.computeDailyStats(
+          history,
+          timestamp,
+          data.transaction_id,
+          amount,
+          data.type || "expense",
+        );
+        const dailySpike = detectDailySpike(
+          stats.dailyTotal,
+          stats.averageDaily,
+          this.appConfig.anomaly.dailySpikeMultiplier,
+        );
+        if (dailySpike) anomalies.push(dailySpike);
+
+        const frequencySpike = detectFrequency(
+          stats.dailyCount,
+          stats.averageCount,
+          this.appConfig.anomaly.frequencyMultiplier,
+        );
+        if (frequencySpike) anomalies.push(frequencySpike);
+      } else {
+        this.logger.debug(
+          `Skipping spike/frequency check: only ${historicalDayCount} historical day(s) for user ${data.user_id}`,
+        );
+      }
     }
 
     const created = [];
@@ -119,47 +126,48 @@ export class AnomalyService {
     transactionDate: Date,
     transactionId: string,
     amount: number,
+    transactionType: string,
   ) {
-    const dailyTotals: Record<string, { total: number; count: number }> = {};
+    const dayKey = transactionDate.toISOString().slice(0, 10);
+    const isCurrentExpense = transactionType !== "income";
+
+    // Tách lịch sử thành: các ngày trước (để tính trung bình) và ngày hôm nay
+    const historicalStats: { total: number; count: number }[] = [];
+    const todayFromHistory = { total: 0, count: 0 };
 
     for (const day of history) {
-      if (!dailyTotals[day.date]) {
-        dailyTotals[day.date] = { total: 0, count: 0 };
-      }
-
+      const dayStats = { total: 0, count: 0 };
       for (const transaction of day.transactions || []) {
-        if (transaction.id === transactionId) {
-          continue;
-        }
+        if (transaction.id === transactionId) continue;
         const isExpense = transaction.type !== "income";
         if (isExpense) {
-          dailyTotals[day.date].total += Number(transaction.amount || 0);
+          dayStats.total += Number(transaction.amount || 0);
+          dayStats.count += 1;
         }
-        dailyTotals[day.date].count += 1;
+      }
+
+      if (day.date === dayKey) {
+        // Các giao dịch đã tồn tại hôm nay (trước transaction hiện tại)
+        todayFromHistory.total = dayStats.total;
+        todayFromHistory.count = dayStats.count;
+      } else {
+        // Ngày khác → đưa vào baseline để tính average
+        historicalStats.push(dayStats);
       }
     }
 
-    const dayKey = transactionDate.toISOString().slice(0, 10);
-    if (!dailyTotals[dayKey]) {
-      dailyTotals[dayKey] = { total: 0, count: 0 };
-    }
-
-    dailyTotals[dayKey].total += amount;
-    dailyTotals[dayKey].count += 1;
-
-    const totals = Object.values(dailyTotals);
-    const averageDaily = totals.length
-      ? totals.reduce((sum, item) => sum + item.total, 0) / totals.length
+    // Average chỉ tính từ các ngày LỊCH SỬ, không bao gồm hôm nay
+    const averageDaily = historicalStats.length
+      ? historicalStats.reduce((sum, d) => sum + d.total, 0) / historicalStats.length
       : 0;
-    const averageCount = totals.length
-      ? totals.reduce((sum, item) => sum + item.count, 0) / totals.length
+    const averageCount = historicalStats.length
+      ? historicalStats.reduce((sum, d) => sum + d.count, 0) / historicalStats.length
       : 0;
 
-    return {
-      dailyTotal: dailyTotals[dayKey].total,
-      dailyCount: dailyTotals[dayKey].count,
-      averageDaily,
-      averageCount,
-    };
+    // Tổng hôm nay = đã có trong lịch sử + transaction hiện tại (nếu là expense)
+    const dailyTotal = todayFromHistory.total + (isCurrentExpense ? amount : 0);
+    const dailyCount = todayFromHistory.count + (isCurrentExpense ? 1 : 0);
+
+    return { dailyTotal, dailyCount, averageDaily, averageCount };
   }
 }

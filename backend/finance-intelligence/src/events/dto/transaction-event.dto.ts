@@ -23,6 +23,11 @@ export class TransactionEventDataDto {
   amount?: number;
 
   @IsOptional()
+  @IsIn(["income", "expense"])
+  @IsString()
+  type?: string;
+
+  @IsOptional()
   @IsString()
   category?: string;
 

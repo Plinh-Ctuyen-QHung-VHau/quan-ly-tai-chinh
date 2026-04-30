@@ -123,6 +123,32 @@ export class ChatService {
         };
       }
 
+      case "get_anomalies": {
+        const limit = args.limit || 5;
+        const anomalies = await this.anomalyService.getRecentAnomalies(user_id, limit);
+
+        if (!anomalies || anomalies.length === 0) {
+          return {
+            reply: "Không phát hiện chi tiêu bất thường nào gần đây. Bạn đang chi tiêu khá đều đặn so với thói quen của mình 👍",
+            data: [],
+          };
+        }
+
+        const summary = anomalies.map(a => {
+          const typeLabel = a.anomaly_type === "daily_spike" ? "Tổng chi trong ngày đột biến" : "Tần suất giao dịch bất thường";
+          const date = new Date(a.detected_at).toLocaleDateString("vi-VN");
+          return `- ${date}: ${typeLabel} | Mức độ: ${a.severity} | Thực tế: ${Number(a.actual_value).toLocaleString("vi-VN")}đ vs Ngưỡng bình thường: ${Number(a.threshold_value).toLocaleString("vi-VN")}đ`;
+        }).join("\n");
+
+        const prompt = `Bạn là trợ lý tài chính. Dựa vào dữ liệu bất thường thực tế sau đây, hãy tóm tắt ngắn gọn, tự nhiên bằng tiếng Việt cho người dùng. Đừng liệt kê dữ liệu thô, hãy diễn đạt như đang nói chuyện:\n\n${summary}\n\nKết thúc bằng 1 lời khuyên ngắn.`;
+
+        const reply = await this.nlpService.generateTextReply(prompt, []);
+        return {
+          reply: reply || "Phát hiện một số giao dịch bất thường gần đây. Bạn nên xem lại chi tiêu.",
+          data: anomalies,
+        };
+      }
+
       default:
         throw new Error(`Unsupported: ${name}`);
     }

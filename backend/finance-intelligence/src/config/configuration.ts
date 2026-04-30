@@ -15,9 +15,6 @@ export const configValidationSchema = Joi.object({
   TRANSACTION_SERVICE_URL: Joi.string().required(),
   BUDGET_NOTIFICATION_SERVICE_URL: Joi.string().required(),
   MESSAGE_BROKER_URL: Joi.string().allow("").optional(),
-  ANOMALY_AMOUNT_THRESHOLD: Joi.number().default(5000000),
-  DAILY_SPIKE_MULTIPLIER: Joi.number().default(2.5),
-  FREQUENCY_MULTIPLIER: Joi.number().default(2),
   CONSUMER_NAME: Joi.string().default("finance-intelligence-service"),
 });
 
@@ -40,9 +37,8 @@ export const configuration = registerAs("app", () => ({
   budgetNotificationServiceUrl: process.env.BUDGET_NOTIFICATION_SERVICE_URL,
   messageBrokerUrl: process.env.MESSAGE_BROKER_URL,
   anomaly: {
-    amountThreshold: Number(process.env.ANOMALY_AMOUNT_THRESHOLD) || 5000000,
-    dailySpikeMultiplier: Number(process.env.DAILY_SPIKE_MULTIPLIER) || 2.5,
-    frequencyMultiplier: Number(process.env.FREQUENCY_MULTIPLIER) || 2,
+    dailySpikeMultiplier: 2.5,
+    frequencyMultiplier: 3,
   },
   consumerName: process.env.CONSUMER_NAME || "finance-intelligence-service",
 }));

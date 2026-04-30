@@ -1,4 +1,4 @@
-export type AnomalyType = "amount" | "daily_spike" | "frequency";
+export type AnomalyType = "daily_spike" | "frequency";
 export type Severity = "low" | "medium" | "high";
 
 export interface AnomalyDetectionResult {
@@ -10,27 +10,6 @@ export interface AnomalyDetectionResult {
   actualValue?: number;
 }
 
-export function detectAmountAnomaly(
-  amount: number,
-  threshold: number,
-): AnomalyDetectionResult | null {
-  if (amount <= 0 || threshold <= 0 || amount < threshold) {
-    return null;
-  }
-
-  const ratio = amount / threshold;
-  const severity: Severity = ratio >= 3 ? "high" : ratio >= 2 ? "medium" : "low";
-  const score = Math.min(1, ratio / 3);
-
-  return {
-    type: "amount",
-    score,
-    severity,
-    reason: `Amount ${amount} exceeds threshold ${threshold}`,
-    thresholdValue: threshold,
-    actualValue: amount,
-  };
-}
 
 export function detectDailySpike(
   dailyTotal: number,
