@@ -12,35 +12,17 @@ export const ChatBubble = () => {
     if (!message.trim() || isSending) return;
 
     setIsSending(true);
-    
     setMessages(prev => [...prev, { sender: 'user', text: message }]);
     
-    // Commands implementation based on endpoints provided
     try {
       if (message.startsWith('/history')) {
         const res = await financeApi.getChatHistory();
         setMessages(prev => [...prev, { sender: 'bot', text: JSON.stringify(res, null, 2) }]);
-      } else if (message.startsWith('/session ')) {
-        const id = message.split(' ')[1];
-        const res = await financeApi.getChatSessionDetail(id);
-        setMessages(prev => [...prev, { sender: 'bot', text: JSON.stringify(res, null, 2) }]);
-      } else if (message.startsWith('/anomalies')) {
-        const res = await financeApi.getAnomalies();
-        setMessages(prev => [...prev, { sender: 'bot', text: JSON.stringify(res, null, 2) }]);
-      } else if (message.startsWith('/anomaly ')) {
-        const id = message.split(' ')[1];
-        const res = await financeApi.getAnomalyDetail(id);
-        setMessages(prev => [...prev, { sender: 'bot', text: JSON.stringify(res, null, 2) }]);
-      } else if (message.startsWith('/recheck ')) {
-        const id = message.split(' ')[1];
-        const res = await financeApi.recheckAnomaly(id);
-        setMessages(prev => [...prev, { sender: 'bot', text: JSON.stringify(res, null, 2) }]);
-      } else if (message.startsWith('/insights')) {
-        const res = await financeApi.getInsights();
-        setMessages(prev => [...prev, { sender: 'bot', text: JSON.stringify(res, null, 2) }]);
       } else {
         const res = await financeApi.askChatbot(message);
-        setMessages(prev => [...prev, { sender: 'bot', text: JSON.stringify(res, null, 2) }]);
+        // ApiGateway wrap response trong { data: ... }
+        const replyText = res?.data?.reply || res?.reply || "Tôi không có câu trả lời.";
+        setMessages(prev => [...prev, { sender: 'bot', text: replyText }]);
       }
     } catch (error: any) {
       setMessages(prev => [...prev, { sender: 'bot', text: `Error: ${error.message}` }]);
@@ -50,6 +32,25 @@ export const ChatBubble = () => {
 
     setMessage('');
   };
+
+  // Load history khi mở popup
+  React.useEffect(() => {
+    if (isOpen) {
+      financeApi.getChatHistory().then((res: any) => {
+        // res có thể chứa các session, ở đây chỉ lấy session đầu tiên làm demo
+        const sessions = res?.data || res;
+        if (sessions && sessions.length > 0) {
+          financeApi.getChatSessionDetail(sessions[0].id).then((detailRes: any) => {
+            const historyMsgs = (detailRes?.data || detailRes || []).map((m: any) => ({
+              sender: m.sender_type === "assistant" ? "bot" : "user",
+              text: m.content
+            }));
+            setMessages(historyMsgs);
+          });
+        }
+      }).catch(console.error);
+    }
+  }, [isOpen]);
 
   return (
     <>

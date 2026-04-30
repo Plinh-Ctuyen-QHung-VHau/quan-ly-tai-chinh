@@ -48,8 +48,8 @@ export class ChatService {
 
       try {
         const execution = await this.executeFunction(input.user_id, name, args, categories);
-        reply = execution.reply; // Backend format reply — KHÔNG để AI bịa số liệu
-        data = execution.data;
+        reply = execution.reply;
+        this.logger.log(`[DATA] ${JSON.stringify(execution.data)}`); // Log ra terminal, không trả về user
       } catch (err) {
         this.logger.error(`[FAIL] ${name}: ${err.message}`);
         reply = "Xin lỗi, tôi gặp lỗi khi lấy dữ liệu.";
@@ -58,7 +58,7 @@ export class ChatService {
 
     await this.chatRepository.saveMessage({ session_id, sender_type: "assistant", content: reply });
     // Trả về intent + args để frontend biết AI hiểu đúng không
-    return { reply, data, metadata: { nlp_source: "ai", intent, args: result.type === "function_call" ? result.call.args : undefined } };
+    return { reply, metadata: { nlp_source: "ai", intent, args: result.type === "function_call" ? result.call.args : undefined } };
   }
 
   private getQuickReply(msg: string): string | null {
@@ -127,8 +127,15 @@ export class ChatService {
   }
 
   private async resolveSessionId(user_id: string, context?: string) {
+    // Ưu tiên session_id từ context (frontend truyền vào)
     const sessionId = context?.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0];
     if (sessionId && await this.chatRepository.getSession(sessionId)) return sessionId;
+    
+    // Nếu không có, lấy session mới nhất của user (không tạo mới)
+    const latest = await this.chatRepository.getLatestSession(user_id);
+    if (latest) return latest.id;
+
+    // Chỉ tạo mới nếu user chưa có session nào
     const session = await this.chatRepository.createSession(user_id, "Finance Chat");
     return session.id;
   }
