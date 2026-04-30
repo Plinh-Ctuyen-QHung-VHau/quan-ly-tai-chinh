@@ -259,6 +259,8 @@ export function TransactionConfirmScreen() {
 
       clearDraft();
       Alert.alert("Đã lưu", "Giao dịch đã được lưu thành công.");
+      // Force refresh app data
+      void useAppDataStore.getState().refresh();
       navigation.navigate("MainTabs", { screen: "Home" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể lưu giao dịch.");

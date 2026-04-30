@@ -1,4 +1,6 @@
-import React, { useCallback, useState, useRef, useEffect } from "react";
+import React, {
+  useCallback, useState, useRef, useEffect, useMemo
+} from "react";
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 
@@ -12,6 +14,7 @@ import { formatCurrency } from "../../utils/formatCurrency";
 import { formatDate } from "../../utils/formatDate";
 import { dataInvalidation } from "../../utils/dataInvalidation";
 import { useSignedUrl } from "../../hooks/useSignedUrl";
+import { useAppDataStore } from "../../store/appDataStore";
 
 export function TransactionDetailScreen() {
   const navigation = useNavigation<any>();
@@ -30,6 +33,12 @@ export function TransactionDetailScreen() {
       const result = await getTransactionById(transaction_id);
       setTransaction(result);
       lastFetchedAt.current = Date.now();
+    } catch (err: any) {
+      const status = err?.statusCode ?? err?.response?.status;
+      // Nếu đang xóa thì bỏ qua lỗi 404
+      if (status === 404 && !deleting) {
+        navigation.goBack();
+      }
     } finally {
       setLoading(false);
     }
@@ -56,6 +65,15 @@ export function TransactionDetailScreen() {
   // Hook phải luôn được gọi trước conditional return
   const receiptSignedUrl = useSignedUrl(transaction?.image_url);
 
+  const expenseCategories = useAppDataStore((state) => state.expenseCategories);
+  const incomeCategories = useAppDataStore((state) => state.incomeCategories);
+
+  const categoryName = useMemo(() => {
+    if (transaction?.category_name) return transaction.category_name;
+    const cats = transaction?.type === "expense" ? expenseCategories : incomeCategories;
+    return cats.find((c) => c.id === transaction?.category_id)?.name ?? "Chưa phân loại";
+  }, [transaction, expenseCategories, incomeCategories]);
+
   const handleDelete = () => {
     Alert.alert("Xác nhận xóa", "Bạn chắc chắn muốn xóa giao dịch này?", [
       { text: "Hủy", style: "cancel" },
@@ -75,8 +93,8 @@ export function TransactionDetailScreen() {
     ]);
   };
 
-  if (loading) {
-    return <LoadingView label="Đang tải chi tiết giao dịch..." />;
+  if (loading || deleting) {
+    return <LoadingView label={deleting ? "Đang xóa..." : "Đang tải chi tiết giao dịch..."} />;
   }
 
   if (!transaction) {
@@ -128,7 +146,7 @@ export function TransactionDetailScreen() {
           <View style={styles.detailRow}>
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Danh mục</Text>
-              <Text style={styles.detailValue}>{transaction.category_name ?? "Chưa phân loại"}</Text>
+              <Text style={styles.detailValue}>{categoryName}</Text>
             </View>
           </View>
 

@@ -101,31 +101,35 @@ export async function getReceiptSignedUrl(image_url: string | null | undefined):
     return cached.url;
   }
 
-  // Extract storage path từ Supabase public URL
-  // Dạng: https://xxx.supabase.co/storage/v1/object/public/receipts/userId/timestamp_receipt.jpg
-  // hoặc: userId/timestamp_receipt.jpg (trường hợp lưu path trực tiếp)
+  // Trích xuất path từ URL Supabase. 
+  // Supabase URL thường có dạng: .../object/[public|sign]/receipts/[userId/filename.jpg]
+  // createSignedUrl yêu cầu path KHÔNG CÓ tên bucket.
   let storagePath = image_url;
-  const publicPrefix = "/storage/v1/object/public/receipts/";
-  const signedPrefix = "/storage/v1/object/sign/receipts/";
-
-  if (image_url.includes(publicPrefix)) {
-    storagePath = image_url.split(publicPrefix)[1]?.split("?")[0] ?? image_url;
-  } else if (image_url.includes(signedPrefix)) {
-    storagePath = image_url.split(signedPrefix)[1]?.split("?")[0] ?? image_url;
-  } else if (image_url.startsWith("http")) {
-    // Cố gắng extract path từ URL không chuẩn
-    const match = image_url.match(/receipts\/(.+?)(\?|$)/);
-    if (match) {
-      storagePath = match[1];
-    } else {
-      return image_url; // Fallback: trả nguyên URL
+  
+  if (image_url.startsWith("http")) {
+    try {
+      const url = new URL(image_url);
+      const pathParts = url.pathname.split("/");
+      // Tìm vị trí của bucket name 'receipts' trong path
+      const bucketIndex = pathParts.indexOf("receipts");
+      if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
+        // Lấy tất cả phần sau bucket name
+        storagePath = pathParts.slice(bucketIndex + 1).join("/");
+      }
+    } catch (e) {
+      // Nếu không parse được URL, thử regex cũ làm fallback
+      const match = image_url.match(/receipts\/(.+?)(\?|$)/);
+      if (match) storagePath = match[1];
     }
   }
+  
+  // Xóa các query params nếu còn sót (như ?token=...)
+  storagePath = storagePath.split("?")[0];
 
   try {
     const { data, error } = await supabase.storage
       .from("receipts")
-      .createSignedUrl(decodeURIComponent(storagePath), 3600);
+      .createSignedUrl(storagePath, 3600);
 
     if (error || !data?.signedUrl) {
       console.warn("[SignedUrl] Failed:", error?.message);

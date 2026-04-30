@@ -44,6 +44,13 @@ export class BudgetsRepository {
     const end_date =
       (createBudgetDto as any).end_date ?? (createBudgetDto as any).endDate;
 
+    // Đảm bảo chỉ có 1 budget hoạt động: Xóa các budget cũ đang active
+    await this.supabase
+      .from("budgets")
+      .update({ status: "deleted" })
+      .eq("user_id", user_id)
+      .in("status", ["active", "exceeded"]);
+
     const { data, error } = await this.supabase
       .from("budgets")
       .insert({
@@ -88,6 +95,19 @@ export class BudgetsRepository {
 
     if (error) throw new Error(error.message);
     return data ? this.mapToBudget(data) : null;
+  }
+
+  async findAllActiveBudgets(): Promise<Budget[]> {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await this.supabase
+      .from("budgets")
+      .select("*")
+      .in("status", ["active", "exceeded"])
+      .lte("start_date", today)
+      .gte("end_date", today);
+
+    if (error) throw new Error(error.message);
+    return (data || []).map((row) => this.mapToBudget(row));
   }
 
   async update(
@@ -168,6 +188,60 @@ export class BudgetsRepository {
     if (error) throw new Error(error.message);
     return data ? this.mapToBudget(data) : null;
   }
+
+  // ─── Budget Snapshots ────────────────────────────────────────────────
+
+  async createSnapshot(params: {
+    budget_id: string;
+    user_id: string;
+    spent_amount: number;
+    remaining_amount: number;
+    percent_used: number;
+  }) {
+    const { data, error } = await this.supabase
+      .from("budget_snapshots")
+      .insert({
+        budget_id: params.budget_id,
+        user_id: params.user_id,
+        spent_amount: params.spent_amount,
+        remaining_amount: params.remaining_amount,
+        percent_used: params.percent_used,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to create budget snapshot: ${error.message}`);
+    return data;
+  }
+
+  async getLatestSnapshot(budget_id: string, user_id: string) {
+    const { data, error } = await this.supabase
+      .from("budget_snapshots")
+      .select("*")
+      .eq("budget_id", budget_id)
+      .eq("user_id", user_id)
+      .order("snapshot_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw new Error(`Failed to get latest snapshot: ${error.message}`);
+    return data;
+  }
+
+  async getSnapshotHistory(budget_id: string, user_id: string, limit = 30) {
+    const { data, error } = await this.supabase
+      .from("budget_snapshots")
+      .select("*")
+      .eq("budget_id", budget_id)
+      .eq("user_id", user_id)
+      .order("snapshot_at", { ascending: false })
+      .limit(limit);
+
+    if (error) throw new Error(`Failed to get snapshot history: ${error.message}`);
+    return data || [];
+  }
+
+  // ─── Mapping ────────────────────────────────────────────────────────
 
   private toDate(value: string | Date | null | undefined): Date | null {
     if (!value) return null;

@@ -38,6 +38,7 @@ export class ChatService {
     let reply = "";
     let data = null;
     let intent = "unknown";
+    let actionPerformed = false;
 
     if (result.type === "text") {
       reply = result.text;
@@ -49,6 +50,7 @@ export class ChatService {
       try {
         const execution = await this.executeFunction(input.user_id, name, args, categories);
         reply = execution.reply;
+        actionPerformed = !!execution.actionPerformed;
         this.logger.log(`[DATA] ${JSON.stringify(execution.data)}`); // Log ra terminal, không trả về user
       } catch (err) {
         this.logger.error(`[FAIL] ${name}: ${err.message}`);
@@ -58,7 +60,11 @@ export class ChatService {
 
     await this.chatRepository.saveMessage({ session_id, sender_type: "assistant", content: reply });
     // Trả về intent + args để frontend biết AI hiểu đúng không
-    return { reply, metadata: { nlp_source: "ai", intent, args: result.type === "function_call" ? result.call.args : undefined } };
+    return { 
+      reply, 
+      metadata: { nlp_source: "ai", intent, args: result.type === "function_call" ? result.call.args : undefined },
+      actionPerformed // Gửi về FE để trigger reload
+    };
   }
 
   private getQuickReply(msg: string): string | null {
@@ -110,7 +116,11 @@ export class ChatService {
           note: args.note || args.category_name
         });
         const label = args.type === "income" ? "Thu nhập" : "Chi tiêu";
-        return { reply: `✅ ${label} **${args.amount.toLocaleString("vi-VN")}đ** (${category.name}) đã được ghi lại.`, data: tx };
+        return { 
+          reply: `✅ ${label} **${args.amount.toLocaleString("vi-VN")}đ** (${category.name}) đã được ghi lại.`, 
+          data: tx,
+          actionPerformed: true // Thêm flag này để FE reload
+        };
       }
 
       default:

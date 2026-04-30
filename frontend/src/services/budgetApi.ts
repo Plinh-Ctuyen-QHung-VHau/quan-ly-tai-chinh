@@ -42,12 +42,17 @@ export async function getCurrentBudgetStatus(): Promise<BudgetStatus | null> {
     const payload = handleApiResponse<BudgetStatusApiResponse>(response);
     return normalizeBudgetStatus(payload);
   } catch (error: any) {
-    const status = error?.statusCode ?? error?.response?.status;
+    // Kiểm tra statusCode ở mọi vị trí có thể
+    const status = 
+      error?.statusCode ?? 
+      error?.response?.status ?? 
+      error?.details?.statusCode ?? 
+      error?.error?.details?.statusCode ??
+      (error?.details as any)?.statusCode;
 
-    if (status === 404) {
+    if (status === 404 || error?.code === "NOT_FOUND" || error?.message?.includes("404")) {
       return null;
     }
-
     throw error;
   }
 }

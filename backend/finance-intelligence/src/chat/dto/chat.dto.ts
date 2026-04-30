@@ -14,6 +14,7 @@ export class ChatInputSecureDto {
 export class ChatResponseDto {
   reply: string;
   data?: any;
+  actionPerformed?: boolean;
   metadata?: {
     intent?: string;
     entities?: Record<string, any>;

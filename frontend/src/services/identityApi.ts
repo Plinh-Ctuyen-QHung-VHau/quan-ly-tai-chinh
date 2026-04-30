@@ -1,5 +1,6 @@
 import { apiClient } from "./apiClient";
 import { handleApiResponse } from "../utils/responseHandler";
+import { invalidateData } from "../utils/dataInvalidation";
 import { UserProfile, UserSettings } from "../types/user";
 import { endpoints } from "./endpoints";
 
@@ -13,7 +14,9 @@ export async function updateMyProfile(payload: {
   avatar_url?: string;
 }) {
   const response = await apiClient.put(endpoints.users.me, payload);
-  return handleApiResponse<UserProfile>(response);
+  const result = handleApiResponse<UserProfile>(response);
+  invalidateData("profile");
+  return result;
 }
 
 export async function getMySettings() {
@@ -28,5 +31,7 @@ export async function updateMySettings(payload: {
   currency?: string;
 }) {
   const response = await apiClient.put(endpoints.users.settings, payload);
-  return handleApiResponse<UserSettings>(response);
+  const result = handleApiResponse<UserSettings>(response);
+  invalidateData("settings");
+  return result;
 }

@@ -5,11 +5,13 @@ import { getMyProfile } from "../services/identityApi";
 import { getNotificationSettings, getNotifications } from "../services/notificationApi";
 import { useNotificationStore } from "./notificationStore";
 import { supabase } from "../services/supabaseClient";
+import { dataInvalidation } from "../utils/dataInvalidation";
 import { Transaction, TransactionSummary } from "../types/transaction";
 import { BudgetStatus } from "../types/budget";
 import { Category } from "../types/category";
 import { UserProfile } from "../types/user";
 import { NotificationSettings } from "../types/notification";
+import { getCurrentBudgetStatus } from "../services/budgetApi";
 
 const DEFAULT_NOTIF_SETTINGS: NotificationSettings = {
   enable_all: true,
@@ -75,11 +77,11 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
       const user = session?.user;
 
       const [summary, budget, txRes, expenseCats, incomeCats, profile, notifSettings, notifList] = await Promise.all([
-        getTransactionSummary(),
-        getCurrentBudget(),
-        getTransactions({ limit: 1000 }),
-        getCategories("expense"),
-        getCategories("income"),
+        getTransactionSummary().catch(() => null),
+        getCurrentBudgetStatus().catch(() => null),
+        getTransactions({ limit: 1000 }).catch(() => ({ data: [] })),
+        getCategories("expense").catch(() => []),
+        getCategories("income").catch(() => []),
         getMyProfile().catch(() => null),
         getNotificationSettings().catch(() => DEFAULT_NOTIF_SETTINGS),
         getNotifications().catch(() => []),
@@ -112,9 +114,9 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
     set({ isRefreshing: true, error: null });
     try {
-      const [summary, budget, txRes, expenseCats, incomeCats] = await Promise.all([
+      const [summary, budgetStatus, txRes, expenseCats, incomeCats] = await Promise.all([
         getTransactionSummary(),
-        getCurrentBudget(),
+        getCurrentBudgetStatus().catch(() => null),
         getTransactions({ limit: 1000 }),
         getCategories("expense"),
         getCategories("income"),
@@ -122,7 +124,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
       set({
         summary,
-        budgetStatus: budget,
+        budgetStatus,
         transactions: Array.isArray(txRes?.data) ? txRes.data : [],
         expenseCategories: expenseCats,
         incomeCategories: incomeCats,

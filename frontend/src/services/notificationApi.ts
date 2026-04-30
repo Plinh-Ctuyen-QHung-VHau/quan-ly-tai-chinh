@@ -1,5 +1,6 @@
 import { apiClient } from "./apiClient";
 import { handleApiResponse } from "../utils/responseHandler";
+import { invalidateData } from "../utils/dataInvalidation";
 import { Notification, NotificationSettings } from "../types/notification";
 import { endpoints } from "./endpoints";
 
@@ -28,5 +29,7 @@ export async function updateNotificationSettings(
   payload: NotificationSettings,
 ) {
   const response = await apiClient.put(endpoints.notifications.updateSettings, payload);
-  return handleApiResponse<NotificationSettings>(response);
+  const result = handleApiResponse<NotificationSettings>(response);
+  invalidateData("notifications");
+  return result;
 }

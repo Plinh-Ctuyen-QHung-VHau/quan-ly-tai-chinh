@@ -24,6 +24,7 @@ import { useNotificationStore } from "../store/notificationStore";
 import { Budget } from "../types/budget";
 import { setupPushNotifications } from "../utils/notificationHandler";
 import { useAppDataStore } from "../store/appDataStore";
+import { dataInvalidation } from "../utils/dataInvalidation";
 import * as Notifications from "expo-notifications";
 
 export type RootStackParamList = {
@@ -129,6 +130,17 @@ export function AppNavigator() {
     if (isAuthenticated) {
       void useAppDataStore.getState().initialize();
     }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const unsubscribe = dataInvalidation.subscribe((key) => {
+      // Logic refresh đã được chuyển vào hàm invalidateData trung tâm để có delay chuẩn
+      console.log(`[AppNavigator] Data invalidation event received: ${key}`);
+    });
+
+    return unsubscribe;
   }, [isAuthenticated]);
 
   if (!bootstrapped || !is_ready) {

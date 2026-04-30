@@ -43,6 +43,14 @@ export class BudgetsController {
     return this.budgetsService.getCurrentStatus(user_id);
   }
 
+  @Get("current/history")
+  getHistory(
+    @Getuser_id() user_id: string,
+    @Query("limit") limit?: number,
+  ) {
+    return this.budgetsService.getHistory(user_id, limit);
+  }
+
   @Put(":id")
   update(
     @Param("id") id: string,

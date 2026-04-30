@@ -16,5 +16,6 @@ import { MetricsModule } from "../metrics/metrics.module";
   ],
   controllers: [BudgetsController],
   providers: [BudgetsService, BudgetsRepository],
+  exports: [BudgetsService, BudgetsRepository],
 })
 export class BudgetsModule { }

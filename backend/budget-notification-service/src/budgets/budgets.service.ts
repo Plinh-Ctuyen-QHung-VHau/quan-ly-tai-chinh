@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { BudgetsRepository } from "./budgets.repository";
 import { CreateBudgetDto } from "./dto/create-budget.dto";
 import { UpdateBudgetDto } from "./dto/update-budget.dto";
@@ -10,6 +10,8 @@ import { AppError } from "@shared/errors/AppError";
 
 @Injectable()
 export class BudgetsService {
+  private readonly logger = new Logger(BudgetsService.name);
+
   constructor(
     private readonly budgetsRepository: BudgetsRepository,
     private readonly transactionClient: TransactionClient,
@@ -62,17 +64,36 @@ export class BudgetsService {
       frontendStatus = "healthy";
     }
 
+    const roundedPercent = Math.round(percent_used * 100) / 100;
+
     const status = {
       id: budget.id,
       budget_amount,
       spent_amount,
       remaining_amount,
-      percent_used: Math.round(percent_used * 100) / 100,
+      percent_used: roundedPercent,
       status: frontendStatus,
       budget_period: budget.budget_period,
       start_date: budget.start_date,
       end_date: budget.end_date,
     };
+
+    // Ghi snapshot vào budget_snapshots
+    try {
+      await this.budgetsRepository.createSnapshot({
+        budget_id: budget.id,
+        user_id: budget.user_id,
+        spent_amount,
+        remaining_amount,
+        percent_used: roundedPercent,
+      });
+      this.logger.log(
+        `Budget snapshot saved: budget=${budget.id}, spent=${spent_amount}, remaining=${remaining_amount}, used=${roundedPercent}%`,
+      );
+    } catch (err) {
+      // Snapshot lưu thất bại không nên block response
+      this.logger.warn(`Failed to save budget snapshot: ${err.message}`);
+    }
 
     // Check and trigger alerts
     await this.checkBudgetThresholds(budget, status);
@@ -100,6 +121,12 @@ export class BudgetsService {
     }
     this.metrics.budgetsDeletedTotal.inc();
     return { success: true, message: "Budget deleted successfully." };
+  }
+
+  async getHistory(user_id: string, limit?: number) {
+    const budget = await this.budgetsRepository.findCurrentActive(user_id);
+    if (!budget) return [];
+    return this.budgetsRepository.getSnapshotHistory(budget.id, user_id, limit);
   }
 
   private async checkBudgetThresholds(budget, status) {

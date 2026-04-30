@@ -20,8 +20,8 @@ export const ChatBubble = () => {
         setMessages(prev => [...prev, { sender: 'bot', text: JSON.stringify(res, null, 2) }]);
       } else {
         const res = await financeApi.askChatbot(message);
-        // ApiGateway wrap response trong { data: ... }
-        const replyText = res?.data?.reply || res?.reply || "Tôi không có câu trả lời.";
+        // Sau khi dùng handleApiResponse, res chính là phần data
+        const replyText = res?.reply || "Tôi không có câu trả lời.";
         setMessages(prev => [...prev, { sender: 'bot', text: replyText }]);
       }
     } catch (error: any) {

@@ -81,14 +81,27 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
+    // Kiểm tra xem đây có phải là lỗi 404 của Budget bọc trong response thành công không
+    const data = response.data;
+    if (data && typeof data === "object" && data.success === false) {
+      const nestedStatus = data.error?.details?.statusCode;
+      const isBudgetStatus404 = 
+        nestedStatus === 404 && 
+        response.config.url?.includes(endpoints.budgets.currentStatus);
+
+      if (isBudgetStatus404) {
+        // Trả về response lỗi để handleApiResponse có thể xử lý, 
+        // nhưng không in log console.error ở đây.
+        return response; 
+      }
+    }
     return response;
   },
   async (error: unknown) => {
-    // Retry tự động khi Network Error (thiết bị treo, mạng yếu)
+    // Retry tự động khi Network Error
     const isNetworkError =
       axios.isAxiosError(error) && !error.response && error.code !== "ERR_CANCELED";
     
-    // Ngăn chặn infinite loop: interceptor bắt lại request đã retry và gọi retry lại từ đầu.
     if (isNetworkError) {
       const config = (error as any).config;
       if (!config || !config._retryCount || config._retryCount < 2) {
@@ -96,25 +109,25 @@ apiClient.interceptors.response.use(
       }
     }
 
-    const shouldSkipBudgetStatus404Log =
-      axios.isAxiosError(error) &&
-      error.response?.status === 404 &&
-      typeof error.config?.url === "string" &&
-      error.config.url.includes(endpoints.budgets.currentStatus) &&
-      (error.response?.data as { message?: string } | undefined)?.message ===
-        "No active budget found for the current period.";
-
     const normalizedError = normalizeAxiosError(error);
 
-    if (!shouldSkipBudgetStatus404Log) {
+    // Xác định xem có nên bỏ qua log lỗi này không
+    const isBudgetStatus404 = 
+      normalizedError.statusCode === 404 && 
+      axios.isAxiosError(error) &&
+      error.config?.url?.includes(endpoints.budgets.currentStatus);
+
+    const isTransactionDetail404 = 
+      normalizedError.statusCode === 404 &&
+      axios.isAxiosError(error) &&
+      error.config?.url?.includes("/api/transactions/") && 
+      error.config?.method?.toLowerCase() === "get";
+
+    if (!isBudgetStatus404 && !isTransactionDetail404) {
       console.error(
         `[API ERROR] ${normalizedError.statusCode || "UNKNOWN"} | Message: ${normalizedError.message} | Data:`,
         normalizedError.details,
       );
-    }
-
-    if (shouldSkipBudgetStatus404Log) {
-      return Promise.reject(error);
     }
 
     if (normalizedError.statusCode === 401 && unauthorizedHandler) {

@@ -78,8 +78,13 @@ export class TransactionsRepository {
 
     if (type) countQuery = countQuery.eq("type", type);
     if (category_id) countQuery = countQuery.eq("category_id", category_id);
-    if (fromDate) countQuery = countQuery.gte("transaction_date", fromDate);
-    if (toDate) countQuery = countQuery.lte("transaction_date", toDate);
+    if (fromDate) {
+      countQuery = countQuery.gte("transaction_date", fromDate);
+    }
+    if (toDate) {
+      const finalToDate = toDate.length === 10 ? `${toDate}T23:59:59.999Z` : toDate;
+      countQuery = countQuery.lte("transaction_date", finalToDate);
+    }
     if (keyword) {
       countQuery = countQuery.or(
         `note.ilike.%${keyword}%,merchant_name.ilike.%${keyword}%`,
@@ -229,7 +234,11 @@ export class TransactionsRepository {
       .eq("user_id", user_id);
 
     if (fromDate) query = query.gte("transaction_date", fromDate);
-    if (toDate) query = query.lte("transaction_date", toDate);
+    if (toDate) {
+      // Nếu toDate chỉ có ngày (YYYY-MM-DD), thêm giờ để bao phủ hết ngày đó
+      const finalToDate = toDate.length === 10 ? `${toDate}T23:59:59.999Z` : toDate;
+      query = query.lte("transaction_date", finalToDate);
+    }
 
     const { data, error } = await query;
     if (error) throw new Error(error.message);
