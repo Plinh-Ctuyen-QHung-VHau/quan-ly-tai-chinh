@@ -15,7 +15,8 @@ import { useAppDataStore } from "../../store/appDataStore";
 import { BudgetStatus } from "../../types/budget";
 import { TransactionSummary } from "../../types/transaction";
 import { formatCurrency } from "../../utils/formatCurrency";
-import { StatTile, SmallMetric } from "../../components/MetricTiles";
+import { formatDate } from "../../utils/formatDate";
+import { StatTile } from "../../components/MetricTiles";
 import { COLORS, shadow } from "../../constants/ui";
 
 const EMPTY_SUMMARY: TransactionSummary = {
@@ -91,8 +92,12 @@ export function HomeScreen() {
 
   const budgetPercent = useMemo(() => {
     if (!hasBudget || budget_amount <= 0) return 0;
-    return clampPercent((spent_amount / budget_amount) * 100);
-  }, [budget_amount, hasBudget, spent_amount]);
+    const raw =
+      typeof budgetStatus?.percent_used === "number"
+        ? budgetStatus.percent_used
+        : (spent_amount / budget_amount) * 100;
+    return clampPercent(raw);
+  }, [budget_amount, budgetStatus?.percent_used, hasBudget, spent_amount]);
 
   if (loading && !refreshing) return <LoadingView label="Đang tải tổng quan..." />;
 
@@ -146,7 +151,7 @@ export function HomeScreen() {
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Dòng tiền tháng này</Text>
+        <Text style={styles.sectionTitle}>Dòng tiền</Text>
       </View>
 
       <View style={styles.cashFlowGrid}>
@@ -155,8 +160,8 @@ export function HomeScreen() {
           value={income}
           hint="Tiền vào trong kỳ"
           color={COLORS.income}
-          bg={COLORS.incomeSoft}
-          border={COLORS.incomeBorder}
+          bg={COLORS.white}
+          border={COLORS.border}
           arrow="up"
         />
 
@@ -165,8 +170,8 @@ export function HomeScreen() {
           value={expense}
           hint="Tiền ra trong kỳ"
           color={COLORS.expense}
-          bg={COLORS.expenseSoft}
-          border={COLORS.expenseBorder}
+          bg={COLORS.white}
+          border={COLORS.border}
           arrow="down"
         />
       </View>
@@ -198,12 +203,12 @@ export function HomeScreen() {
       <View style={styles.budgetCard}>
         <View style={styles.budgetHeader}>
           <View>
-            <Text style={styles.budgetTitle}>Ngân sách hiện tại</Text>
-            <Text style={styles.budgetSubtitle}>
-              Theo dõi mức chi tiêu của bạn
-            </Text>
+            {budgetStatus?.start_date && budgetStatus?.end_date ? (
+              <Text style={styles.budgetPeriodText}>
+                {formatDate(budgetStatus.start_date)} – {formatDate(budgetStatus.end_date)}
+              </Text>
+            ) : null}
           </View>
-
           <View style={[styles.budgetStatusChip, { backgroundColor: budgetTheme.bg }]}>
             <Text style={[styles.budgetStatusText, { color: budgetTheme.color }]}>
               {budgetTheme.label}
@@ -214,7 +219,7 @@ export function HomeScreen() {
         {hasBudget ? (
           <>
             <View style={styles.budgetProgressRow}>
-              <Text style={styles.budgetPercent}>{Math.round(budgetPercent)}%</Text>
+              <Text style={[styles.budgetPercent, { color: budgetTheme.color }]}>{Math.round(budgetPercent)}%</Text>
               <Text style={styles.budgetUsedText}>đã sử dụng ngân sách</Text>
             </View>
 
@@ -231,31 +236,23 @@ export function HomeScreen() {
             </View>
 
             <View style={styles.budgetMetricRow}>
-              <SmallMetric
-                label="Ngân sách"
-                value={budget_amount}
-                color={COLORS.blue}
-                bg={COLORS.blueLight}
-              />
-
-              <SmallMetric
-                label="Đã chi"
-                value={spent_amount}
-                color={COLORS.expense}
-                bg={COLORS.expenseSoft}
-              />
-
-              <SmallMetric
-                label="Còn lại"
-                value={remaining_amount}
-                color={COLORS.income}
-                bg={COLORS.incomeSoft}
-              />
+              <View style={styles.budgetStatCol}>
+                <Text style={styles.budgetStatLabel}>Ngân sách</Text>
+                <Text style={styles.budgetStatValue} numberOfLines={1}>{formatCurrency(budget_amount)}</Text>
+              </View>
+              <View style={styles.budgetStatDivider} />
+              <View style={styles.budgetStatCol}>
+                <Text style={styles.budgetStatLabel}>Đã chi</Text>
+                <Text style={styles.budgetStatValue} numberOfLines={1}>{formatCurrency(spent_amount)}</Text>
+              </View>
+              <View style={styles.budgetStatDivider} />
+              <View style={styles.budgetStatCol}>
+                <Text style={styles.budgetStatLabel}>Còn lại</Text>
+                <Text style={[styles.budgetStatValue, remaining_amount < 0 && { color: COLORS.expense }]} numberOfLines={1}>{formatCurrency(remaining_amount)}</Text>
+              </View>
             </View>
 
-            <Text style={styles.budgetFooterText}>
-              Còn lại khoảng {Math.max(0, Math.round(100 - budgetPercent))}% ngân sách cho kỳ hiện tại.
-            </Text>
+
           </>
         ) : (
           <View style={styles.emptyBudgetBox}>
@@ -298,30 +295,33 @@ const styles = StyleSheet.create({
   quickActionSecondaryIcon: { color: COLORS.blue, fontSize: 18, fontWeight: "900", marginBottom: 5 },
   quickActionSecondaryText: { color: COLORS.dark, fontSize: 14, fontWeight: "900" },
   sectionHeader: { marginBottom: 10 },
-  sectionTitle: { color: COLORS.text, fontSize: 20, fontWeight: "900" },
+  sectionTitle: { color: COLORS.muted, fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1 },
   cashFlowGrid: { flexDirection: "row", gap: 10, marginBottom: 10 },
   statTile: { flex: 1, minHeight: 112, borderRadius: 18, padding: 14, borderWidth: 1 },
   statArrow: { fontSize: 16, fontWeight: "900", marginBottom: 8 },
   statLabel: { color: COLORS.text, fontSize: 12, fontWeight: "900", textTransform: "uppercase", marginBottom: 4 },
   statValue: { fontSize: 17, fontWeight: "900", marginBottom: 4 },
   statHint: { color: COLORS.muted, fontSize: 11, lineHeight: 15 },
-  netCard: { ...shadow, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderRadius: 18, padding: 14, backgroundColor: COLORS.blueLight, borderWidth: 1, borderColor: "#BFDBFE", marginBottom: 20 },
+  netCard: { ...shadow, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderRadius: 18, padding: 14, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, marginBottom: 20 },
   netLabel: { color: COLORS.text, fontSize: 14, fontWeight: "900", marginBottom: 3 },
   netHint: { color: COLORS.muted, fontSize: 12 },
   netValue: { maxWidth: "48%", fontSize: 17, fontWeight: "900" },
   budgetCard: { ...shadow, backgroundColor: COLORS.white, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: COLORS.border },
-  budgetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18, gap: 10 },
-  budgetTitle: { color: COLORS.text, fontSize: 17, fontWeight: "900" },
-  budgetSubtitle: { color: COLORS.muted, fontSize: 12, marginTop: 3 },
-  budgetStatusChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  budgetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
+  budgetPeriodText: { color: COLORS.muted2, fontSize: 11, fontWeight: "500" },
+  budgetStatusChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
   budgetStatusText: { fontSize: 12, fontWeight: "900" },
   budgetProgressRow: { flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 10 },
-  budgetPercent: { color: COLORS.text, fontSize: 34, lineHeight: 40, fontWeight: "900" },
+  budgetPercent: { color: COLORS.text, fontSize: 30, lineHeight: 36, fontWeight: "900" },
   budgetUsedText: { color: COLORS.muted, fontSize: 13, fontWeight: "700" },
-  progressTrack: { height: 10, borderRadius: 999, backgroundColor: "#E5EAF0", overflow: "hidden", marginBottom: 14 },
+  progressTrack: { height: 8, borderRadius: 999, backgroundColor: "#E5EAF0", overflow: "hidden", marginBottom: 16 },
   progressFill: { height: "100%", borderRadius: 999 },
-  budgetMetricRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
-  smallMetric: { flex: 1, borderRadius: 14, padding: 10 },
+  budgetMetricRow: { flexDirection: "row", alignItems: "stretch", borderTopWidth: 1, borderColor: COLORS.border, paddingTop: 14 },
+  budgetStatCol: { flex: 1, paddingHorizontal: 4 },
+  budgetStatDivider: { width: 1, backgroundColor: COLORS.border, marginVertical: 2 },
+  budgetStatLabel: { color: COLORS.muted, fontSize: 10, fontWeight: "500", marginBottom: 5, letterSpacing: 0.2 },
+  budgetStatValue: { color: COLORS.text, fontSize: 13, fontWeight: "800" },
+  smallMetric: { flex: 1, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: COLORS.border },
   smallMetricLabel: { color: COLORS.muted, fontSize: 10, fontWeight: "900", textTransform: "uppercase", marginBottom: 4 },
   smallMetricValue: { fontSize: 12, fontWeight: "900" },
   budgetFooterText: { color: COLORS.muted, fontSize: 12, lineHeight: 17 },

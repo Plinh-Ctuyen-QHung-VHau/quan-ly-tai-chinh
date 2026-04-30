@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 
 import { EmptyState } from "../../components/EmptyState";
 import { LoadingView } from "../../components/LoadingView";
@@ -14,9 +14,7 @@ import { TransactionItem } from "../../components/TransactionItem";
 import { ScreenHero } from "../../components/ScreenHero";
 import { TransactionHistoryFiltersCard } from "../../components/TransactionHistoryFiltersCard";
 import { COLORS, shadow } from "../../constants/ui";
-import { dataInvalidation } from "../../utils/dataInvalidation";
-import { Category, TransactionType } from "../../types/category";
-import { Transaction, TransactionFilters } from "../../types/transaction";
+import { TransactionType } from "../../types/category";
 import { useAppDataStore } from "../../store/appDataStore";
 
 type DateField = "from" | "to";
@@ -110,23 +108,24 @@ export function TransactionHistoryScreen() {
   const loading = useAppDataStore((state) => state.isInitializing || state.isRefreshing);
   const error = useAppDataStore((state) => state.error);
 
-  const [type, setType] = useState<TransactionType>("expense");
+  const [type, setType] = useState<TransactionType | null>(null);
   const [category_id, setcategory_id] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [rangePreset, setRangePreset] = useState<RangePreset>("custom");
   const [showIosPicker, setShowIosPicker] = useState<DateField | null>(null);
 
-  // Dummy cho FiltersCard, không còn dùng pagination nữa
-  const [limit, setLimit] = useState("10");
-  const [page, setPage] = useState(1);
+  // Dummy cho FiltersCard
 
-  const categories = type === "expense" ? expenseCategories : incomeCategories;
-  const safeCategories = Array.isArray(categories) ? categories : [];
+  const categories = type === "income" ? incomeCategories : expenseCategories;
+  const safeCategories = (() => {
+    if (type === null) return [];
+    return Array.isArray(categories) ? categories : [];
+  })();
 
   const safeTransactions = useMemo(() => {
     return (Array.isArray(allTransactions) ? allTransactions : []).filter(item => {
-      if (item.type !== type) return false;
+      if (type !== null && item.type !== type) return false;
       if (category_id && item.category_id !== category_id) return false;
       if (fromDate) {
         const itemDateStr = (item.transaction_date || "").substring(0, 10);
@@ -172,11 +171,10 @@ export function TransactionHistoryScreen() {
     const range = applyRangePresetValue(preset);
     setFromDate(range.from);
     setToDate(range.to);
-    setPage(1);
   };
 
   const clearFilters = () => {
-    setType("expense");
+    setType(null);
     setcategory_id("");
     setFromDate("");
     setToDate("");
@@ -199,9 +197,11 @@ export function TransactionHistoryScreen() {
         title="Lịch sử giao dịch"
         subtitle="Theo dõi các khoản thu chi và lọc nhanh theo thời gian, danh mục."
         rightSlot={
-          <View style={styles.typeBadge}>
-            <Text style={styles.typeBadgeText}>{getTypeLabel(type)}</Text>
-          </View>
+          type ? (
+            <View style={styles.typeBadge}>
+              <Text style={styles.typeBadgeText}>{getTypeLabel(type)}</Text>
+            </View>
+          ) : undefined
         }
       />
 
@@ -262,7 +262,7 @@ export function TransactionHistoryScreen() {
           onPress={() => navigation.navigate("AddTransaction")}
           style={styles.addButton}
         >
-          <Text style={styles.addButtonText}>+ Thêm</Text>
+          <Text style={styles.addButtonText}>Thêm</Text>
         </Pressable>
       </View>
 

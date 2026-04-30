@@ -7,7 +7,6 @@ import { AppCard } from "../../components/AppCard";
 import { EmptyState } from "../../components/EmptyState";
 import { LoadingView } from "../../components/LoadingView";
 import { ScreenHero } from "../../components/ScreenHero";
-import { SectionHeader } from "../../components/SectionHeader";
 import { COLORS, shadow } from "../../constants/ui";
 import {
   deleteBudget,
@@ -172,53 +171,48 @@ export function BudgetScreen() {
       />
 
       <AppCard style={styles.card}>
-        <SectionHeader
-          title="Chi tiết ngân sách"
-          subtitle="Theo dõi hạn mức chi tiêu trong kỳ hiện tại."
-          rightSlot={
-            <View style={styles.headerRight}>
-              <View style={[styles.statusBadge, { backgroundColor: statusTheme.bg }]}>
-                <Text style={[styles.statusText, { color: statusTheme.color }]}>
-                  {hasBudget ? statusTheme.label : "Chưa tạo"}
-                </Text>
-              </View>
-              {hasBudget ? (
-                <Pressable
-                  onPress={openBudgetActions}
-                  style={({ pressed }) => [
-                    styles.menuButton,
-                    pressed && styles.menuButtonPressed,
-                  ]}
-                >
-                  <Text style={styles.menuButtonText}>⋯</Text>
-                </Pressable>
-              ) : null}
+        {/* Compact card header */}
+        <View style={styles.cardHeader}>
+          <View>
+            <Text style={styles.cardTitle}>Ngân sách</Text>
+            {budgetStatus?.start_date && budgetStatus?.end_date ? (
+              <Text style={styles.periodText}>
+                {formatDate(budgetStatus.start_date)} – {formatDate(budgetStatus.end_date)}
+              </Text>
+            ) : null}
+          </View>
+          <View style={styles.headerRight}>
+            <View style={[styles.statusBadge, { backgroundColor: statusTheme.bg }]}>
+              <Text style={[styles.statusText, { color: statusTheme.color }]}>
+                {hasBudget ? statusTheme.label : "Chưa tạo"}
+              </Text>
             </View>
-          }
-        />
+            {hasBudget ? (
+              <Pressable
+                onPress={openBudgetActions}
+                style={({ pressed }) => [
+                  styles.menuButton,
+                  pressed && styles.menuButtonPressed,
+                ]}
+              >
+                <Text style={styles.menuButtonText}>⋯</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
 
         {hasBudget ? (
           <>
-            {/* Period dates */}
-            {budgetStatus?.start_date && budgetStatus?.end_date ? (
-              <View style={styles.periodRow}>
-                <Text style={styles.periodText}>
-                  {formatDate(budgetStatus.start_date)} - {formatDate(budgetStatus.end_date)}
-                </Text>
-              </View>
-            ) : null}
-
-            <Text style={styles.label}>Đã sử dụng</Text>
 
             <View style={styles.progressRow}>
               <Text style={[styles.percent, { color: progressColor }]}>
                 {Math.round(budgetPercent)}%
               </Text>
-              <Text style={styles.percentHint}>ngân sách</Text>
+              <Text style={styles.percentHint}>đã sử dụng</Text>
             </View>
 
             {/* Progress bar */}
-            <View style={[styles.progressTrack, { backgroundColor: statusTheme.bg }]}>
+            <View style={styles.progressTrack}>
               <View
                 style={[
                   styles.progressFill,
@@ -230,34 +224,23 @@ export function BudgetScreen() {
               />
             </View>
 
-            <View style={styles.moneyRow}>
-              <View style={styles.moneyBox}>
-                <Text style={styles.moneyLabel}>Ngân sách</Text>
-                <Text style={styles.moneyValue} numberOfLines={1}>
-                  {formatCurrency(budget_amount)}
-                </Text>
+            {/* Inline 3-column stat row */}
+            <View style={styles.statRow}>
+              <View style={styles.statCol}>
+                <Text style={styles.statColLabel}>Ngân sách</Text>
+                <Text style={styles.statColValue} numberOfLines={1}>{formatCurrency(budget_amount)}</Text>
               </View>
-
-              <View style={[styles.moneyBox, styles.moneyBoxExpense]}>
-                <Text style={styles.moneyLabel}>Đã chi</Text>
-                <Text
-                  style={[styles.moneyValue, styles.expense]}
-                  numberOfLines={1}
-                >
-                  {formatCurrency(spent_amount)}
-                </Text>
+              <View style={styles.statDivider} />
+              <View style={styles.statCol}>
+                <Text style={styles.statColLabel}>Đã chi</Text>
+                <Text style={styles.statColValue} numberOfLines={1}>{formatCurrency(spent_amount)}</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statCol}>
+                <Text style={styles.statColLabel}>Còn lại</Text>
+                <Text style={[styles.statColValue, remaining_amount < 0 && styles.expenseValue]} numberOfLines={1}>{formatCurrency(remaining_amount)}</Text>
               </View>
             </View>
-
-            <View style={styles.moneyBoxWide}>
-              <Text style={styles.moneyLabel}>Còn lại</Text>
-              <Text style={[styles.moneyValue, styles.income]} numberOfLines={1}>
-                {formatCurrency(remaining_amount)}
-              </Text>
-            </View>
-
-            {/* Divider */}
-            <View style={styles.divider} />
 
 
           </>
@@ -276,28 +259,25 @@ export function BudgetScreen() {
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: 16, paddingBottom: 120, backgroundColor: COLORS.bg },
-  card: { ...shadow, padding: 20, borderRadius: 28, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border },
+  card: { ...shadow, padding: 20, borderRadius: 24, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 10 },
+  cardTitle: { color: COLORS.text, fontSize: 16, fontWeight: "800", marginBottom: 3 },
   headerRight: { flexDirection: "row", alignItems: "center", gap: 8 },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
-  statusText: { fontSize: 12, fontWeight: "900" },
-  menuButton: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: COLORS.border, backgroundColor: "#F8FAFC", alignItems: "center", justifyContent: "center" },
+  statusBadge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 },
+  statusText: { fontSize: 11, fontWeight: "700" },
+  menuButton: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.bg, alignItems: "center", justifyContent: "center" },
   menuButtonPressed: { opacity: 0.78 },
-  menuButtonText: { color: COLORS.text, fontSize: 20, lineHeight: 20, fontWeight: "900", marginTop: -4 },
-  periodRow: { marginBottom: 14, padding: 10, borderRadius: 14, backgroundColor: COLORS.blueLight, borderWidth: 1, borderColor: COLORS.blueSoft },
-  periodText: { color: COLORS.blue, fontSize: 13, fontWeight: "800" },
-  label: { color: COLORS.muted, fontSize: 13, fontWeight: "800" },
-  progressRow: { flexDirection: "row", alignItems: "baseline", marginTop: 4, marginBottom: 10 },
-  percent: { fontSize: 38, fontWeight: "900" },
-  percentHint: { marginLeft: 8, color: COLORS.muted, fontSize: 13, fontWeight: "700" },
-  progressTrack: { height: 14, borderRadius: 999, overflow: "hidden", marginBottom: 16 },
+  menuButtonText: { color: COLORS.muted, fontSize: 18, lineHeight: 18, fontWeight: "900", marginTop: -3 },
+  periodText: { color: COLORS.muted2, fontSize: 12, fontWeight: "500" },
+  progressRow: { flexDirection: "row", alignItems: "baseline", marginBottom: 12 },
+  percent: { fontSize: 40, fontWeight: "900", letterSpacing: -1 },
+  percentHint: { marginLeft: 8, color: COLORS.muted, fontSize: 13, fontWeight: "500" },
+  progressTrack: { height: 6, borderRadius: 999, overflow: "hidden", marginBottom: 20, backgroundColor: "#E5EAF0" },
   progressFill: { height: "100%", borderRadius: 999 },
-  moneyRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
-  moneyBox: { flex: 1, padding: 14, borderRadius: 18, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border },
-  moneyBoxExpense: { backgroundColor: COLORS.white, borderColor: COLORS.border },
-  moneyBoxWide: { padding: 14, borderRadius: 18, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16 },
-  moneyLabel: { color: COLORS.muted, fontSize: 12, fontWeight: "800", marginBottom: 5 },
-  moneyValue: { color: COLORS.text, fontSize: 15, fontWeight: "900" },
-  divider: { height: 1, backgroundColor: COLORS.border, marginBottom: 16 },
-  income: { color: COLORS.income },
-  expense: { color: COLORS.expense },
+  statRow: { flexDirection: "row", alignItems: "stretch", borderTopWidth: 1, borderColor: COLORS.border, paddingTop: 16 },
+  statCol: { flex: 1, paddingHorizontal: 4 },
+  statDivider: { width: 1, backgroundColor: COLORS.border, marginVertical: 2 },
+  statColLabel: { color: COLORS.muted, fontSize: 11, fontWeight: "500", marginBottom: 5, letterSpacing: 0.2 },
+  statColValue: { color: COLORS.text, fontSize: 14, fontWeight: "800" },
+  expenseValue: { color: COLORS.expense },
 });
