@@ -132,7 +132,6 @@ export function TransactionHistoryFiltersCard({
         <Text style={styles.label}>Khoảng thời gian</Text>
         {(fromDate || toDate) && (
           <Pressable onPress={onClearDates}>
-            <Text style={styles.clearDateText}>Xóa ngày</Text>
           </Pressable>
         )}
       </View>

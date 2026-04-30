@@ -53,6 +53,7 @@ export function DatePickerModal({
             value={tempDate}
             mode="date"
             display="spinner"
+            textColor={COLORS.text || "#000000"}
             onChange={(_, selectedDate) => {
               if (selectedDate) setTempDate(selectedDate);
             }}

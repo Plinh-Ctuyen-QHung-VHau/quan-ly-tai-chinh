@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import {
   Alert,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -206,23 +207,35 @@ export function NotificationSettingsScreen() {
             </View>
           </Pressable>
 
-          {/* Inline picker trên iOS */}
+          {/* Popup picker trên iOS */}
           {showTimePicker && Platform.OS === "ios" && (
-            <View style={styles.inlinePicker}>
-              <DateTimePicker
-                mode="time"
-                value={timeStringToDate(settings.reminder_time)}
-                onChange={onTimeChange}
-                display="spinner"
-                locale="vi-VN"
-              />
-              <Pressable
-                style={styles.doneBtn}
-                onPress={() => setShowTimePicker(false)}
-              >
-                <Text style={styles.doneBtnText}>Xong</Text>
-              </Pressable>
-            </View>
+            <Modal
+              visible={showTimePicker}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setShowTimePicker(false)}
+            >
+              <Pressable style={styles.backdrop} onPress={() => setShowTimePicker(false)} />
+              <View style={styles.centerWrap}>
+                <View style={styles.modalCard}>
+                  <Text style={styles.modalTitle}>Chọn giờ nhắc nhở</Text>
+                  <DateTimePicker
+                    mode="time"
+                    value={timeStringToDate(settings.reminder_time)}
+                    onChange={onTimeChange}
+                    display="spinner"
+                    locale="vi-VN"
+                    textColor={COLORS.text || "#000000"}
+                  />
+                  <Pressable
+                    style={styles.primaryButton}
+                    onPress={() => setShowTimePicker(false)}
+                  >
+                    <Text style={styles.primaryButtonText}>Xong</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </Modal>
           )}
         </View>
       )}
@@ -369,22 +382,51 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // iOS inline picker
-  inlinePicker: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingTop: 8,
+  // iOS Modal picker
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(15,23,42,0.4)",
   },
-  doneBtn: {
-    alignSelf: "flex-end",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: COLORS.blue,
-    borderRadius: 12,
-    marginTop: 8,
+  centerWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
   },
-  doneBtnText: { color: COLORS.white, fontWeight: "900", fontSize: 14 },
+  modalCard: {
+    width: "100%",
+    maxWidth: 340,
+    borderRadius: 24,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingTop: 16,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    ...shadow,
+  },
+  modalTitle: {
+    color: COLORS.text,
+    fontSize: 17,
+    fontWeight: "900",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  primaryButton: {
+    minHeight: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.dark,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.dark,
+    marginTop: 6,
+  },
+  primaryButtonText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: "900",
+  },
 
   footer: {
     color: COLORS.muted,
