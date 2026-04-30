@@ -19,6 +19,8 @@ export enum TransactionType {
 export enum TransactionSource {
   CAMERA = "camera",
   GALLERY = "gallery",
+  OCR = "ocr",
+  CHATBOT = "chatbot",
 }
 
 export class CreateTransactionDto {

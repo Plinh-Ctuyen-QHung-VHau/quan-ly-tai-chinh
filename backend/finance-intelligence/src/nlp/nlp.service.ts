@@ -2,20 +2,12 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigType } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import * as Joi from "joi";
 import { configuration } from "../config/configuration";
-import { AppError } from "@shared/errors/AppError";
-import { ERROR_CODES } from "@shared/errors/errorCodes";
-import { LlmIntentOutput } from "./dto/nlp.dto";
 import { AppMetrics } from "../metrics/app.metrics";
 
 @Injectable()
 export class NlpService {
   private readonly logger = new Logger(NlpService.name);
-  private readonly intentSchema = Joi.object({
-    intent: Joi.string().min(1).required(),
-    entities: Joi.object().required(),
-  });
 
   constructor(
     private readonly httpService: HttpService,
@@ -24,150 +16,93 @@ export class NlpService {
     private readonly appConfig: ConfigType<typeof configuration>,
   ) {}
 
-  async extractIntent(message: string, context?: string): Promise<LlmIntentOutput> {
-    try {
-      const sanitizedMessage = this.redactPii(message);
-      const sanitizedContext = context ? this.redactPii(context) : undefined;
+  // Build tools với category enum động từ dữ liệu thật của user
+  private buildTools(categories: any[]) {
+    const expenseCategories = categories.filter(c => c.type === "expense").map(c => c.name);
+    const incomeCategories = categories.filter(c => c.type === "income").map(c => c.name);
 
-      const prompt = this.buildIntentPrompt(sanitizedMessage, sanitizedContext);
-      const text = await this.callGemini(prompt, true);
-      const parsed = this.safeParseJson(text);
-
-      const { error, value } = this.intentSchema.validate(parsed, {
-        allowUnknown: true,
-      });
-      if (error) {
-        this.logger.warn("Invalid Gemini intent payload", error as Error);
-        throw new AppError(
-          "Invalid intent payload",
-          ERROR_CODES.VALIDATION_ERROR,
-          error.message,
-        );
-      }
-
-      this.metrics.nlpRequestsTotal.inc({ status: "success" });
-      return value as LlmIntentOutput;
-    } catch (error) {
-      this.metrics.nlpRequestsTotal.inc({ status: "error" });
-      throw error;
-    }
-  }
-
-  async formatReply(reply: string, data?: any): Promise<string> {
-    if (!this.appConfig.gemini.formatResponse) {
-      return reply;
-    }
-
-    const prompt = this.buildFormatPrompt(reply, data);
-    const text = await this.callGemini(prompt, false);
-    return text.trim() || reply;
-  }
-
-  private async callGemini(prompt: string, expectJson: boolean) {
-    const model = this.appConfig.gemini.model;
-    const apiKey = this.appConfig.gemini.apiKey;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-    const body: any = {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: expectJson ? "application/json" : "text/plain",
+    return [
+      {
+        name: "get_spending_summary",
+        description: "Lấy tổng thu nhập hoặc chi tiêu trong khoảng thời gian.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            type: { type: "STRING", enum: ["income", "expense"], description: "Thu nhập hay chi tiêu" },
+            fromDate: { type: "STRING", description: "Ngày bắt đầu YYYY-MM-DD" },
+            toDate: { type: "STRING", description: "Ngày kết thúc YYYY-MM-DD" },
+          },
+          required: ["type"]
+        }
       },
+      {
+        name: "analyze_trends",
+        description: "So sánh thu nhập hoặc chi tiêu giữa 2 khoảng thời gian.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            type: { type: "STRING", enum: ["income", "expense"] },
+            period1: { type: "OBJECT", properties: { from: { type: "STRING" }, to: { type: "STRING" } }, description: "Khoảng thời gian 1" },
+            period2: { type: "OBJECT", properties: { from: { type: "STRING" }, to: { type: "STRING" } }, description: "Khoảng thời gian 2" },
+          },
+          required: ["type", "period1", "period2"]
+        }
+      },
+      {
+        name: "record_transaction",
+        description: "Ghi lại giao dịch mới khi người dùng nhắc đến một khoản tiền cụ thể.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            type: { type: "STRING", enum: ["income", "expense"] },
+            amount: { type: "NUMBER", description: "Số tiền" },
+            // Ép AI chỉ được chọn từ danh sách category thật
+            category_name: {
+              type: "STRING",
+              enum: [...expenseCategories, ...incomeCategories],
+              description: "Danh mục giao dịch, chỉ được chọn từ danh sách"
+            },
+            note: { type: "STRING", description: "Ghi chú thêm" },
+          },
+          required: ["type", "amount", "category_name"]
+        }
+      }
+    ];
+  }
+
+  async processMessage(message: string, history: any[] = [], categories: any[] = []) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.appConfig.gemini.model}:generateContent?key=${this.appConfig.gemini.apiKey}`;
+    const currentDate = new Date().toISOString().split('T')[0];
+    const tools = this.buildTools(categories);
+
+    const body = {
+      contents: [
+        { role: "user", parts: [{ text: `Bạn là trợ lý tài chính. Hôm nay: ${currentDate}. Chỉ ghi giao dịch khi người dùng đề cập số tiền cụ thể. Phân biệt rõ thu nhập và chi tiêu.` }] },
+        ...history,
+        { role: "user", parts: [{ text: message }] }
+      ],
+      tools: [{ functionDeclarations: tools }],
+      generationConfig: { temperature: 0.1 }
     };
 
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(url, body, {
-          timeout: this.appConfig.gemini.timeoutMs,
-        }),
-      );
-      const text =
-        response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      return text;
-    } catch (error) {
-      this.logger.error("Gemini request failed", error as Error);
-      throw new AppError(
-        "Gemini request failed",
-        ERROR_CODES.SERVICE_UNAVAILABLE,
-        error,
-      );
-    }
+    const response = await firstValueFrom(this.httpService.post(url, body));
+    const part = response.data?.candidates?.[0]?.content?.parts?.[0];
+    return part?.functionCall
+      ? { type: "function_call", call: part.functionCall }
+      : { type: "text", text: part?.text || "Xin lỗi, tôi chưa hiểu ý bạn." };
   }
 
-  private safeParseJson(raw: string) {
-    const trimmed = raw.trim();
-    const jsonText = this.extractJson(trimmed);
-    try {
-      return JSON.parse(jsonText);
-    } catch (error) {
-      throw new AppError(
-        "Failed to parse Gemini JSON",
-        ERROR_CODES.VALIDATION_ERROR,
-        error,
-      );
-    }
-  }
-
-  private extractJson(text: string) {
-    const withoutFence = text
-      .replace(/^```json/i, "")
-      .replace(/```$/i, "")
-      .trim();
-
-    if (withoutFence.startsWith("{") && withoutFence.endsWith("}")) {
-      return withoutFence;
-    }
-
-    const start = withoutFence.indexOf("{");
-    const end = withoutFence.lastIndexOf("}");
-    if (start !== -1 && end !== -1 && end > start) {
-      return withoutFence.slice(start, end + 1);
-    }
-
-    return withoutFence;
-  }
-
-  private buildIntentPrompt(message: string, context?: string) {
-    const contextLine = context ? `Context: ${context}\n` : "";
-
-    return (
-      "You are an intent parser for a finance assistant. " +
-      "Return only JSON with keys intent (string) and entities (object). " +
-      "Valid intents: spending_summary, recent_anomalies, budget_status, anomaly_check, unknown. " +
-      "Entities may include fromDate, toDate, category, amount. " +
-      contextLine +
-      `Message: ${message}`
-    );
-  }
-
-  private buildFormatPrompt(reply: string, data?: any) {
-    const payload = data
-      ? `Data: ${this.redactPii(JSON.stringify(data))}`
-      : "";
-    return (
-      "Rewrite the reply to be concise and friendly. Do not add new facts. " +
-      payload +
-      ` Reply: ${reply}`
-    );
-  }
-
-  private redactPii(text: string) {
-    let result = text;
-    const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
-    const phoneRegex = /(\+?\d[\d\s-]{7,}\d)/g;
-    const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
-
-    result = result.replace(emailRegex, "[REDACTED_EMAIL]");
-    result = result.replace(phoneRegex, "[REDACTED_PHONE]");
-    result = result.replace(uuidRegex, "[REDACTED_ID]");
-
-    // TODO: Add robust PII detection for names and addresses.
-    return result;
+  // Chỉ dùng cho các câu hỏi dạng text, KHÔNG dùng cho data số liệu
+  async generateTextReply(message: string, history: any[]) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.appConfig.gemini.model}:generateContent?key=${this.appConfig.gemini.apiKey}`;
+    const body = {
+      contents: [
+        ...history,
+        { role: "user", parts: [{ text: message }] }
+      ],
+      generationConfig: { temperature: 0.2 }
+    };
+    const response = await firstValueFrom(this.httpService.post(url, body));
+    return response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
   }
 }

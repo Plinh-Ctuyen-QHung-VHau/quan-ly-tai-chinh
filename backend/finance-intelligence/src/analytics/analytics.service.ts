@@ -10,24 +10,18 @@ export class AnalyticsService {
     user_id: string,
     fromDate?: string,
     toDate?: string,
+    type?: string,
   ): Promise<TransactionSummary> {
-    const range = this.resolveDateRange(fromDate, toDate);
-    return this.transactionClient.getSummary(user_id, range.fromDate, range.toDate);
+    // NẾU CÓ NGÀY TỪ AI, DÙNG LUÔN. NẾU KHÔNG CÓ MỚI TÍNH TOÁN DEFAULT
+    const finalFrom = fromDate || this.getDefaultStartDate();
+    const finalTo = toDate || new Date().toISOString().slice(0, 10);
+
+    return this.transactionClient.getSummary(user_id, finalFrom, finalTo, type);
   }
 
-  private resolveDateRange(fromDate?: string, toDate?: string) {
-    const parsedEnd = toDate ? new Date(toDate) : null;
-    const end = parsedEnd && !isNaN(parsedEnd.getTime()) ? parsedEnd : new Date();
-
-    const parsedStart = fromDate ? new Date(fromDate) : null;
-    const start =
-      parsedStart && !isNaN(parsedStart.getTime())
-        ? parsedStart
-        : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    return {
-      fromDate: start.toISOString().slice(0, 10),
-      toDate: end.toISOString().slice(0, 10),
-    };
+  private getDefaultStartDate() {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d.toISOString().slice(0, 10);
   }
 }

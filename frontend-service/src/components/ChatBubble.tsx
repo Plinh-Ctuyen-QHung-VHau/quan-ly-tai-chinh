@@ -6,9 +6,12 @@ export const ChatBubble = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<{sender: string, text: string}[]>([]);
+  const [isSending, setIsSending] = useState(false);
 
   const handleSend = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || isSending) return;
+
+    setIsSending(true);
     
     setMessages(prev => [...prev, { sender: 'user', text: message }]);
     
@@ -41,8 +44,10 @@ export const ChatBubble = () => {
       }
     } catch (error: any) {
       setMessages(prev => [...prev, { sender: 'bot', text: `Error: ${error.message}` }]);
+    } finally {
+      setIsSending(false);
     }
-    
+
     setMessage('');
   };
 
@@ -79,8 +84,13 @@ export const ChatBubble = () => {
                 value={message}
                 onChangeText={setMessage}
                 placeholder="Ask me anything..."
+                editable={!isSending}
               />
-              <TouchableOpacity onPress={handleSend} style={styles.sendBtn}>
+              <TouchableOpacity
+                onPress={handleSend}
+                style={[styles.sendBtn, isSending && styles.sendBtnDisabled]}
+                disabled={isSending}
+              >
                 <Text>Send</Text>
               </TouchableOpacity>
             </View>
@@ -168,5 +178,8 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#007AFF',
     borderRadius: 20,
-  }
+  },
+  sendBtnDisabled: {
+    opacity: 0.5,
+  },
 });

@@ -14,4 +14,10 @@ export class ChatInputSecureDto {
 export class ChatResponseDto {
   reply: string;
   data?: any;
+  metadata?: {
+    intent?: string;
+    entities?: Record<string, any>;
+    nlp_source?: "rule" | "ai";
+    args?: Record<string, any>;
+  };
 }

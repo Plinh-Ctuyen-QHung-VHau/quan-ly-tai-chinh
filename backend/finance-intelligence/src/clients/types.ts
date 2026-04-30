@@ -19,6 +19,26 @@ export interface TransactionSummary {
   balance: number;
 }
 
+export interface CreateTransactionRequest {
+  type: "income" | "expense";
+  amount: number;
+  category_id: string;
+  transaction_date: string;
+  source: "camera" | "gallery" | "ocr" | "chatbot";
+  note?: string;
+  merchant_name?: string;
+}
+
+export interface TransactionRecord {
+  id: string;
+  type: string;
+  amount: number;
+  category_id: string;
+  transaction_date: string;
+  note?: string | null;
+  merchant_name?: string | null;
+}
+
 export interface BudgetStatus {
   id: string;
   budget_amount: number;
