@@ -102,7 +102,7 @@ QUY TẮC BẮT BUỘC CHUNG:
 3. LOẠI GIAO DỊCH (suggested_type)
 ====================
 - "expense" (chi phí): "Tới", "Người nhận", "Chuyển tiền đến", "Tài khoản nhận", "Thanh toán", "Quẹt thẻ", "POS", "Rút tiền mặt".
-- "income" (thu nhập): "Từ", "Người gửi", "Nhận từ", "Ghi có", "Nhận tiền", "Tiền vào", "Hoàn tiền", "Refund", "Trả cổ tức","Học bổng".
+- "income" (thu nhập): "Giao dịch nhận được","Giao dịch chuyển khoản","Thu nhập","Lương","Bảng lương","Thưởng","Từ", "Người gửi", "Nhận từ", "Ghi có", "Nhận tiền", "Tiền vào", "Hoàn tiền", "Refund", "Trả cổ tức","Học bổng".
 
 ====================
 4. CHUẨN HÓA THỰC THỂ MERCHANT (merchant_name)
