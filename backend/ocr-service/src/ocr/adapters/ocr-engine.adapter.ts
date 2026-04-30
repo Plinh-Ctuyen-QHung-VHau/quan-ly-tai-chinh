@@ -16,7 +16,7 @@ export type OcrLine = {
 };
 
 export type OcrEngineResult = {
-  engine: "tesseract" | "paddleocr";
+  engine: "tesseract";
   language: string;
   rawText: string;
   lines: OcrLine[];
@@ -27,6 +27,6 @@ export type OcrEngineResult = {
 };
 
 export interface OcrEngineAdapter {
-  readonly name: "tesseract" | "paddleocr";
+  readonly name: "tesseract";
   recognize(imageBuffer: Buffer): Promise<OcrEngineResult>;
 }

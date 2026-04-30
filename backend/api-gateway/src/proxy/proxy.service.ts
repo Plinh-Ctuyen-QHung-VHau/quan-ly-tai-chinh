@@ -22,36 +22,22 @@ export class ProxyService {
 
   private initializeServiceUrls() {
     this.serviceUrls = {
-      "/api/api/users":
+      "/api/users":
         this.configService.get<string>("services.identity") + "/users",
-      "/api/api/transactions":
-        this.configService.get<string>("services.transaction") +
-        "/transactions",
-      "/api/api/categories":
+      "/api/transactions":
+        this.configService.get<string>("services.transaction") + "/transactions",
+      "/api/categories":
         this.configService.get<string>("services.transaction") + "/categories",
-      "/api/api/ocr": this.configService.get<string>("services.ocr") + "/ocr",
-      "/api/api/budgets":
+      "/api/ocr": this.configService.get<string>("services.ocr") + "/ocr",
+      "/api/budgets":
         this.configService.get<string>("services.budget") + "/budgets",
-      "/api/api/notifications":
+      "/api/notifications":
         this.configService.get<string>("services.budget") + "/notifications",
-      "/api/api/chatbot":
-        this.configService.get<string>("services.finance") + "/chatbot",
-      "/api/api/anomalies":
-        this.configService.get<string>("services.finance") + "/anomalies",
-      "/api/api/insights":
-        this.configService.get<string>("services.finance") + "/insights",
-      // Fail-safe mappings for cases where one or more /api prefixes are stripped
       "/api/chatbot":
         this.configService.get<string>("services.finance") + "/chatbot",
       "/api/anomalies":
         this.configService.get<string>("services.finance") + "/anomalies",
       "/api/insights":
-        this.configService.get<string>("services.finance") + "/insights",
-      "/chatbot":
-        this.configService.get<string>("services.finance") + "/chatbot",
-      "/anomalies":
-        this.configService.get<string>("services.finance") + "/anomalies",
-      "/insights":
         this.configService.get<string>("services.finance") + "/insights",
     };
   }

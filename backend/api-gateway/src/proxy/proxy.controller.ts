@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { ProxyService } from "./proxy.service";
 import { SupabaseAuthGuard } from "../auth/supabase-auth.guard";
 
-@Controller("/api")
+@Controller()
 export class ProxyController {
   constructor(private readonly proxyService: ProxyService) { }
 

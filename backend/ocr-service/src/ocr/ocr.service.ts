@@ -6,7 +6,6 @@ import {
   OCR_ENGINE_ADAPTER,
   OcrEngineAdapter,
 } from "./adapters/ocr-engine.adapter";
-import { OcrEngineSelector } from "./adapters/ocr-engine-selector";
 import { ScanOcrDto } from "./dto/ocr.dto";
 import { OcrParser } from "./ocr.parser";
 import { OcrRepository } from "./ocr.repository";
@@ -19,28 +18,19 @@ import { catchError, map } from "rxjs/operators";
 @Injectable()
 export class OcrService {
   private readonly logger = new Logger(OcrService.name);
-  private readonly compareEngines: boolean;
-  private readonly allEngines: OcrEngineAdapter[];
 
   constructor(
     private readonly ocrRepository: OcrRepository,
     private readonly storageReader: StorageReader,
     @Inject(OCR_ENGINE_ADAPTER)
     private readonly primaryEngine: OcrEngineAdapter,
-    @Inject("OCR_ENGINES_ALL")
-    allEngines: OcrEngineAdapter[],
-    private readonly engineSelector: OcrEngineSelector,
     private readonly ocrParser: OcrParser,
     private readonly metrics: AppMetrics,
     private readonly imagePreprocessor: ImagePreprocessorService,
     @Inject(configuration.KEY)
     private readonly appConfig: ConfigType<typeof configuration>,
   ) {
-    this.compareEngines = process.env.OCR_COMPARE_ENGINES === "true";
-    this.allEngines = allEngines;
-    this.logger.log(
-      `OCR engines: primary=${primaryEngine.name}, compare=${this.compareEngines}, available=[${allEngines.map(e => e.name).join(",")}]`,
-    );
+    this.logger.log(`OCR engine: ${primaryEngine.name} (Tesseract + Gemini 3 Flash Preview)`);
   }
 
   async scan(user_id: string, scanOcrDto: ScanOcrDto) {
@@ -127,112 +117,33 @@ export class OcrService {
     const imageBuffer = await this.resizeIfNeeded(rawBuffer, 1600);
     this.logger.log(`[perf] After resize: ${(imageBuffer.length / 1024).toFixed(0)} KB`);
 
-    // 3. Preprocess (OpenCV) — only for Tesseract path
+    // 3. Preprocess (OpenCV) for Tesseract
     const tPre = Date.now();
     const processedBuffer = await this.imagePreprocessor.preprocess(imageBuffer, "standard");
     this.logger.log(`[perf] Preprocess: ${Date.now() - tPre}ms`);
 
-    // 4. Choose engine strategy
-    if (this.compareEngines && this.allEngines.length > 1) {
-      return this.runCompareMode(imageBuffer, processedBuffer, image_url, t0);
-    } else {
-      return this.runSingleEngine(processedBuffer, image_url, t0);
-    }
-  }
+    // 4. Run Tesseract OCR
+    const ocrResult = await this.primaryEngine.recognize(processedBuffer);
+    this.logger.log(`[perf] ${this.primaryEngine.name}: ${ocrResult.durationMs}ms`);
 
-  /**
-   * Single engine mode: run primary engine with variant fallback.
-   */
-  private async runSingleEngine(imageBuffer: Buffer, image_url: string, t0: number) {
-    const variants = ["standard", "upscale_gray"];
-    let bestResult = null;
-    let highestScore = -1;
-
-    for (const variant of variants) {
-      try {
-        const tVar = Date.now();
-        const buffer = variant === "standard"
-          ? imageBuffer
-          : await this.imagePreprocessor.preprocess(imageBuffer, variant);
-        this.logger.log(`[perf] Preprocess(${variant}): ${Date.now() - tVar}ms`);
-
-        const ocrResult = await this.primaryEngine.recognize(buffer);
-        this.logger.log(`[perf] ${this.primaryEngine.name}(${variant}): ${ocrResult.durationMs}ms`);
-
-        if (!ocrResult.rawText || ocrResult.rawText.trim().length < 5) {
-          this.logger.warn(`Variant ${variant}: text too short, skipping`);
-          continue;
-        }
-
-        const parsedResult = await this.ocrParser.parse(
-          ocrResult.rawText,
-          ocrResult,
-          this.primaryEngine.name,
-          this.appConfig.ocr.lang,
-        );
-
-        parsedResult.parsed_fields_json.preprocessing_variant = variant;
-        parsedResult.parsed_fields_json.selected_ocr_engine = this.primaryEngine.name;
-
-        if (parsedResult.confidence_score > highestScore) {
-          highestScore = parsedResult.confidence_score;
-          bestResult = parsedResult;
-        }
-
-        if (highestScore > 55) {
-          this.logger.log(`[perf] Short-circuit at '${variant}' score=${highestScore}`);
-          break;
-        }
-      } catch (err) {
-        this.logger.warn(`Variant ${variant} failed: ${err.message}`);
-      }
-    }
-
-    this.logger.log(`[perf] Total OCR pipeline: ${Date.now() - t0}ms`);
-
-    if (!bestResult) {
+    if (!ocrResult.rawText || ocrResult.rawText.trim().length < 5) {
       throw new AppError(
         "OCR_NO_TEXT_DETECTED",
         "Could not detect sufficient text in the image.",
       );
     }
 
-    return { ...bestResult, image_url };
-  }
-
-  /**
-   * Compare mode: run all engines, parse each, pick the best by parse quality.
-   */
-  private async runCompareMode(rawBuffer: Buffer, processedBuffer: Buffer, image_url: string, t0: number) {
-    const selectorResult = await this.engineSelector.selectBest(
-      this.allEngines,
-      rawBuffer,
-      processedBuffer,
+    // 5. Parse with Gemini 3 Flash Preview
+    const parsedResult = await this.ocrParser.parse(
+      ocrResult.rawText,
+      ocrResult,
+      this.primaryEngine.name,
       this.appConfig.ocr.lang,
     );
 
-    this.logger.log(`[perf] Total compare pipeline: ${Date.now() - t0}ms`);
+    parsedResult.parsed_fields_json.selected_ocr_engine = this.primaryEngine.name;
 
-    if (!selectorResult) {
-      throw new AppError(
-        "OCR_NO_TEXT_DETECTED",
-        "No engine could detect sufficient text.",
-      );
-    }
-
-    const { best, all } = selectorResult;
-    const parsedResult = best.parsedResult;
-
-    // Enrich parsed_fields_json with comparison data
-    parsedResult.parsed_fields_json.selected_ocr_engine = best.engineResult.engine;
-    parsedResult.parsed_fields_json.ocr_engine_results = all.map(r => ({
-      engine: r.engineResult.engine,
-      confidence: r.engineResult.confidence,
-      parse_score: r.parseScore,
-      raw_text_preview: r.engineResult.rawText.slice(0, 200),
-      duration_ms: r.engineResult.durationMs,
-      warnings: r.engineResult.warnings,
-    }));
+    this.logger.log(`[perf] Total OCR pipeline: ${Date.now() - t0}ms`);
 
     return { ...parsedResult, image_url };
   }

@@ -51,9 +51,11 @@ export class StorageReader {
   getPathFromUrl(urlOrPath: string): string {
     try {
       const url = new URL(urlOrPath);
-      // Extract path after /storage/v1/object/public/<bucket>/
-      const match = url.pathname.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/);
-      if (match) return match[1];
+      // Hỗ trợ cả public URL và signed URL:
+      // /storage/v1/object/public/<bucket>/path
+      // /storage/v1/object/sign/<bucket>/path?token=xxx
+      const match = url.pathname.match(/\/storage\/v1\/object\/(?:public|sign)\/[^/]+\/(.+)/);
+      if (match) return decodeURIComponent(match[1]);
       return urlOrPath;
     } catch {
       // Not a URL, treat as path directly
