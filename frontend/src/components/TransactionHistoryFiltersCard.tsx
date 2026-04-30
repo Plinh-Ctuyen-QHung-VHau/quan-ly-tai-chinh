@@ -9,8 +9,6 @@ import {
 import { AppCard } from "./AppCard";
 import { CategoryPicker } from "./CategoryPicker";
 import { DatePickerModal } from "./DatePickerModal";
-import { SectionHeader } from "./SectionHeader";
-import { SegmentedChips } from "./SegmentedChips";
 import { transactionTypeOptions } from "../constants/options";
 import { Category, TransactionType } from "../types/category";
 import { COLORS } from "../constants/ui";
@@ -19,8 +17,8 @@ type DateField = "from" | "to";
 type RangePreset = "today" | "7days" | "month" | "custom";
 
 type Props = Readonly<{
-  type: TransactionType;
-  setType: (type: TransactionType) => void;
+  type: TransactionType | null;
+  setType: (type: TransactionType | null) => void;
   category_id: string;
   setcategory_id: (value: string) => void;
   categories: Category[];
@@ -68,10 +66,6 @@ export function TransactionHistoryFiltersCard({
   onConfirmDate,
   onClearFilters,
 }: Props) {
-  const hasActiveFilters = Boolean(
-    fromDate || toDate || category_id || rangePreset !== "custom"
-  );
-
   return (
     <AppCard style={styles.filterCard}>
       {/* Header */}
@@ -85,14 +79,29 @@ export function TransactionHistoryFiltersCard({
 
       {/* Loại giao dịch */}
       <Text style={styles.label}>Loại giao dịch</Text>
-      <SegmentedChips
-        options={transactionTypeOptions}
-        value={type}
-        onChange={(nextType) => {
-          setType(nextType as TransactionType);
-          setcategory_id("");
-        }}
-      />
+      <View style={styles.typeRow}>
+        {transactionTypeOptions.map((opt) => {
+          const active = type === opt.value;
+          return (
+            <Pressable
+              key={opt.value}
+              onPress={() => {
+                setType(active ? null : (opt.value as TransactionType));
+                setcategory_id("");
+              }}
+              style={({ pressed }) => [
+                styles.typeChip,
+                active && styles.typeChipActive,
+                pressed && styles.typeChipPressed,
+              ]}
+            >
+              <Text style={[styles.typeChipText, active && styles.typeChipTextActive]}>
+                {opt.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       {/* Danh mục */}
       <Text style={styles.label}>Danh mục</Text>
@@ -108,7 +117,7 @@ export function TransactionHistoryFiltersCard({
       {/* Khoảng thời gian */}
       <View style={styles.rangeHeader}>
         <Text style={styles.label}>Khoảng thời gian</Text>
-        {(fromDate || toDate) && (
+        {Boolean(fromDate || toDate) && (
           <Pressable onPress={onClearDates}>
           </Pressable>
         )}
@@ -128,7 +137,6 @@ export function TransactionHistoryFiltersCard({
                 pressed && styles.presetChipPressed,
               ]}
             >
-              {active && <Text style={styles.presetCheckmark}>✓ </Text>}
               <Text style={[styles.presetText, active && styles.presetTextActive]}>
                 {label}
               </Text>
@@ -158,13 +166,7 @@ export function TransactionHistoryFiltersCard({
       <DatePickerModal
         visible={Boolean(showIosPicker)}
         title={showIosPicker === "to" ? "Chọn ngày kết thúc" : "Chọn ngày bắt đầu"}
-        value={
-          new Date(
-            showIosPicker === "to"
-              ? toDate || Date.now()
-              : fromDate || Date.now(),
-          )
-        }
+        value={showIosPicker === "to" ? new Date(toDate || Date.now()) : new Date(fromDate || Date.now())}
         onClose={onCloseDatePicker}
         onConfirm={(date) => {
           if (!showIosPicker) return;
@@ -191,7 +193,6 @@ const styles = StyleSheet.create({
   presetChip: { flex: 1, minHeight: 40, borderRadius: 999, borderWidth: 1.5, borderColor: "#E2E8F0", backgroundColor: "#F8FAFC", alignItems: "center", justifyContent: "center", flexDirection: "row" },
   presetChipActive: { backgroundColor: COLORS.dark, borderColor: COLORS.dark },
   presetChipPressed: { opacity: 0.75 },
-  presetCheckmark: { color: "#FFFFFF", fontWeight: "900", fontSize: 12 },
   presetText: { color: "#334155", fontWeight: "800", fontSize: 13 },
   presetTextActive: { color: "#FFFFFF" },
   dateRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
@@ -200,6 +201,12 @@ const styles = StyleSheet.create({
   dateBoxLabel: { color: "#64748B", fontSize: 12, fontWeight: "800", marginBottom: 5 },
   dateBoxValue: { color: "#0F172A", fontSize: 14, fontWeight: "900" },
   dateBoxPlaceholder: { color: "#94A3B8", fontSize: 14, fontWeight: "700" },
+  typeRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
+  typeChip: { flex: 1, minHeight: 48, borderRadius: 16, borderWidth: 1.5, borderColor: "#E2E8F0", backgroundColor: "#F8FAFC", alignItems: "center", justifyContent: "center" },
+  typeChipActive: { backgroundColor: COLORS.dark, borderColor: COLORS.dark },
+  typeChipPressed: { opacity: 0.75 },
+  typeChipText: { color: "#334155", fontWeight: "900", fontSize: 15 },
+  typeChipTextActive: { color: "#FFFFFF" },
 });
 
 export default TransactionHistoryFiltersCard;

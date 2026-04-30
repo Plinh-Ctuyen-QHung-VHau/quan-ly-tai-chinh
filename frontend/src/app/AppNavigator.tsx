@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Alert } from "react-native";
 import {
-  Alert,
-  NavigationContainerRefWithCurrent,
   NavigationContainer,
 } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AuthNavigator } from "./AuthNavigator";
 import { MainTabNavigator } from "./MainTabNavigator";
@@ -21,7 +21,6 @@ import { getSession, signOut } from "../services/authService";
 import { useAuthStore } from "../store/authStore";
 import { setUnauthorizedHandler } from "../services/apiClient";
 import { useNotificationStore } from "../store/notificationStore";
-import { Budget } from "../types/budget";
 import { setupPushNotifications } from "../utils/notificationHandler";
 import { useAppDataStore } from "../store/appDataStore";
 import { dataInvalidation } from "../utils/dataInvalidation";
@@ -42,6 +41,8 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function AppNavigator() {
+  const insets = useSafeAreaInsets();
+  const safeContentStyle = { paddingTop: insets.top } as const;
   const session = useAuthStore((state) => state.session);
   const setSession = useAuthStore((state) => state.setSession);
   const setReady = useAuthStore((state) => state.setReady);
@@ -97,7 +98,6 @@ export function AppNavigator() {
       setTimeout(() => {
         // NavigationContainer chưa expose ref trực tiếp ở đây,
         // realtime store sẽ prepend notification tự động
-        // TODO: nếu muốn navigate, dùng navigationRef pattern
       }, 300);
     });
 
@@ -140,7 +140,7 @@ export function AppNavigator() {
       console.log(`[AppNavigator] Data invalidation event received: ${key}`);
     });
 
-    return unsubscribe;
+    return () => { unsubscribe(); };
   }, [isAuthenticated]);
 
   if (!bootstrapped || !is_ready) {
@@ -156,24 +156,29 @@ export function AppNavigator() {
             <Stack.Screen
               name="AddTransaction"
               component={AddTransactionScreen}
+              options={{ contentStyle: safeContentStyle }}
             />
             <Stack.Screen
               name="TransactionConfirm"
               component={TransactionConfirmScreen}
+              options={{ contentStyle: safeContentStyle }}
             />
             <Stack.Screen
               name="TransactionDetail"
               component={TransactionDetailScreen}
+              options={{ contentStyle: safeContentStyle }}
             />
             <Stack.Screen
               name="TransactionEdit"
               component={TransactionEditScreen}
+              options={{ contentStyle: safeContentStyle }}
             />
-            <Stack.Screen name="BudgetForm" component={BudgetFormScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="BudgetForm" component={BudgetFormScreen} options={{ contentStyle: safeContentStyle }} />
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ contentStyle: safeContentStyle }} />
             <Stack.Screen
               name="NotificationSettings"
               component={NotificationSettingsScreen}
+              options={{ contentStyle: safeContentStyle }}
             />
           </>
         ) : (

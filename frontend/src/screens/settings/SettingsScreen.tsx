@@ -38,12 +38,6 @@ export function SettingsScreen() {
         />
         <Text style={styles.spacer} />
         <AppButton
-          title="Thiết lập ngân sách"
-          variant="secondary"
-          onPress={() => navigation.navigate("Budget")}
-        />
-        <Text style={styles.spacer} />
-        <AppButton
           title="Cài đặt thông báo"
           variant="secondary"
           onPress={() => navigation.navigate("NotificationSettings")}

@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
-  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
@@ -18,6 +18,7 @@ import { transactionTypeOptions } from "../../constants/options";
 import { COLORS, shadow } from "../../constants/ui";
 import { createTransaction, getCategories } from "../../services/transactionApi";
 import { useTransactionStore } from "../../store/transactionStore";
+import { useAppDataStore } from "../../store/appDataStore";
 import { Category, TransactionType } from "../../types/category";
 import { OcrResult } from "../../types/ocr";
 import { isPositiveAmount } from "../../utils/validators";
@@ -159,8 +160,8 @@ export function TransactionConfirmScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [transaction_date, settransaction_date] = useState(toDateInput(initialDate));
   const [showFullImage, setShowFullImage] = useState(false);
+  const [transaction_date, settransaction_date] = useState(toDateInput(initialDate));
 
   useEffect(() => {
     settransaction_date(toDateInput(initialDate));
@@ -258,10 +259,8 @@ export function TransactionConfirmScreen() {
       });
 
       clearDraft();
-      Alert.alert("Đã lưu", "Giao dịch đã được lưu thành công.");
-      // Force refresh app data
       void useAppDataStore.getState().refresh();
-      navigation.navigate("MainTabs", { screen: "Home" });
+      navigation.navigate("MainTabs", { screen: "Transactions" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể lưu giao dịch.");
     } finally {
@@ -287,21 +286,32 @@ export function TransactionConfirmScreen() {
           </Text>
         </View>
 
-        {previewImage ? (
-          <Pressable onLongPress={() => setShowFullImage(true)} style={styles.previewImageContainer}>
-            <Image source={{ uri: previewImage }} style={styles.previewImage} resizeMode="cover" />
-            <View style={styles.receiptBadge}>
-              <Text style={styles.receiptBadgeText}>Đã đính kèm hóa đơn</Text>
-            </View>
-          </Pressable>
-        ) : null}
-
-        <ImageViewerModal
-          visible={showFullImage}
-          imageUrl={previewImage ?? ""}
-          onClose={() => setShowFullImage(false)}
-        />
       </View>
+
+      {/* ── Receipt image card ── */}
+      {previewImage ? (
+        <Pressable
+          style={({ pressed }) => [styles.receiptCard, pressed && { opacity: 0.93 }]}
+          onPress={() => setShowFullImage(true)}
+        >
+          <Image
+            source={{ uri: previewImage }}
+            style={styles.receiptImage}
+            resizeMode="cover"
+          />
+          <View style={styles.receiptOverlay}>
+            <View style={styles.receiptLabelWrap}>
+              <Text style={styles.receiptLabelTitle}>Hóa đơn đính kèm</Text>
+              <Text style={styles.receiptLabelSub}>Nhấn để xem toàn màn hình</Text>
+            </View>
+          </View>
+          <ImageViewerModal
+            visible={showFullImage}
+            imageUrl={previewImage}
+            onClose={() => setShowFullImage(false)}
+          />
+        </Pressable>
+      ) : null}
 
       {/* ── Amount preview card ── */}
       <View style={[styles.amountCard, { backgroundColor: amountBg, borderColor: amountBorder }]}>
@@ -468,11 +478,13 @@ const styles = StyleSheet.create({
   heroKicker: { color: "#93C5FD", fontSize: 11, fontWeight: "900", letterSpacing: 2, marginBottom: 10 },
   heroTitle: { color: COLORS.white, fontSize: 34, fontWeight: "900", letterSpacing: -0.8, marginBottom: 8 },
   heroSubtitle: { color: "#94A3B8", fontSize: 14, lineHeight: 21 },
-  receiptBadge: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(22,163,74,0.8)", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, position: "absolute", bottom: 10, left: 10 },
-  receiptBadgeIcon: { fontSize: 16 },
-  receiptBadgeText: { color: "#FFFFFF", fontWeight: "800", fontSize: 13 },
-  previewImageContainer: { marginTop: 16, width: "100%", height: 200, borderRadius: 16, overflow: "hidden", position: "relative" },
-  previewImage: { width: "100%", height: "100%" },
+  // Receipt image card
+  receiptCard: { ...shadow, borderRadius: 24, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16, overflow: "hidden", height: 240 },
+  receiptImage: { width: "100%", height: "100%" },
+  receiptOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: "rgba(10,15,30,0.55)" },
+  receiptLabelWrap: { gap: 2 },
+  receiptLabelTitle: { color: "#FFFFFF", fontWeight: "900", fontSize: 14, letterSpacing: 0.2 },
+  receiptLabelSub: { color: "rgba(255,255,255,0.7)", fontWeight: "600", fontSize: 12 },
 
   // Amount card
   amountCard: { borderRadius: 28, borderWidth: 1.5, padding: 22, marginBottom: 16, ...shadow },
