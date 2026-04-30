@@ -9,7 +9,7 @@ export const configValidationSchema = Joi.object({
   EVENT_LOG_SCHEMA: Joi.string().default("app_common"),
   PROCESSED_EVENTS_SCHEMA: Joi.string().default("app_common"),
   GEMINI_API_KEY: Joi.string().required(),
-  GEMINI_MODEL: Joi.string().default("gemini-3-flash-preview"),
+  GEMINI_MODEL: Joi.string().default("gemini-3.1-flash-lite-preview"),
   GEMINI_TIMEOUT_MS: Joi.number().default(30000),
   API_GATEWAY_URL: Joi.string().required(),
   TRANSACTION_SERVICE_URL: Joi.string().required(),
@@ -32,7 +32,7 @@ export const configuration = registerAs("app", () => ({
   // TODO: Move GEMINI_API_KEY to secret manager or infrastructure vault.
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
-    model: process.env.GEMINI_MODEL || "gemini-3-flash-preview",
+    model: process.env.GEMINI_MODEL,
     timeoutMs: parseInt(process.env.GEMINI_TIMEOUT_MS, 10) || 30000,
   },
   apiGatewayUrl: process.env.API_GATEWAY_URL,

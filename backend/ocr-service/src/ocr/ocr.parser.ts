@@ -41,7 +41,12 @@ export class OcrParser {
     apiKey: string
   ): Promise<ParsedOcrResult> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const fallbackModels = [
+      "gemini-3.1-flash-lite-preview",
+      "gemini-2.5-flash",
+      "gemini-3-flash-preview",
+      "gemini-2.5-flash-lite"
+    ];
 
     const prompt = `Bạn là chuyên gia OCR Parser cho ứng dụng Quản lý Tài chính cá nhân tại Việt Nam.
 
@@ -122,14 +127,33 @@ QUY TẮC BẮT BUỘC CHUNG:
 - "Giải trí": cinema, CGV, Lotte Cinema, Steam, karaoke, Netflix, Spotify.
 - "Tiền nhà": tiền nhà, thuê nhà, phòng trọ, chung cư, phí quản lý.`;
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
-    });
+    let responseText = "";
+    let lastError: any = null;
 
-    const responseText = result.response.text();
+    for (const modelName of fallbackModels) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        console.log(`[OCR Parser] Trying model: ${modelName}...`);
+
+        const result = await model.generateContent({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+          }
+        });
+
+        responseText = result.response.text();
+        console.log(`[OCR Parser] Successfully used model: ${modelName}`);
+        break; // Stop looping if successful
+      } catch (error: any) {
+        console.warn(`[OCR Parser] Model ${modelName} failed:`, error.message);
+        lastError = error;
+      }
+    }
+
+    if (!responseText) {
+      throw lastError || new Error("All fallback models failed due to quota or network issues.");
+    }
     const json = JSON.parse(responseText);
 
     return {
