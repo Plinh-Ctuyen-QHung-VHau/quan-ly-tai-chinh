@@ -204,11 +204,12 @@ export class ChatService {
 
       case "get_anomalies": {
         const limit = args.limit || 5;
-        const anomalies = await this.anomalyService.getRecentAnomalies(user_id, limit);
+        const anomalies = await this.anomalyService.getRecentAnomalies(user_id, limit, args.fromDate, args.toDate);
 
         if (!anomalies || anomalies.length === 0) {
+          const timeStr = args.fromDate ? `từ ${args.fromDate} đến ${args.toDate || 'nay'}` : "gần đây";
           return {
-            reply: "Không phát hiện chi tiêu bất thường nào gần đây. Bạn đang chi tiêu khá đều đặn so với thói quen của mình 👍",
+            reply: `Không phát hiện chi tiêu bất thường nào ${timeStr}. Bạn đang chi tiêu khá đều đặn so với thói quen của mình 👍`,
             data: [],
           };
         }

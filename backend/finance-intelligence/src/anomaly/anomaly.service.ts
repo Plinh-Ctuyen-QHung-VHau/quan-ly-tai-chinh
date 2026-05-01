@@ -101,8 +101,8 @@ export class AnomalyService {
     return created;
   }
 
-  async getRecentAnomalies(user_id: string, limit: number = 5) {
-    return this.anomalyRepository.findRecentByUser(user_id, limit);
+  async getRecentAnomalies(user_id: string, limit: number = 5, fromDate?: string, toDate?: string) {
+    return this.anomalyRepository.findRecentByUser(user_id, limit, fromDate, toDate);
   }
 
   async findByTransaction(transaction_id: string) {

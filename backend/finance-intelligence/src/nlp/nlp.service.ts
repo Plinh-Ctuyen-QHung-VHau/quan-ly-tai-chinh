@@ -76,6 +76,8 @@ export class NlpService {
           type: "OBJECT",
           properties: {
             limit: { type: "NUMBER", description: "Số lượng bất thường muốn xem, mặc định 5" },
+            fromDate: { type: "STRING", description: "Ngày bắt đầu YYYY-MM-DD" },
+            toDate: { type: "STRING", description: "Ngày kết thúc YYYY-MM-DD" },
           },
           required: []
         }

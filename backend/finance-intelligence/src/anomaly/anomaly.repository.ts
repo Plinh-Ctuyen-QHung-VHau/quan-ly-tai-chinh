@@ -32,11 +32,19 @@ export class AnomalyRepository {
     return data;
   }
 
-  async findRecentByUser(user_id: string, limit: number = 5) {
-    const { data, error } = await this.supabase
+  async findRecentByUser(user_id: string, limit: number = 5, fromDate?: string, toDate?: string) {
+    let query = this.supabase
       .from("anomaly_results")
       .select("*")
-      .eq("user_id", user_id)
+      .eq("user_id", user_id);
+
+    if (fromDate) query = query.gte("detected_at", fromDate);
+    if (toDate) {
+      const finalToDate = toDate.length === 10 ? `${toDate}T23:59:59.999Z` : toDate;
+      query = query.lte("detected_at", finalToDate);
+    }
+
+    const { data, error } = await query
       .order("detected_at", { ascending: false })
       .limit(limit);
 
