@@ -41,7 +41,7 @@ export class OcrParser {
     apiKey: string
   ): Promise<ParsedOcrResult> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = "gemini-2.5-flash-lite";
+    const modelName = "gemini-3.1-flash-lite-preview";
 
     const prompt = `Bạn là chuyên gia OCR Parser cho ứng dụng Quản lý Tài chính cá nhân tại Việt Nam.
 
