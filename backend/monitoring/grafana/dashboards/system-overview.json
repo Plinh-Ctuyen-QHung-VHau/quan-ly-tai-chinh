@@ -165,7 +165,7 @@
         }
       ],
       "options": {
-        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
         "orientation": "horizontal"
       },
       "gridPos": { "h": 4, "w": 8, "x": 0, "y": 20 }
@@ -193,7 +193,7 @@
         }
       ],
       "options": {
-        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
         "orientation": "horizontal"
       },
       "gridPos": { "h": 4, "w": 8, "x": 8, "y": 20 }
@@ -205,13 +205,13 @@
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "targets": [
         {
-          "expr": "sum(increase(budget_notification_service_notifications_created_total[1h])) by (type)",
-          "legendFormat": "{{type}}",
+          "expr": "sum(budget_notification_service_notifications_created_total)",
+          "legendFormat": "Total",
           "refId": "A"
         }
       ],
       "options": {
-        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
         "orientation": "horizontal"
       },
       "gridPos": { "h": 4, "w": 8, "x": 16, "y": 20 }

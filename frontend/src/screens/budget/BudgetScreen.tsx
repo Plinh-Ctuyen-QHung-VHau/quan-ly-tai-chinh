@@ -205,7 +205,7 @@ export function BudgetScreen() {
           <>
 
             <View style={styles.progressRow}>
-              <Text style={styles.percentHint}>Đã chi</Text>
+              <Text style={[styles.percentHint, { marginLeft: 0, marginRight: 8 }]}>Đã chi</Text>
               <Text style={[styles.percent, { color: progressColor }]}>
                 {Math.round(budgetPercent)}%
               </Text>

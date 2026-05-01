@@ -25,6 +25,19 @@ function formatDisplayDate(value: string) {
   });
 }
 
+function mapApiErrorToMessage(err: unknown): string {
+  if (!(err instanceof Error)) return "Không thể cập nhật giao dịch.";
+  const apiErr = err as any;
+  const field = apiErr.details?.field as string | undefined;
+  const code = apiErr.code as string | undefined;
+  if (code === "VALIDATION_ERROR" && field === "category_id") return "Danh mục không phù hợp với loại giao dịch đã chọn. Vui lòng chọn lại danh mục.";
+  if (code === "VALIDATION_ERROR" && field === "amount") return "Số tiền không hợp lệ. Vui lòng kiểm tra lại.";
+  if (code === "VALIDATION_ERROR" && field === "transaction_date") return "Ngày giao dịch không hợp lệ. Vui lòng chọn lại.";
+  if (code === "NOT_FOUND") return "Giao dịch không tồn tại hoặc đã bị xóa.";
+  if (code === "UNAUTHORIZED") return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+  return err.message || "Không thể cập nhật giao dịch.";
+}
+
 export function TransactionEditScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -62,11 +75,18 @@ export function TransactionEditScreen() {
     void loadTransaction();
   }, [loadTransaction]);
 
+  const isInitialMount = React.useRef(true);
+
   useEffect(() => {
     const loadCategories = async () => {
       try {
         const list = await getCategories(type);
         setCategories(Array.isArray(list) ? list : []);
+        // Reset category khi đổi type (trừ lần đầu load)
+        if (!isInitialMount.current) {
+          setcategory_id("");
+        }
+        isInitialMount.current = false;
       } catch {
         setCategories([]);
       }
@@ -106,7 +126,7 @@ export function TransactionEditScreen() {
       Alert.alert("Đã cập nhật", "Giao dịch đã được sửa thành công.");
       navigation.goBack();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể cập nhật giao dịch.");
+      setError(mapApiErrorToMessage(err));
     } finally {
       setSaving(false);
     }
