@@ -56,7 +56,7 @@ function getBudgetTheme(status?: BudgetStatus["status"]) {
     return { label: "Đã vượt ngân sách", color: COLORS.expense, bg: COLORS.expenseSoft };
   }
 
-  return { label: "Chưa có", color: COLORS.muted, bg: "#F1F5F9" };
+  return { label: "" };
 }
 
 // StatTile and SmallMetric are provided by ../../components/MetricTiles
@@ -196,89 +196,93 @@ export function HomeScreen() {
         </Text>
       </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Ngân sách kỳ này</Text>
-      </View>
+      <Pressable
 
-      <View style={styles.budgetCard}>
-        <View style={styles.budgetHeader}>
-          <View>
-            <Text style={styles.budgetCardTitle}>Tiến độ ngân sách</Text>
-            {budgetStatus?.start_date && budgetStatus?.end_date ? (
-              <Text style={styles.budgetPeriodText}>
-                {formatDate(budgetStatus.start_date)} – {formatDate(budgetStatus.end_date)}
-              </Text>
-            ) : null}
-          </View>
-          <View style={[styles.budgetStatusChip, { backgroundColor: budgetTheme.bg }]}>
-            <Text style={[styles.budgetStatusText, { color: budgetTheme.color }]}>
-              {budgetTheme.label}
-            </Text>
-          </View>
+        onPress={() => navigation.navigate("MainTabs", { screen: "Budget" })}
+      ><View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Ngân sách kỳ này</Text>
+
         </View>
 
-        {hasBudget ? (
-          <>
-            <View style={styles.budgetProgressRow}>
-              <Text style={styles.budgetUsedText}>Đã chi </Text>
-
-              <Text style={[styles.budgetPercent, { color: budgetTheme.color }]}>{Math.round(budgetPercent)}%</Text>
-              <Text style={styles.budgetUsedText}> ngân sách</Text>
+        <View style={styles.budgetCard}>
+          <View style={styles.budgetHeader}>
+            <View>
+              <Text style={styles.budgetCardTitle}>Tiến độ ngân sách</Text>
+              {budgetStatus?.start_date && budgetStatus?.end_date ? (
+                <Text style={styles.budgetPeriodText}>
+                  {formatDate(budgetStatus.start_date)} – {formatDate(budgetStatus.end_date)}
+                </Text>
+              ) : null}
             </View>
-
-            <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${budgetPercent}%`,
-                    backgroundColor: budgetTheme.color,
-                  },
-                ]}
-              />
+            <View style={[styles.budgetStatusChip, { backgroundColor: budgetTheme.bg }]}>
+              <Text style={[styles.budgetStatusText, { color: budgetTheme.color }]}>
+                {budgetTheme.label}
+              </Text>
             </View>
-
-            <View style={styles.budgetMetricRow}>
-              <View style={styles.budgetStatCol}>
-                <Text style={styles.budgetStatLabel}>Ngân sách</Text>
-                <Text style={styles.budgetStatValue} numberOfLines={1}>{formatCurrency(budget_amount)}</Text>
-              </View>
-              <View style={styles.budgetStatDivider} />
-              <View style={styles.budgetStatCol}>
-                <Text style={styles.budgetStatLabel}>Đã chi</Text>
-                <Text style={styles.budgetStatValue} numberOfLines={1}>{formatCurrency(spent_amount)}</Text>
-              </View>
-              <View style={styles.budgetStatDivider} />
-              <View style={styles.budgetStatCol}>
-                <Text style={styles.budgetStatLabel}>Còn lại</Text>
-                <Text style={[styles.budgetStatValue, remaining_amount < 0 && { color: COLORS.expense }]} numberOfLines={1}>{formatCurrency(remaining_amount)}</Text>
-              </View>
-            </View>
-
-
-          </>
-        ) : (
-          <View style={styles.emptyBudgetBox}>
-            <Text style={styles.emptyBudgetTitle}>Chưa có ngân sách</Text>
-            <Text style={styles.emptyBudgetText}>
-              Tạo ngân sách để kiểm soát chi tiêu tốt hơn.
-            </Text>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.createBudgetButton,
-                pressed && styles.pressed,
-              ]}
-              onPress={() => navigation.navigate("BudgetForm", { mode: "create" })}
-            >
-              <Text style={styles.createBudgetButtonText}>Tạo ngân sách</Text>
-            </Pressable>
           </View>
-        )}
-      </View>
+
+          {hasBudget ? (
+            <>
+              <View style={styles.budgetProgressRow}>
+                <Text style={styles.budgetUsedText}>Đã chi </Text>
+
+                <Text style={[styles.budgetPercent, { color: budgetTheme.color }]}>{Math.round(budgetPercent)}%</Text>
+                <Text style={styles.budgetUsedText}> ngân sách</Text>
+              </View>
+
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${budgetPercent}%`,
+                      backgroundColor: budgetTheme.color,
+                    },
+                  ]}
+                />
+              </View>
+
+              <View style={styles.budgetMetricRow}>
+                <View style={styles.budgetStatCol}>
+                  <Text style={styles.budgetStatLabel}>Ngân sách</Text>
+                  <Text style={styles.budgetStatValue} numberOfLines={1}>{formatCurrency(budget_amount)}</Text>
+                </View>
+                <View style={styles.budgetStatDivider} />
+                <View style={styles.budgetStatCol}>
+                  <Text style={styles.budgetStatLabel}>Đã chi</Text>
+                  <Text style={styles.budgetStatValue} numberOfLines={1}>{formatCurrency(spent_amount)}</Text>
+                </View>
+                <View style={styles.budgetStatDivider} />
+                <View style={styles.budgetStatCol}>
+                  <Text style={styles.budgetStatLabel}>Còn lại</Text>
+                  <Text style={[styles.budgetStatValue, remaining_amount < 0 && { color: COLORS.expense }]} numberOfLines={1}>{formatCurrency(remaining_amount)}</Text>
+                </View>
+              </View>
 
 
-    </ScrollView>
+            </>
+          ) : (
+            <View style={styles.emptyBudgetBox}>
+              <Text style={styles.emptyBudgetTitle}>Chưa có ngân sách</Text>
+              <Text style={styles.emptyBudgetText}>
+                Tạo ngân sách để kiểm soát chi tiêu tốt hơn.
+              </Text>
+
+              {/* <Pressable
+                style={({ pressed }) => [
+                  styles.createBudgetButton,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => navigation.navigate("BudgetForm", { mode: "create" })}
+              >
+                <Text style={styles.createBudgetButtonText}>Tạo ngân sách</Text>
+              </Pressable> */}
+            </View>
+          )}
+        </View>
+      </Pressable>
+
+    </ScrollView >
   );
 }
 

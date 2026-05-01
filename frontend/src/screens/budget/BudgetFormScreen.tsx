@@ -2,12 +2,12 @@ import React, { useMemo, useState } from "react";
 import {
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { AppButton } from "../../components/AppButton";
 import { AppCard } from "../../components/AppCard";
@@ -258,9 +258,13 @@ export function BudgetFormScreen() {
   };
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
+    <KeyboardAwareScrollView
+      style={{ flex: 1, backgroundColor: COLORS.bg }}
       contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+      enableOnAndroid={true}
+      extraScrollHeight={100}
+      keyboardShouldPersistTaps="handled"
     >
       <View style={styles.heroCard}>
         <View style={styles.heroGlow} />
@@ -404,12 +408,12 @@ export function BudgetFormScreen() {
           setActiveDateField(null);
         }}
       />
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, paddingHorizontal: 18, paddingTop: 14, paddingBottom: 120, backgroundColor: COLORS.bg },
+  container: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 60, backgroundColor: COLORS.bg },
   pressed: { opacity: 0.8, transform: [{ scale: 0.99 }] },
 
   heroCard: { backgroundColor: COLORS.dark, borderRadius: 30, padding: 20, paddingBottom: 28, marginBottom: 18, overflow: "hidden" },

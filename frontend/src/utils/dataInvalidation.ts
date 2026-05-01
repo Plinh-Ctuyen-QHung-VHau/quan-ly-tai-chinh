@@ -34,12 +34,20 @@ export function invalidateData(key: DataKey) {
   const refreshKeys: DataKey[] = ["transactions", "transactionSummary", "budget", "categories", "notifications", "ocrResult"];
   
   if (refreshKeys.includes(key)) {
-    // Sử dụng debounce để tránh gọi refresh quá nhiều lần liên tục (ví dụ xóa hàng loạt)
     if (refreshTimeout) clearTimeout(refreshTimeout);
     
     refreshTimeout = setTimeout(() => {
       console.log(`[INVALIDATION] Triggering global store refresh after delay for key: ${key}`);
       void useAppDataStore.getState().refresh();
-    }, 500); // 500ms để Backend kịp commit dữ liệu
+    }, 500);
+  }
+}
+
+/** Hủy bỏ tất cả pending refresh để tránh gọi API sau khi logout */
+export function cancelPendingRefresh() {
+  if (refreshTimeout) {
+    clearTimeout(refreshTimeout);
+    refreshTimeout = null;
+    console.log("[INVALIDATION] Pending refresh cancelled (logout).");
   }
 }

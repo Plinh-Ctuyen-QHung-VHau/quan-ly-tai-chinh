@@ -30,11 +30,11 @@ type Step = "email" | "otp" | "newPassword";
 const STEP_LABELS: Record<Step, { title: string; subtitle: string }> = {
   email: {
     title: "Quên mật khẩu?",
-    subtitle: "Nhập email đăng ký. Mã xác nhận 8 số sẽ được gửi về hộp thư của bạn.",
+    subtitle: "Nhập email đăng ký. Mã xác nhận 6 số sẽ được gửi về hộp thư của bạn.",
   },
   otp: {
     title: "Nhập mã xác nhận",
-    subtitle: "Kiểm tra hộp thư và nhập mã 8 số vừa được gửi.",
+    subtitle: "Kiểm tra hộp thư và nhập mã  được gửi.",
   },
   newPassword: {
     title: "Đặt mật khẩu mới",
@@ -91,7 +91,7 @@ export function ForgotPasswordScreen({
     setOtpError("");
     const token = otp.join("");
     if (token.length < 8) {
-      setOtpError("Vui lòng nhập đủ 8 số.");
+      setOtpError("Vui lòng nhập đủ 8 ký tự.");
       return;
     }
     setLoading(true);
@@ -219,21 +219,41 @@ export function ForgotPasswordScreen({
               <Text style={styles.otpHint}>
                 Mã gửi đến: <Text style={styles.otpEmail}>{email}</Text>
               </Text>
-              <View style={styles.otpRow}>
-                {otp.map((digit, i) => (
-                  <TextInput
-                    key={i}
-                    ref={(r) => { otpRefs.current[i] = r; }}
-                    style={[styles.otpBox, otpError ? styles.otpBoxError : null]}
-                    value={digit}
-                    onChangeText={(v) => handleOtpChange(v, i)}
-                    onKeyPress={({ nativeEvent: { key } }) => handleOtpKeyPress(key, i)}
-                    keyboardType="number-pad"
-                    maxLength={1}
-                    selectTextOnFocus
-                    autoFocus={i === 0}
-                  />
-                ))}
+              <View style={styles.otpContainer}>
+                <View style={styles.otpRow}>
+                  {otp.slice(0, 4).map((digit, i) => (
+                    <TextInput
+                      key={i}
+                      ref={(r) => { otpRefs.current[i] = r; }}
+                      style={[styles.otpBox, otpError ? styles.otpBoxError : null]}
+                      value={digit}
+                      onChangeText={(v) => handleOtpChange(v, i)}
+                      onKeyPress={({ nativeEvent: { key } }) => handleOtpKeyPress(key, i)}
+                      keyboardType="number-pad"
+                      maxLength={1}
+                      selectTextOnFocus
+                      autoFocus={i === 0}
+                    />
+                  ))}
+                </View>
+                <View style={styles.otpDivider}>
+                  <View style={styles.otpDash} />
+                </View>
+                <View style={styles.otpRow}>
+                  {otp.slice(4, 8).map((digit, i) => (
+                    <TextInput
+                      key={i + 4}
+                      ref={(r) => { otpRefs.current[i + 4] = r; }}
+                      style={[styles.otpBox, otpError ? styles.otpBoxError : null]}
+                      value={digit}
+                      onChangeText={(v) => handleOtpChange(v, i + 4)}
+                      onKeyPress={({ nativeEvent: { key } }) => handleOtpKeyPress(key, i + 4)}
+                      keyboardType="number-pad"
+                      maxLength={1}
+                      selectTextOnFocus
+                    />
+                  ))}
+                </View>
               </View>
               {otpError ? <Text style={styles.fieldError}>{otpError}</Text> : null}
               <AppButton
@@ -330,11 +350,20 @@ const styles = StyleSheet.create({
   // OTP
   otpHint: { color: COLORS.muted, fontSize: 13, marginBottom: 16, textAlign: "center" },
   otpEmail: { color: COLORS.blue, fontWeight: "700" },
+  otpContainer: {
+    alignItems: "center", marginBottom: 16,
+  },
   otpRow: {
-    flexDirection: "row", justifyContent: "center", gap: 10, marginBottom: 16,
+    flexDirection: "row", justifyContent: "center", gap: 10,
+  },
+  otpDivider: {
+    height: 12, justifyContent: "center", alignItems: "center", marginVertical: 8,
+  },
+  otpDash: {
+    width: 32, height: 2, borderRadius: 1, backgroundColor: COLORS.border,
   },
   otpBox: {
-    width: 46, height: 56, borderRadius: 14,
+    width: 52, height: 58, borderRadius: 14,
     borderWidth: 2, borderColor: COLORS.border,
     textAlign: "center", fontSize: 22, fontWeight: "900",
     color: COLORS.text, backgroundColor: COLORS.white,

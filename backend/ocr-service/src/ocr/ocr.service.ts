@@ -14,6 +14,7 @@ import { AppMetrics } from "../metrics/app.metrics";
 import { ImagePreprocessorService } from "../preprocess/image-preprocessor.service";
 import { race, firstValueFrom, throwError, timer, from } from "rxjs";
 import { catchError, map } from "rxjs/operators";
+import { EventPublisher } from "@shared/events/event.publisher";
 
 @Injectable()
 export class OcrService {
@@ -27,6 +28,7 @@ export class OcrService {
     private readonly ocrParser: OcrParser,
     private readonly metrics: AppMetrics,
     private readonly imagePreprocessor: ImagePreprocessorService,
+    private readonly eventPublisher: EventPublisher,
     @Inject(configuration.KEY)
     private readonly appConfig: ConfigType<typeof configuration>,
   ) {
@@ -43,6 +45,13 @@ export class OcrService {
       user_id,
       scanOcrDto,
     );
+
+    this.eventPublisher.publish("ocr.started", {
+      request_id: ocrRequest.id,
+      user_id,
+      image_url,
+      source_type,
+    }, "ocr-service").catch(err => console.error(err));
 
     try {
       const ocrPromise = from(this.performOcr(image_url));
@@ -72,6 +81,13 @@ export class OcrService {
       const duration = (Date.now() - startTime) / 1000;
       this.metrics.ocrProcessingDurationSeconds.observe(duration);
 
+      await this.eventPublisher.publish("ocr.processed", {
+        request_id: ocrRequest.id,
+        user_id,
+        image_url,
+        duration_seconds: duration,
+      }, "ocr-service");
+
       return {
         ocrrequest_id: finalResult.request_id,
         ocr_result_id: finalResult.id,
@@ -100,6 +116,14 @@ export class OcrService {
       this.metrics.ocrFailuresTotal.inc();
       const duration = (Date.now() - startTime) / 1000;
       this.metrics.ocrProcessingDurationSeconds.observe(duration);
+
+      await this.eventPublisher.publish("ocr.failed", {
+        request_id: ocrRequest.id,
+        user_id,
+        image_url,
+        reason: error.message,
+        duration_seconds: duration,
+      }, "ocr-service");
 
       throw error;
     }

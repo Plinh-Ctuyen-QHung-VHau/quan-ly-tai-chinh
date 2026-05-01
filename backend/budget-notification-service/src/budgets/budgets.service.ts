@@ -4,7 +4,7 @@ import { CreateBudgetDto } from "./dto/create-budget.dto";
 import { UpdateBudgetDto } from "./dto/update-budget.dto";
 import { TransactionClient } from "../clients/transaction.client";
 import { NotificationsService } from "../notifications/notifications.service";
-import { EventPublisher } from "../events/event.publisher";
+import { EventPublisher } from "@shared/events/event.publisher";
 import { AppMetrics } from "../metrics/app.metrics";
 import { AppError } from "@shared/errors/AppError";
 
@@ -26,6 +26,7 @@ export class BudgetsService {
       createBudgetDto,
     );
     this.metrics.budgetsCreatedTotal.inc();
+    this.eventPublisher.publish("budget.created", budget, "budget-notification-service").catch(err => console.error(err));
     return budget;
   }
 
@@ -111,15 +112,18 @@ export class BudgetsService {
       throw new NotFoundException(`Budget with ID ${id} not found.`);
     }
     this.metrics.budgetsUpdatedTotal.inc();
+    this.eventPublisher.publish("budget.updated", budget, "budget-notification-service").catch(err => console.error(err));
     return budget;
   }
 
   async remove(id: string, user_id: string) {
+    const budget = await this.budgetsRepository.findCurrentActive(user_id); // Fetch before delete to get payload
     const success = await this.budgetsRepository.softDelete(id, user_id);
     if (!success) {
       throw new NotFoundException(`Budget with ID ${id} not found.`);
     }
     this.metrics.budgetsDeletedTotal.inc();
+    this.eventPublisher.publish("budget.deleted", { id, user_id }, "budget-notification-service").catch(err => console.error(err));
     return { success: true, message: "Budget deleted successfully." };
   }
 
@@ -144,7 +148,7 @@ export class BudgetsService {
         await this.eventPublisher.publish("budget.exceeded", {
           budget_id: budget.id,
           user_id: budget.user_id,
-        });
+        }, "budget-notification-service");
         this.metrics.budgetExceededTotal.inc();
         this.metrics.budgetThresholdReachedTotal.inc({ threshold: "100" });
       }
@@ -162,7 +166,7 @@ export class BudgetsService {
           budget_id: budget.id,
           user_id: budget.user_id,
           threshold: 80,
-        });
+        }, "budget-notification-service");
         this.metrics.budgetThresholdReachedTotal.inc({ threshold: "80" });
       }
     }

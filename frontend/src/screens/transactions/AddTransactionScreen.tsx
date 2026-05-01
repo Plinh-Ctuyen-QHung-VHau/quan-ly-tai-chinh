@@ -55,15 +55,19 @@ async function processReceiptImage(params: {
   user_id: string;
   source_type: "camera" | "gallery";
 }) {
-  const image_url = await uploadReceiptImage(params.imageUri, params.user_id);
+  // uploadReceiptImage now returns the storage path (e.g. userId/filename.png)
+  const storagePath = await uploadReceiptImage(params.imageUri, params.user_id);
 
-  const validimage_url =
-    image_url && (image_url.startsWith("http://") || image_url.startsWith("https://"))
-      ? image_url
-      : null;
-
-  if (!validimage_url) {
+  if (!storagePath) {
     throw new Error("Ảnh tải lên không hợp lệ.");
+  }
+
+  // Generate a fresh signed URL just for OCR (requires an HTTP URL)
+  const { getReceiptSignedUrl } = await import("../../services/storageService");
+  const ocrImageUrl = await getReceiptSignedUrl(storagePath);
+
+  if (!ocrImageUrl) {
+    throw new Error("Không lấy được URL ảnh để nhận diện.");
   }
 
   let ocrResult = null;
@@ -71,7 +75,7 @@ async function processReceiptImage(params: {
   try {
     ocrResult = await scanReceipt({
       source_type: params.source_type,
-      image_url: validimage_url,
+      image_url: ocrImageUrl,
     });
   } catch (error) {
     const normalized = normalizeAxiosError(error);
@@ -89,7 +93,8 @@ async function processReceiptImage(params: {
     }
   }
 
-  return { image_url: validimage_url, ocrResult };
+  // Return the storage path (not the signed URL) to be stored in the DB
+  return { image_url: storagePath, ocrResult };
 }
 
 export function AddTransactionScreen() {

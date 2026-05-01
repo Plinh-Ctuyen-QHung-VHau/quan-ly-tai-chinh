@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { AppButton } from "../../components/AppButton";
@@ -53,9 +54,11 @@ export function LoginScreen({
   };
 
   return (
-    <ScrollView
+    <KeyboardAwareScrollView
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
+      enableOnAndroid={true}
+      extraScrollHeight={100}
     >
       <View style={styles.bgOrbTop} />
       <View style={styles.bgOrbBottom} />
@@ -112,7 +115,7 @@ export function LoginScreen({
           />
         </View>
       </AppCard>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

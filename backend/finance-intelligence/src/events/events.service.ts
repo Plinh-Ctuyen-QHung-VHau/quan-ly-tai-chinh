@@ -1,11 +1,11 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigType } from "@nestjs/config";
-import { EventsRepository } from "./events.repository";
+import { EventsRepository } from "@shared/events/events.repository";
 import { AnomalyService } from "../anomaly/anomaly.service";
 import { TransactionEventDto } from "./dto/transaction-event.dto";
 import { configuration } from "../config/configuration";
 import { AppMetrics } from "../metrics/app.metrics";
-import { EventPublisher } from "./event.publisher";
+import { EventPublisher } from "@shared/events/event.publisher";
 
 @Injectable()
 export class EventsService {

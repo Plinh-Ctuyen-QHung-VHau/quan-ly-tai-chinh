@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { EmptyState } from "../../components/EmptyState";
 import { LoadingView } from "../../components/LoadingView";
@@ -188,9 +188,13 @@ export function TransactionHistoryScreen() {
   }
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
+    <KeyboardAwareScrollView
+      style={{ flex: 1, backgroundColor: COLORS.bg }}
       contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+      enableOnAndroid={true}
+      extraScrollHeight={100}
+      keyboardShouldPersistTaps="handled"
     >
       <ScreenHero
         kicker="Giao dịch"
@@ -288,12 +292,12 @@ export function TransactionHistoryScreen() {
           description="Hãy thêm giao dịch đầu tiên của bạn"
         />
       )}
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 18, paddingTop: 40, paddingBottom: 130, backgroundColor: COLORS.bg },
+  container: { paddingHorizontal: 18, paddingTop: 40, paddingBottom: 60, backgroundColor: COLORS.bg },
   typeBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: COLORS.blue },
   typeBadgeText: { color: COLORS.white, fontSize: 12, fontWeight: "800" },
   heroStatsRow: { flexDirection: "row", gap: 12, marginBottom: 16 },

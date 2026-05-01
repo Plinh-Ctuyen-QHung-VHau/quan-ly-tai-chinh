@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { AppButton } from "../../components/AppButton";
 import { AppInput } from "../../components/AppInput";
@@ -115,11 +116,15 @@ export function TransactionEditScreen() {
     return <LoadingView label="Đang tải giao dịch..." />;
   }
 
-  const isExpense = type === "expense";
-  const amountColor = isExpense ? COLORS.expense : COLORS.income;
-
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
+    <KeyboardAwareScrollView
+      style={{ flex: 1, backgroundColor: COLORS.bg }}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+      enableOnAndroid={true}
+      extraScrollHeight={100}
+      keyboardShouldPersistTaps="handled"
+    >
       {/* ── Header Area ── */}
       <View style={styles.header}>
         <Text style={styles.screenTitle}>Cập nhật giao dịch</Text>
@@ -231,14 +236,14 @@ export function TransactionEditScreen() {
           setShowDatePicker(false);
         }}
       />
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingBottom: 40 },
+  container: { backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingBottom: 40, paddingTop: 24 },
 
-  header: { marginTop: 24, marginBottom: 20 },
+  header: { marginBottom: 20 },
   screenKicker: { color: COLORS.blue, fontSize: 11, fontWeight: "900", letterSpacing: 2, marginBottom: 8 },
   screenTitle: { color: COLORS.text, fontSize: 32, fontWeight: "900", letterSpacing: -0.8 },
 

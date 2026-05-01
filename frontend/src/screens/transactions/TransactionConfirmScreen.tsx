@@ -3,348 +3,196 @@ import {
   Alert,
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
-import { AppButton } from "../../components/AppButton";
 import { AppInput } from "../../components/AppInput";
-import { CategoryPicker } from "../../components/CategoryPicker";
+import { AppButton } from "../../components/AppButton";
 import { DatePickerModal } from "../../components/DatePickerModal";
-import { transactionTypeOptions } from "../../constants/options";
+import { CategoryPicker } from "../../components/CategoryPicker";
 import { COLORS, shadow } from "../../constants/ui";
-import { createTransaction, getCategories } from "../../services/transactionApi";
-import { useTransactionStore } from "../../store/transactionStore";
+import { getCategories, createTransaction } from "../../services/transactionApi";
+import { TransactionType, Category } from "../../types/category";
+import { formatCurrency } from "../../utils/formatCurrency";
 import { useAppDataStore } from "../../store/appDataStore";
-import { Category, TransactionType } from "../../types/category";
-import { OcrResult } from "../../types/ocr";
-import { isPositiveAmount } from "../../utils/validators";
+import { useTransactionStore } from "../../store/transactionStore";
 import { useSignedUrl } from "../../hooks/useSignedUrl";
 import { ImageViewerModal } from "../../components/ImageViewerModal";
-
-function toAmountString(value: unknown) {
-  if (value === null || value === undefined) return "";
-  return String(value).replace(/[^\d.]/g, "");
-}
-
-function toDateInput(value: unknown) {
-  if (!value) return new Date().toISOString().slice(0, 10);
-  const date = new Date(String(value));
-  if (!Number.isNaN(date.getTime())) {
-    return date.toISOString().slice(0, 10);
-  }
-  const match = String(value).match(/\d{4}-\d{2}-\d{2}/);
-  return match?.[0] ?? new Date().toISOString().slice(0, 10);
-}
-
-function formatDisplayDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value || "Chưa chọn";
-  return date.toLocaleDateString("vi-VN", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatAmount(value: string) {
-  const num = Number(value);
-  if (!num) return "0 đ";
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(num);
-}
-
-function getParsedFields(draftOcr: OcrResult | null) {
-  const parsed = draftOcr?.parsed_fields_json ?? draftOcr?.parsed_fields_json;
-  if (!parsed) return {};
-  if (typeof parsed === "string") {
-    try {
-      return JSON.parse(parsed);
-    } catch {
-      return {};
-    }
-  }
-  return parsed;
-}
-
-function normalizeText(value: string) {
-  if (!value) return "";
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .trim();
-}
-
-function isTransactionType(value: unknown): value is TransactionType {
-  return value === "income" || value === "expense";
-}
-
-function getValidimage_url(value?: string | null) {
-  return value && (value.startsWith("http://") || value.startsWith("https://")) ? value : undefined;
-}
-
-function isCategorySelected(items: Category[], id: string) {
-  return items.some((item) => item.id === id);
-}
-
-function resolvecategory_id(items: Category[], currentId: string, preferredId: string) {
-  if (isCategorySelected(items, currentId)) return currentId;
-  if (isCategorySelected(items, preferredId)) return preferredId;
-  return items[0]?.id ?? "";
-}
-
-function findCategoryByText(categories: Category[], text?: string | null) {
-  if (!text) return undefined;
-  const normalizedText = normalizeText(text);
-  return categories.find((item) => {
-    const name = normalizeText(item.name ?? "");
-    return name && (normalizedText.includes(name) || name.includes(normalizedText));
-  });
-}
 
 export function TransactionConfirmScreen() {
   const navigation = useNavigation<any>();
 
-  const draftOcr = useTransactionStore((state) => state.draftOcrResult);
+  // Get draft data from store
   const draftReceiptPath = useTransactionStore((state) => state.draftReceiptPath);
+  const draftOcrResult = useTransactionStore((state) => state.draftOcrResult);
   const draftsource_type = useTransactionStore((state) => state.draftsource_type);
   const clearDraft = useTransactionStore((state) => state.clearDraft);
 
-  const parsedFields = getParsedFields(draftOcr);
+  const expenseCategories = useAppDataStore((state) => state.expenseCategories);
+  const incomeCategories = useAppDataStore((state) => state.incomeCategories);
+  const refresh = useAppDataStore((state) => state.refresh);
 
-  const initialAmount =
-    draftOcr?.suggested_amount ??
-    parsedFields?.suggested_amount ??
-    "";
-
-  const rawInitialType =
-    draftOcr?.suggested_type ??
-    parsedFields?.suggested_type ??
-    "expense";
-
-  const initialType: TransactionType = isTransactionType(rawInitialType) ? rawInitialType : "expense";
-
-  const initialDate =
-    draftOcr?.suggested_date ??
-    parsedFields?.suggested_date ??
-    null;
-
-  const initialcategory_id =
-    draftOcr?.suggestedcategory_id ??
-    parsedFields?.suggestedcategory_id ??
-    "";
-
-  const suggestedCategoryText =
-    parsedFields?.suggestedCategory ?? parsedFields?.suggested_category ?? parsedFields?.category ?? null;
-
-  const [amount, setAmount] = useState(toAmountString(initialAmount));
-  const [type, setType] = useState<TransactionType>(initialType);
-  const [category_id, setcategory_id] = useState<string>(
-    String(initialcategory_id ?? ""),
+  const [type, setType] = useState<TransactionType>(
+    (draftOcrResult?.suggested_type as TransactionType) || "expense"
   );
-  const [merchant_name, setmerchant_name] = useState(
-    draftOcr?.merchant_name ?? parsedFields?.merchant_name ?? "",
+  const [amount, setAmount] = useState(
+    draftOcrResult?.suggested_amount ? String(draftOcrResult.suggested_amount) : ""
   );
+  const [category_id, setcategory_id] = useState("");
   const [note, setNote] = useState("");
+  const [transaction_date, settransaction_date] = useState(
+    draftOcrResult?.suggested_date || new Date().toISOString().slice(0, 10)
+  );
+  const [merchant_name, setmerchant_name] = useState(draftOcrResult?.merchant_name || "");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
-  const [transaction_date, settransaction_date] = useState(toDateInput(initialDate));
 
+  const signedUrl = useSignedUrl(draftReceiptPath);
+
+  // Sync categories when type changes
   useEffect(() => {
-    settransaction_date(toDateInput(initialDate));
-  }, [initialDate]);
-
-  useEffect(() => {
-    let active = true;
-
-    const loadCategories = async () => {
-      setLoading(true);
-      setError("");
-
+    const load = async () => {
+      setLoadingCategories(true);
       try {
         const list = await getCategories(type);
-        const safeList = Array.isArray(list) ? list : [];
-
-        if (!active) return;
-
-        setCategories(safeList);
-
-        const found = findCategoryByText(safeList, suggestedCategoryText);
-        if (found) {
-          setcategory_id(found.id);
-          return;
+        setCategories(list);
+        // Try auto-select category from OCR if possible
+        const suggestedCatId = draftOcrResult?.suggestedcategory_id;
+        if (suggestedCatId) {
+          setcategory_id(suggestedCatId);
         }
-
-        setcategory_id((prev) => resolvecategory_id(safeList, prev, initialcategory_id));
       } catch (err) {
-        if (active) setError(err instanceof Error ? err.message : "Không thể tải danh mục.");
+        console.error("Load categories error:", err);
       } finally {
-        if (active) setLoading(false);
+        setLoadingCategories(false);
       }
     };
-
-    void loadCategories();
-
-    return () => {
-      active = false;
-    };
-  }, [type, initialcategory_id, suggestedCategoryText]);
-
-  const safeCategories = Array.isArray(categories) ? categories : [];
-
-  const rawPreviewImage = useMemo(() => draftOcr?.image_url ?? draftReceiptPath ?? "", [draftOcr?.image_url, draftReceiptPath]);
-
-  const previewImage = useSignedUrl(rawPreviewImage || null) ?? rawPreviewImage;
-
-  const ocrDate = useMemo(() => toDateInput(initialDate), [initialDate]);
-  const displayDate = useMemo(
-    () => formatDisplayDate(transaction_date),
-    [transaction_date],
-  );
-
-  const isExpense = type === "expense";
-  const amountColor = isExpense ? COLORS.expense : COLORS.income;
-  const amountBg = isExpense ? COLORS.expenseSoft : COLORS.incomeSoft;
-  const amountBorder = isExpense ? COLORS.expenseBorder : COLORS.incomeBorder;
+    void load();
+  }, [type, draftOcrResult?.suggestedcategory_id]);
 
   const handleSave = async () => {
-    setError("");
-
-    if (!isPositiveAmount(amount)) {
-      setError("Vui lòng nhập số tiền lớn hơn 0.");
+    if (!amount || Number(amount) <= 0) {
+      Alert.alert("Lỗi", "Vui lòng nhập số tiền hợp lệ.");
       return;
     }
-
     if (!category_id) {
-      setError("Vui lòng chọn danh mục.");
-      return;
-    }
-
-    if (!transaction_date) {
-      setError("Vui lòng chọn ngày giao dịch.");
-      return;
-    }
-
-    if (!draftsource_type) {
-      setError("Thiếu nguồn ảnh giao dịch.");
-      Alert.alert("Lỗi", "Thiếu nguồn ảnh giao dịch (camera/gallery).");
+      Alert.alert("Lỗi", "Vui lòng chọn danh mục.");
       return;
     }
 
     setSaving(true);
-
     try {
-      await createTransaction({
+      const payload = {
         amount: Number(amount),
         type,
-        category_id: category_id,
+        category_id,
         note: note.trim() || undefined,
-        transaction_date: transaction_date,
+        transaction_date,
         merchant_name: merchant_name.trim() || undefined,
-        image_url: getValidimage_url(rawPreviewImage),
-        source: draftsource_type,
-      });
+        image_url: draftReceiptPath || undefined,
+        source: draftsource_type ?? "camera",
+      };
 
+      await createTransaction(payload);
+      await refresh();
       clearDraft();
-      void useAppDataStore.getState().refresh();
-      navigation.navigate("MainTabs", { screen: "Transactions" });
+
+      Alert.alert("Thành công", "Giao dịch đã được lưu.", [
+        { text: "OK", onPress: () => navigation.navigate("MainTabs") },
+      ]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể lưu giao dịch.");
+      Alert.alert("Lỗi", err instanceof Error ? err.message : "Không thể lưu giao dịch.");
     } finally {
       setSaving(false);
     }
   };
 
+  const formattedAmount = useMemo(() => {
+    const val = Number(amount);
+    return isNaN(val) ? "0 đ" : formatCurrency(val);
+  }, [amount]);
+
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
+    <KeyboardAwareScrollView
+      style={{ flex: 1, backgroundColor: COLORS.bg }}
       contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+      enableOnAndroid={true}
+      extraScrollHeight={100}
+      keyboardShouldPersistTaps="handled"
     >
       {/* ── Hero ── */}
       <View style={styles.heroWrap}>
         <View style={styles.heroGlowLeft} />
         <View style={styles.heroGlowRight} />
-
         <View style={styles.heroContent}>
           <Text style={styles.heroKicker}>XÁC NHẬN GIAO DỊCH</Text>
-          <Text style={styles.heroTitle}>Kiểm tra thông tin</Text>
+          <Text style={styles.heroTitle}>Kiểm tra lại dữ liệu</Text>
+          <Text style={styles.heroSubtitle}>
+            Chúng tôi đã trích xuất thông tin từ hóa đơn. Hãy điều chỉnh nếu có sai sót.
+          </Text>
         </View>
-
       </View>
 
-      {/* ── Receipt image card ── */}
-      {previewImage ? (
+      {/* ── Receipt Image ── */}
+      {signedUrl && (
         <Pressable
-          style={({ pressed }) => [styles.receiptCard, pressed && { opacity: 0.93 }]}
           onLongPress={() => setShowFullImage(true)}
+          style={styles.receiptCard}
         >
-          <Image
-            source={{ uri: previewImage }}
-            style={styles.receiptImage}
-            resizeMode="cover"
-          />
+          <Image source={{ uri: signedUrl }} style={styles.receiptImage} resizeMode="cover" />
           <View style={styles.receiptOverlay}>
             <View style={styles.receiptLabelWrap}>
-              <Text style={styles.receiptLabelTitle}>Hóa đơn đính kèm</Text>
+              <Text style={styles.receiptLabelTitle}>Hình ảnh hóa đơn</Text>
               <Text style={styles.receiptLabelSub}>Nhấn giữ để xem toàn màn hình</Text>
             </View>
           </View>
-          <ImageViewerModal
-            visible={showFullImage}
-            imageUrl={previewImage}
-            onClose={() => setShowFullImage(false)}
-          />
         </Pressable>
-      ) : null}
+      )}
 
-      {/* ── Amount preview card ── */}
-      <View style={[styles.amountCard, { backgroundColor: amountBg, borderColor: amountBorder }]}>
-        <Text style={styles.amountCardLabel}>
-          {isExpense ? "Chi tiêu" : "Thu nhập"}
+      <ImageViewerModal
+        visible={showFullImage}
+        imageUrl={signedUrl ?? ""}
+        onClose={() => setShowFullImage(false)}
+      />
+
+      {/* ── Amount Display ── */}
+      <View style={[styles.amountCard, { backgroundColor: type === "expense" ? "#FFF1F2" : "#F0FDF4", borderColor: type === "expense" ? "#FECACA" : "#BBF7D0" }]}>
+        <Text style={styles.amountCardLabel}>Tổng số tiền</Text>
+        <Text style={[styles.amountCardValue, { color: type === "expense" ? COLORS.expense : COLORS.income }]}>
+          {formattedAmount}
         </Text>
-        <Text style={[styles.amountCardValue, { color: amountColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-          {formatAmount(amount)}
-        </Text>
+        <Text style={styles.amountCardDate}>{transaction_date}</Text>
       </View>
 
-      {/* ── Loại giao dịch ── */}
+      {/* ── Type Selector ── */}
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>Loại giao dịch</Text>
         <View style={styles.typeSegment}>
-          {transactionTypeOptions.map((option) => {
-            const active = type === option.value;
-            return (
-              <Pressable
-                key={option.value}
-                onPress={() => { setType(option.value); setcategory_id(""); }}
-                style={[styles.typeBtn, active ? styles.typeBtnActive : styles.typeBtnInactive]}
-              >
-                <Text style={[styles.typeBtnText, active && styles.typeBtnTextActive]}>
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+          <Pressable
+            onPress={() => setType("expense")}
+            style={[styles.typeBtn, type === "expense" ? styles.typeBtnActive : styles.typeBtnInactive]}
+          >
+            <Text style={[styles.typeBtnText, type === "expense" && styles.typeBtnTextActive]}>Chi tiêu</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setType("income")}
+            style={[styles.typeBtn, type === "income" ? styles.typeBtnActive : styles.typeBtnInactive]}
+          >
+            <Text style={[styles.typeBtnText, type === "income" && styles.typeBtnTextActive]}>Thu nhập</Text>
+          </Pressable>
         </View>
       </View>
 
-      {/* ── Form card ── */}
+      {/* ── Main Form ── */}
       <View style={styles.formCard}>
-
-        {/* Số tiền */}
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Số tiền</Text>
           <AppInput
@@ -353,11 +201,9 @@ export function TransactionConfirmScreen() {
             onChangeText={setAmount}
             keyboardType="numeric"
             placeholder="0"
-            error={amount && !isPositiveAmount(amount) ? "Vui lòng nhập số tiền lớn hơn 0." : undefined}
           />
         </View>
 
-        {/* Ngày giao dịch */}
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Ngày giao dịch</Text>
           <Pressable
@@ -365,14 +211,14 @@ export function TransactionConfirmScreen() {
             style={({ pressed }) => [styles.dateField, pressed && styles.dateFieldPressed]}
           >
             <View style={styles.dateFieldRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.dateFieldValue}>{displayDate}</Text>
-                {ocrDate && ocrDate !== transaction_date && (
-                  <Text style={styles.ocrHint}>
-                    Gợi ý: {formatDisplayDate(ocrDate)}
-                  </Text>
-                )}
-              </View>
+              <Text style={styles.dateFieldValue}>
+                {new Date(transaction_date).toLocaleDateString("vi-VN", {
+                  weekday: "long",
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </Text>
               <View style={styles.dateEditBtn}>
                 <Text style={styles.dateEditBtnText}>Sửa</Text>
               </View>
@@ -380,7 +226,6 @@ export function TransactionConfirmScreen() {
           </Pressable>
         </View>
 
-        {/* Cửa hàng */}
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Cửa hàng / Người nhận</Text>
           <AppInput
@@ -391,50 +236,39 @@ export function TransactionConfirmScreen() {
           />
         </View>
 
-        {/* Danh mục */}
-        <View style={styles.fieldGroup}>
-          <View style={styles.fieldLabelRow}>
-            <Text style={styles.fieldLabel}>Danh mục</Text>
-
-          </View>
-          {!loading && safeCategories.length === 0 ? (
-            <Text style={styles.emptyHint}>Chưa có danh mục phù hợp.</Text>
-          ) : (
-            <CategoryPicker
-              items={safeCategories}
-              selectedId={category_id}
-              onSelect={setcategory_id}
-            />
-          )}
-        </View>
-
-        {/* Ghi chú */}
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Ghi chú</Text>
           <AppInput
             label=""
             value={note}
             onChangeText={setNote}
-            placeholder="Ghi chú thêm nếu cần"
+            placeholder="Ghi chú thêm..."
             multiline
           />
         </View>
 
-        {/* Error */}
-        {error ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
+        <View style={styles.fieldGroup}>
+          <View style={styles.fieldLabelRow}>
+            <Text style={styles.fieldLabel}>Danh mục</Text>
+            {loadingCategories && <Text style={styles.loadingHint}>Đang tải...</Text>}
           </View>
-        ) : null}
-      </View>
+          <CategoryPicker
+            items={categories}
+            selectedId={category_id}
+            onSelect={setcategory_id}
+          />
+          {categories.length === 0 && !loadingCategories && (
+            <Text style={styles.emptyHint}>Chưa có danh mục nào cho loại này.</Text>
+          )}
+        </View>
 
-      {/* ── Actions ── */}
-      <View style={styles.actionsWrap}>
-        <AppButton
-          title={saving ? "Đang lưu..." : "Lưu giao dịch"}
-          onPress={() => void handleSave()}
-          loading={saving}
-        />
+        <View style={{ marginTop: 10 }}>
+          <AppButton
+            title={saving ? "Đang lưu..." : "Xác nhận và Lưu"}
+            onPress={() => void handleSave()}
+            loading={saving}
+          />
+        </View>
 
         <Pressable
           onPress={() => navigation.goBack()}
@@ -459,12 +293,12 @@ export function TransactionConfirmScreen() {
           setShowDatePicker(false);
         }}
       />
-    </ScrollView >
+    </KeyboardAwareScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingBottom: 40, paddingTop: 40 },
+  container: { backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingBottom: 40, paddingTop: 40 },
 
   // Hero
   heroWrap: { marginTop: 12, marginBottom: 20, borderRadius: 32, backgroundColor: COLORS.dark, overflow: "hidden", padding: 24, paddingBottom: 20 },
@@ -520,9 +354,8 @@ const styles = StyleSheet.create({
   errorText: { color: COLORS.expense, fontWeight: "800", fontSize: 14, lineHeight: 20 },
 
   // Actions
-  actionsWrap: { gap: 10, marginBottom: 16 },
-  backBtn: { height: 52, borderRadius: 18, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center" },
-  backBtnPressed: { opacity: 0.8 },
+  backBtn: { marginTop: 12, height: 52, borderRadius: 18, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center" },
+  backBtnPressed: { opacity: 0.8, transform: [{ scale: 0.99 }] },
   backBtnDisabled: { opacity: 0.5 },
-  backBtnText: { color: COLORS.text, fontSize: 15, fontWeight: "900" },
+  backBtnText: { color: COLORS.text, fontSize: 16, fontWeight: "900" },
 });

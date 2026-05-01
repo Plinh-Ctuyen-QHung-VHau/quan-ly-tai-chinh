@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { OcrResult } from "../types/ocr";
 import { Transaction } from "../types/transaction";
 
-type Receiptsource_type = "camera" | "gallery";
+type Receiptsource_type = "camera" | "gallery" | "chatbot";
 
 interface TransactionState {
   draftReceiptPath: string | null;

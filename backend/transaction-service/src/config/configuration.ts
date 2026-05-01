@@ -6,6 +6,7 @@ export const configValidationSchema = Joi.object({
   SUPABASE_URL: Joi.string().uri().required(),
   SUPABASE_SERVICE_ROLE_KEY: Joi.string().required(),
   SUPABASE_DB_SCHEMA: Joi.string().default("transaction"),
+  FINANCE_INTELLIGENCE_URL: Joi.string().uri().default("http://finance-intelligence:3006"),
 });
 
 export const configuration = () => ({
@@ -14,6 +15,7 @@ export const configuration = () => ({
     url: process.env.SUPABASE_URL,
     schema: process.env.SUPABASE_DB_SCHEMA || "transaction",
   },
+  financeIntelligenceUrl: process.env.FINANCE_INTELLIGENCE_URL || "http://finance-intelligence:3006",
 });
 
 export const configModuleOptions: ConfigModuleOptions = {

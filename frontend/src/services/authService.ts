@@ -1,6 +1,8 @@
 import { supabase } from "./supabaseClient";
 import { AuthCredentials, RegisterPayload } from "../types/auth";
 import { updateNotificationSettings } from "./notificationApi";
+import { setLoggingOut } from "./apiClient";
+import { cancelPendingRefresh } from "../utils/dataInvalidation";
 
 function mapAuthError(error: unknown): Error {
   if (!(error instanceof Error)) {
@@ -64,6 +66,11 @@ export async function signUp(payload: RegisterPayload) {
 }
 
 export async function signOut(skipApiCall = false) {
+  // Set flags NGAY ĐẦU — trước mọi async operation khác
+  // để bỏ qua 401 từ bất kỳ request nào đang chạy ngầm
+  setLoggingOut(true);
+  cancelPendingRefresh();
+
   // Xóa push token khỏi DB trước khi đăng xuất
   // để tránh gửi thông báo nhầm khi user khác đăng nhập trên cùng thiết bị
   if (!skipApiCall) {
@@ -79,22 +86,23 @@ export async function signOut(skipApiCall = false) {
 
   const { error } = await supabase.auth.signOut();
   if (error) {
+    setLoggingOut(false);
     throw error;
   }
 }
 
-/** Bước 1: Gửi mã 6 số về email (dùng Reset Password template) */
+/** Bước 1: Gửi mã OTP 6 số về email (dùng Reset Password template với {{ .Token }}) */
 export async function sendPasswordResetOtp(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email);
   if (error) throw mapAuthError(error);
 }
 
-/** Bước 2: Xác minh mã OTP từ email reset password */
+/** Bước 2: Xác minh mã OTP 6 số từ email (type "recovery" cho reset password flow) */
 export async function verifyPasswordResetOtp(email: string, token: string) {
   const { data, error } = await supabase.auth.verifyOtp({
     email,
     token,
-    type: "recovery",   // đúng type cho reset password flow
+    type: "recovery",
   });
   if (error) throw mapAuthError(error);
   return data.session;

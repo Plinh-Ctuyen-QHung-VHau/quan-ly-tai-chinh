@@ -13,11 +13,18 @@ if (!baseURL && __DEV__) {
 }
 
 let unauthorizedHandler: (() => Promise<void> | void) | null = null;
+let isLoggingOut = false;
 
 export function setUnauthorizedHandler(
   handler: (() => Promise<void> | void) | null,
 ) {
   unauthorizedHandler = handler;
+}
+
+export function setLoggingOut(value: boolean) {
+  isLoggingOut = value;
+  // Auto-reset after 3s to avoid getting stuck in logout state
+  if (value) setTimeout(() => { isLoggingOut = false; }, 3000);
 }
 
 export const apiClient = axios.create({
@@ -123,14 +130,17 @@ apiClient.interceptors.response.use(
       error.config?.url?.includes("/api/transactions/") && 
       error.config?.method?.toLowerCase() === "get";
 
-    if (!isBudgetStatus404 && !isTransactionDetail404) {
+    // Bỏ qua hoàn toàn lỗi 401 khi user đang đăng xuất chủ động
+    const is401DuringLogout = normalizedError.statusCode === 401 && isLoggingOut;
+
+    if (!isBudgetStatus404 && !isTransactionDetail404 && !is401DuringLogout) {
       console.error(
         `[API ERROR] ${normalizedError.statusCode || "UNKNOWN"} | Message: ${normalizedError.message} | Data:`,
         normalizedError.details,
       );
     }
 
-    if (normalizedError.statusCode === 401 && unauthorizedHandler) {
+    if (normalizedError.statusCode === 401 && unauthorizedHandler && !isLoggingOut) {
       await unauthorizedHandler();
     }
 

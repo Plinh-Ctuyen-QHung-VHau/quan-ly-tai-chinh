@@ -43,7 +43,7 @@ export class AnomalyService {
       const dayKey = timestamp.toISOString().slice(0, 10);
       const historicalDayCount = history.filter(d => d.date !== dayKey).length;
 
-      if (historicalDayCount >= 2) {
+      if (historicalDayCount >= 1) {
         const stats = this.computeDailyStats(
           history,
           timestamp,
@@ -72,6 +72,7 @@ export class AnomalyService {
     }
 
     const created = [];
+    let maxScore = 0;
     for (const anomaly of anomalies) {
       const record = await this.anomalyRepository.create({
         transaction_id: data.transaction_id,
@@ -88,7 +89,13 @@ export class AnomalyService {
         type: anomaly.type,
         severity: anomaly.severity,
       });
+      maxScore = Math.max(maxScore, anomaly.score);
       created.push(record);
+    }
+
+    if (anomalies.length > 0 && data.transaction_id) {
+      await this.anomalyRepository.updateTransactionAnomalyFlag(data.transaction_id, maxScore);
+      this.logger.log(`Marked transaction ${data.transaction_id} as anomaly with score ${maxScore}`);
     }
 
     return created;

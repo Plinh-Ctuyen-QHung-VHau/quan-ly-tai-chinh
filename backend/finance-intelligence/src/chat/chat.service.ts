@@ -6,6 +6,7 @@ import { AnalyticsService } from "../analytics/analytics.service";
 import { AnomalyService } from "../anomaly/anomaly.service";
 import { BudgetNotificationClient } from "../clients/budget-notification.client";
 import { TransactionClient } from "../clients/transaction.client";
+import { EventPublisher } from "@shared/events/event.publisher";
 
 @Injectable()
 export class ChatService {
@@ -18,6 +19,7 @@ export class ChatService {
     private readonly anomalyService: AnomalyService,
     private readonly budgetClient: BudgetNotificationClient,
     private readonly transactionClient: TransactionClient,
+    private readonly eventPublisher: EventPublisher,
   ) {}
 
   async chat(input: ChatInputSecureDto): Promise<ChatResponseDto> {
@@ -59,6 +61,17 @@ export class ChatService {
     }
 
     await this.chatRepository.saveMessage({ session_id, sender_type: "assistant", content: reply });
+    
+    // Phát event chatbot.interaction
+    this.eventPublisher.publish("chatbot.interaction", {
+      user_id: input.user_id,
+      session_id,
+      question: input.message,
+      answer: reply,
+      intent,
+      args: result.type === "function_call" ? result.call.args : undefined,
+    }, "finance-intelligence").catch(err => console.error(err));
+
     // Trả về intent + args để frontend biết AI hiểu đúng không
     return { 
       reply, 
@@ -103,8 +116,8 @@ export class ChatService {
 
       case "record_transaction": {
         const category = categories.find(c => c.name === args.category_name && c.type === args.type)
-          || categories.find(c => c.name === args.category_name)
-          || categories.find(c => c.type === args.type && (c.name.includes("Khác") || c.name.includes("khác")));
+          || categories.find(c => c.type === args.type && c.name.toLowerCase() === args.category_name?.toLowerCase())
+          || categories.find(c => c.type === args.type && (c.name.toLowerCase().includes("khác") || c.name.toLowerCase().includes("other")));
 
         if (!category) {
           return { reply: `Không tìm thấy danh mục phù hợp. Vui lòng thử lại với danh mục khác.`, data: null };

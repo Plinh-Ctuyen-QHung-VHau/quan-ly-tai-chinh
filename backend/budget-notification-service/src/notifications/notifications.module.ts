@@ -5,8 +5,10 @@ import { NotificationsService } from "./notifications.service";
 import { NotificationsController } from "./notifications.controller";
 import { MetricsModule } from "../metrics/metrics.module";
 
+import { SharedEventsModule } from "@shared/events/events.module";
+
 @Module({
-  imports: [MetricsModule, HttpModule],
+  imports: [MetricsModule, HttpModule, SharedEventsModule],
   controllers: [NotificationsController],
   providers: [NotificationsService, NotificationsRepository],
   exports: [NotificationsService, NotificationsRepository],

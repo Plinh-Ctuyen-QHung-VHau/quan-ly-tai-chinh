@@ -18,6 +18,10 @@ import {
 import { AppError } from "@shared/errors/AppError";
 import { ERROR_CODES } from "@shared/errors/errorCodes";
 import { TRANSACTION_METRICS } from "../metrics/transaction-metrics";
+import { HttpService } from "@nestjs/axios";
+import { ConfigService } from "@nestjs/config";
+import * as crypto from "crypto";
+import { EventPublisher } from "@shared/events/event.publisher";
 
 @Injectable()
 export class TransactionsService {
@@ -30,6 +34,9 @@ export class TransactionsService {
   constructor(
     private readonly transactionsRepository: TransactionsRepository,
     private readonly categoriesRepository: CategoriesRepository,
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+    private readonly eventPublisher: EventPublisher,
   ) {
     this.transactionsCreated = TRANSACTION_METRICS.transactionsCreated;
     this.transactionsUpdated = TRANSACTION_METRICS.transactionsUpdated;
@@ -58,7 +65,7 @@ export class TransactionsService {
 
     const transaction = await this.transactionsRepository.create(user_id, dto);
     this.transactionsCreated.inc({ type: dto.type });
-    // TODO: Publish 'transaction.created' event
+    this.emitTransactionEvent("transaction.created", transaction, user_id, category);
     return transaction;
   }
 
@@ -116,7 +123,14 @@ export class TransactionsService {
       dto,
     );
     this.transactionsUpdated.inc({ type: updatedTransaction.type });
-    // TODO: Publish 'transaction.updated' event
+    
+    // category object is only available if dto.category_id is provided
+    let updatedCategory;
+    if (dto.category_id) {
+       updatedCategory = await this.categoriesRepository.findById(dto.category_id, user_id);
+    }
+    
+    this.emitTransactionEvent("transaction.updated", updatedTransaction, user_id, updatedCategory);
     return updatedTransaction;
   }
 
@@ -129,7 +143,7 @@ export class TransactionsService {
     const success = await this.transactionsRepository.delete(id, user_id);
     if (success) {
       this.transactionsDeleted.inc({ type: transaction.type });
-      // TODO: Publish 'transaction.deleted' event
+      this.eventPublisher.publish("transaction.deleted", { id, user_id }, "transaction-service").catch(err => console.error(err));
     }
     return { success };
   }
@@ -149,5 +163,38 @@ export class TransactionsService {
     );
     end({ method: "getSummary" });
     return summary;
+  }
+
+  private emitTransactionEvent(event: string, transaction: any, user_id: string, category?: any) {
+    const baseUrl = this.configService.get<string>("FINANCE_INTELLIGENCE_URL") || "http://finance-intelligence:3006";
+    const url = `${baseUrl}/events/transactions`;
+    const event_id = crypto.randomUUID();
+    const payload = {
+      event_id,
+      event,
+      data: {
+        transaction_id: transaction.id,
+        user_id,
+        amount: transaction.amount,
+        type: transaction.type,
+        category: category?.name || transaction.category_name || "unknown",
+        timestamp: transaction.transaction_date,
+      }
+    };
+
+    // Log the event to app_common.event_logs
+    this.eventPublisher.publish(
+      event, 
+      payload,
+      "transaction-service"
+    ).catch(err => console.error(err));
+
+    this.httpService.post(url, payload).subscribe({
+      next: () => {},
+      error: (err) => {
+        // Just log the error, don't fail the transaction creation
+        console.error(`Failed to emit ${event} to finance-intelligence:`, err.message);
+      }
+    });
   }
 }

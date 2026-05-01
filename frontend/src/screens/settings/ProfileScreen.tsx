@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import {
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { AppButton } from "../../components/AppButton";
 import { AppInput } from "../../components/AppInput";
@@ -74,9 +74,13 @@ export function ProfileScreen() {
   };
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
+    <KeyboardAwareScrollView
+      style={{ flex: 1, backgroundColor: COLORS.bg }}
       contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+      enableOnAndroid={true}
+      extraScrollHeight={100}
+      keyboardShouldPersistTaps="handled"
     >
       <ScreenHero
         kicker="Hồ sơ"
@@ -165,7 +169,7 @@ export function ProfileScreen() {
           </View>
         )}
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -183,9 +187,8 @@ function InfoRow({ label, value }: InfoRowProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
     padding: 16,
-    paddingBottom: 120,
+    paddingBottom: 60,
     backgroundColor: COLORS.bg,
   },
 

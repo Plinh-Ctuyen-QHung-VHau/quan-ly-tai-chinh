@@ -1,22 +1,20 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { randomUUID } from "crypto";
-import { SupabaseService } from "../supabase/supabase.service";
+import { createSupabaseAdminClient } from "../supabase/supabase.client";
 
 const EVENT_LOG_SCHEMA = process.env.EVENT_LOG_SCHEMA || "app_common";
 
 @Injectable()
 export class EventPublisher {
   private readonly logger = new Logger(EventPublisher.name);
-
-  constructor(private readonly supabaseService: SupabaseService) {}
+  private supabaseClient = createSupabaseAdminClient();
 
   async publish(eventType: string, payload: any, producer: string) {
     const event_id = randomUUID();
     const occurred_at = new Date().toISOString();
 
     try {
-      const { error } = await this.supabaseService
-        .getClient()
+      const { error } = await this.supabaseClient
         .schema(EVENT_LOG_SCHEMA)
         .from("event_logs")
         .insert({
@@ -28,12 +26,10 @@ export class EventPublisher {
         });
 
       if (error) {
-        this.logger.error("Failed to publish event:", error.message);
+        this.logger.error(`Failed to publish event ${eventType}:`, error.message);
       }
     } catch (error) {
-      this.logger.error("Failed to publish event:", error);
+      this.logger.error(`Failed to publish event ${eventType}:`, error);
     }
-
-    // TODO: Publish to message broker when infrastructure is available.
   }
 }

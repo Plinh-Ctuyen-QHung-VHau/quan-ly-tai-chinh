@@ -3,8 +3,10 @@ import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
 import { UsersRepository } from "./users.repository";
 
+import { SharedEventsModule } from "@shared/events/events.module";
+
 @Module({
-  imports: [],
+  imports: [SharedEventsModule],
   controllers: [UsersController],
   providers: [UsersService, UsersRepository],
 })

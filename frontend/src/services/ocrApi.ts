@@ -29,7 +29,7 @@ function normalizeOcrResult(raw: OcrResultRaw): OcrResult {
     suggested_type: raw.suggested_type ?? null,
     suggestedcategory_id: raw.suggested_category_id ?? null,
     merchant_name: raw.merchant_name ?? null,
-    image_url: raw.image_url ?? raw.image_url ?? null,
+    image_url: raw.image_url ?? null,
     parsed_fields_json: parsed,
   };
 }

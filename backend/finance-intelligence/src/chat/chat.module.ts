@@ -8,8 +8,10 @@ import { AnalyticsModule } from "../analytics/analytics.module";
 import { AnomalyModule } from "../anomaly/anomaly.module";
 import { ClientsModule } from "../clients/clients.module";
 
+import { SharedEventsModule } from "@shared/events/events.module";
+
 @Module({
-  imports: [NlpModule, AnalyticsModule, AnomalyModule, ClientsModule],
+  imports: [NlpModule, AnalyticsModule, AnomalyModule, ClientsModule, SharedEventsModule],
   controllers: [ChatController, ChatbotController],
   providers: [ChatService, ChatRepository],
   exports: [ChatService],

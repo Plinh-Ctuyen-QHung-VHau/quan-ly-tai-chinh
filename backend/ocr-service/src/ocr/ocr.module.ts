@@ -22,14 +22,16 @@ const primaryEngineFactory = {
   useFactory: (configService: ConfigService): OcrEngineAdapter => {
     const appConfig =
       configService.get<ConfigType<typeof configuration>>("app");
-    console.log(`[OcrModule] OCR engine: tesseract + gemini-3-flash-preview`);
+    console.log(`[OcrModule] OCR engine: tesseract + Gemini 3.1 Flash Lite-preview`);
     return new TesseractOcrEngineAdapter(appConfig);
   },
   inject: [ConfigService],
 };
 
+import { SharedEventsModule } from "@shared/events/events.module";
+
 @Module({
-  imports: [StorageModule, ConfigModule],
+  imports: [StorageModule, ConfigModule, SharedEventsModule],
   controllers: [OcrController],
   providers: [
     OcrService,
@@ -40,4 +42,4 @@ const primaryEngineFactory = {
     ImagePreprocessorService,
   ],
 })
-export class OcrModule {}
+export class OcrModule { }

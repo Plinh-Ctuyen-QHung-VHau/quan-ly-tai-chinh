@@ -9,6 +9,7 @@ import { UpdateNotificationSettingsDto } from "./dto/update-notification-setting
 import { AppMetrics } from "../metrics/app.metrics";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
+import { EventPublisher } from "@shared/events/event.publisher";
 
 type NotificationType = "reminder" | "budget_alert" | "anomaly_alert" | "financial_tip";
 
@@ -40,6 +41,7 @@ export class NotificationsService {
     private readonly notificationsRepository: NotificationsRepository,
     private readonly metrics: AppMetrics,
     private readonly httpService: HttpService,
+    private readonly eventPublisher: EventPublisher,
   ) { }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -86,6 +88,7 @@ export class NotificationsService {
 
     const notification = await this.notificationsRepository.create(input);
     this.metrics.notificationsCreatedTotal.inc({ type });
+    this.eventPublisher.publish("notification.created", notification, "budget-notification-service").catch(err => console.error(err));
 
     // Send push notification if push_token exists
     if (settings.push_token) {
@@ -234,12 +237,14 @@ export class NotificationsService {
       throw new NotFoundException("Notification not found.");
     }
     this.metrics.notificationsReadTotal.inc();
+    this.eventPublisher.publish("notification.updated", notification, "budget-notification-service").catch(err => console.error(err));
     return notification;
   }
 
   async markAllAsRead(userId: string) {
     const count = await this.notificationsRepository.markAllAsRead(userId);
     this.metrics.notificationsReadTotal.inc(count);
+    this.eventPublisher.publish("notification.updated_all", { user_id: userId, count }, "budget-notification-service").catch(err => console.error(err));
     return { markedAsReadCount: count };
   }
 
@@ -252,7 +257,9 @@ export class NotificationsService {
   }
 
   async updateSettings(userId: string, updateDto: UpdateNotificationSettingsDto) {
-    return this.notificationsRepository.updateSettings(userId, updateDto);
+    const settings = await this.notificationsRepository.updateSettings(userId, updateDto);
+    this.eventPublisher.publish("notification_settings.updated", settings, "budget-notification-service").catch(err => console.error(err));
+    return settings;
   }
 
   private async getOrCreateSettings(userId: string): Promise<NotificationSettings> {

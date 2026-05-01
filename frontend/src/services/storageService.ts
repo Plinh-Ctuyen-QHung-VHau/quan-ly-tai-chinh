@@ -68,21 +68,11 @@ export async function uploadReceiptImage(uri: string, user_id: string) {
     throw error;
   }
 
-  // Dùng signed URL (1 giờ) vì bucket receipts là private
-  const { data: signedData, error: signedError } = await supabase.storage
-    .from("receipts")
-    .createSignedUrl(data.path, 3600);
-
-  if (signedError || !signedData?.signedUrl) {
-    throw new Error("Không lấy được URL ảnh hợp lệ.");
-  }
-
-  const image_url = signedData.signedUrl;
-
+  // Trả về storage path (không có bucket name) để lưu vào DB.
+  // getReceiptSignedUrl() sẽ tạo signed URL tươi khi cần hiển thị.
   console.log("[UPLOAD] uploaded path:", data.path);
-  console.log("[UPLOAD] image_url:", image_url);
 
-  return image_url;
+  return data.path;
 }
 
 /**

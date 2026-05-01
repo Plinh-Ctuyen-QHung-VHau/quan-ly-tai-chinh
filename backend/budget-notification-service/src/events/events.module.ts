@@ -1,9 +1,8 @@
 import { Module } from "@nestjs/common";
-import { EventPublisher } from "./event.publisher";
+import { SharedEventsModule } from "@shared/events/events.module";
 
 @Module({
-  imports: [],
-  providers: [EventPublisher],
-  exports: [EventPublisher],
+  imports: [SharedEventsModule],
+  exports: [SharedEventsModule],
 })
-export class EventsModule { }
+export class EventsModule {}

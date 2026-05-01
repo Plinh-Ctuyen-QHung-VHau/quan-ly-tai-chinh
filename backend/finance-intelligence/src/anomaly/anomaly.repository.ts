@@ -53,4 +53,19 @@ export class AnomalyRepository {
     if (error) throw new Error(error.message);
     return data || [];
   }
+
+  async updateTransactionAnomalyFlag(transaction_id: string, anomaly_score: number) {
+    const { error } = await this.supabaseService.getClient()
+      .schema("transaction")
+      .from("transactions")
+      .update({
+        is_anomaly: true,
+        anomaly_score,
+      })
+      .eq("id", transaction_id);
+
+    if (error) {
+      console.error(`[AnomalyRepository] Failed to update transaction anomaly status:`, error.message);
+    }
+  }
 }

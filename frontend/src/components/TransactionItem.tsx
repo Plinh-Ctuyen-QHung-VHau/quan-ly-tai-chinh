@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { Transaction } from "../types/transaction";
 import { formatCurrency } from "../utils/formatCurrency";
@@ -53,6 +54,9 @@ export function TransactionItem({
         <View style={styles.content}>
           <Text style={styles.category} numberOfLines={1}>
             {transaction.category_name ?? "Danh mục"}
+            {transaction.is_anomaly && (
+              <Ionicons name="warning" size={14} color="#EF4444" style={{ marginLeft: 4 }} />
+            )}
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
             {formatDate(transaction.transaction_date)}

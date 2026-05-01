@@ -6,7 +6,6 @@ import {
   IsOptional,
   IsEnum,
   Min,
-  IsUrl,
   IsBoolean,
 } from "class-validator";
 import { Expose } from "class-transformer";
@@ -44,8 +43,8 @@ export class CreateTransactionDto {
   source: TransactionSource;
 
   @IsOptional()
-  @IsUrl()
-  image_url?: string;
+  @IsString()
+  image_url?: string; // storage path (e.g. userId/filename.png) or URL
 
   @IsOptional()
   @IsString()

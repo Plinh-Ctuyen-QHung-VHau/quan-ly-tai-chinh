@@ -1,6 +1,6 @@
 import { TransactionType } from "./category";
 
-export type TransactionSource = "camera" | "gallery";
+export type TransactionSource = "camera" | "gallery" | "chatbot";
 
 /** Shape nhận từ API (snake_case — Supabase trả nguyên bản) */
 export interface Transaction {
@@ -16,7 +16,7 @@ export interface Transaction {
   transaction_date: string;
   merchant_name?: string | null;
   image_url?: string | null;
-  isAnomaly?: boolean;
+  is_anomaly?: boolean;
   anomaly_score?: number | null;
   ocr_result_id?: string | null;
   source?: TransactionSource | null;
