@@ -86,11 +86,6 @@ function getPeriodLabel(period: budget_period) {
   return period === "weekly" ? "Theo tuần" : "Theo tháng";
 }
 
-function getPeriodDescription(period: budget_period) {
-  return period === "weekly"
-    ? "Chu kỳ tuần: nên đặt từ đầu tuần đến cuối tuần để dễ theo dõi."
-    : "Chu kỳ tháng: tự động từ ngày đầu đến cuối tháng.";
-}
 
 function PreviewStat({ label, value }: { label: string; value: string }) {
   return (
@@ -120,7 +115,7 @@ function DateCard({
       <Text style={styles.dateCardLabel}>{label}</Text>
       <Text style={styles.dateCardValue}>{value}</Text>
       <Text style={styles.dateCardHint}>
-        {active ? "Đang chọn" : "Chọn ngày"}
+        {active ? "Đang chọn" : "Nhấn để thay đổi"}
       </Text>
     </Pressable>
   );
@@ -170,7 +165,6 @@ export function BudgetFormScreen() {
   const [error, setError] = useState("");
 
   const periodLabel = getPeriodLabel(budget_period);
-  const periodDescription = getPeriodDescription(budget_period);
 
   const dayCount = useMemo(() => {
     if (!start_date || !end_date) return 0;
@@ -309,20 +303,16 @@ export function BudgetFormScreen() {
           <PreviewStat label="Mỗi ngày" value={dailyLimit} />
         </View>
 
-        <View style={styles.periodNoteBox}>
-          <Text style={styles.periodNoteText}>{periodDescription}</Text>
-        </View>
+
       </View>
 
       <AppCard style={styles.formCard}>
-        <Text style={styles.formTitle}>Thông tin ngân sách</Text>
+        <Text style={styles.formTitle}>Thông tin</Text>
 
-        <Text style={styles.formSubtitle}>
-          Nhập số tiền và chọn khoảng thời gian áp dụng.
-        </Text>
+
 
         <View style={styles.amountBox}>
-          <Text style={styles.label}>Số tiền ngân sách</Text>
+          <Text style={styles.label}>Ngân sách dự kiến</Text>
 
           <AppInput
             label=""
@@ -332,12 +322,10 @@ export function BudgetFormScreen() {
             placeholder="VD: 5000000"
           />
 
-          <Text style={styles.helperText}>
-            Đây là số tiền tối đa bạn muốn chi trong kỳ đã chọn.
-          </Text>
+
         </View>
 
-        <Text style={styles.label}>Chu kỳ ngân sách</Text>
+        <Text style={styles.label}>Chu kỳ áp dụng</Text>
 
         <View style={styles.segment}>
           {PERIODS.map((item) => {
@@ -363,9 +351,7 @@ export function BudgetFormScreen() {
           <Text style={styles.label}>Khoảng thời gian</Text>
 
           <Pressable onPress={() => applyPeriod(budget_period)}>
-            <Text style={styles.quickText}>
-              {budget_period === "weekly" ? "Tuần này" : "Tháng này"}
-            </Text>
+
           </Pressable>
         </View>
 
@@ -385,10 +371,7 @@ export function BudgetFormScreen() {
           />
         </View>
 
-        <Text style={styles.dateHelperText}>
-          Ngày bắt đầu và ngày kết thúc có thể tự động đồng bộ theo chu kỳ,
-          hoặc bạn có thể chọn thủ công.
-        </Text>
+
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -475,6 +458,6 @@ const styles = StyleSheet.create({
   dateHelperText: { color: COLORS.muted, fontSize: 13, lineHeight: 20, marginBottom: 16 },
 
   error: { color: COLORS.expense, backgroundColor: COLORS.expenseSoft, borderWidth: 1, borderColor: COLORS.expenseBorder, padding: 12, borderRadius: 16, fontSize: 14, lineHeight: 20, fontWeight: "700", marginBottom: 14 },
-  cancelButton: { marginTop: 12, height: 52, borderRadius: 18, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" },
+  cancelButton: { marginTop: 12, height: 52, borderRadius: 18, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center" },
   cancelText: { color: COLORS.text, fontSize: 16, fontWeight: "900" },
 });

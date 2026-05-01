@@ -143,7 +143,7 @@ export function HomeScreen() {
             styles.quickActionSecondary,
             pressed && styles.pressed,
           ]}
-          onPress={() => navigation.navigate("BudgetForm", { mode: "create" })}
+          onPress={() => navigation.navigate("MainTabs", { screen: "Budget" })}
         >
           <Text style={styles.quickActionSecondaryIcon}>◎</Text>
           <Text style={styles.quickActionSecondaryText}>Ngân sách</Text>
@@ -203,6 +203,7 @@ export function HomeScreen() {
       <View style={styles.budgetCard}>
         <View style={styles.budgetHeader}>
           <View>
+            <Text style={styles.budgetCardTitle}>Tiến độ ngân sách</Text>
             {budgetStatus?.start_date && budgetStatus?.end_date ? (
               <Text style={styles.budgetPeriodText}>
                 {formatDate(budgetStatus.start_date)} – {formatDate(budgetStatus.end_date)}
@@ -219,8 +220,10 @@ export function HomeScreen() {
         {hasBudget ? (
           <>
             <View style={styles.budgetProgressRow}>
+              <Text style={styles.budgetUsedText}>Đã chi </Text>
+
               <Text style={[styles.budgetPercent, { color: budgetTheme.color }]}>{Math.round(budgetPercent)}%</Text>
-              <Text style={styles.budgetUsedText}>đã sử dụng ngân sách</Text>
+              <Text style={styles.budgetUsedText}> ngân sách</Text>
             </View>
 
             <View style={styles.progressTrack}>
@@ -258,7 +261,7 @@ export function HomeScreen() {
           <View style={styles.emptyBudgetBox}>
             <Text style={styles.emptyBudgetTitle}>Chưa có ngân sách</Text>
             <Text style={styles.emptyBudgetText}>
-              Tạo ngân sách để kiểm soát chi tiêu tốt hơn trong kỳ này.
+              Tạo ngân sách để kiểm soát chi tiêu tốt hơn.
             </Text>
 
             <Pressable
@@ -274,9 +277,7 @@ export function HomeScreen() {
         )}
       </View>
 
-      <Text style={styles.footerNote}>
-        Kéo xuống để làm mới · {formatShortDate(new Date())}
-      </Text>
+
     </ScrollView>
   );
 }
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
   quickActionSecondaryIcon: { color: COLORS.blue, fontSize: 18, fontWeight: "900", marginBottom: 5 },
   quickActionSecondaryText: { color: COLORS.dark, fontSize: 14, fontWeight: "900" },
   sectionHeader: { marginBottom: 10 },
-  sectionTitle: { color: COLORS.muted, fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1 },
+  sectionTitle: { color: COLORS.text, fontSize: 13, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.5 },
   cashFlowGrid: { flexDirection: "row", gap: 10, marginBottom: 10 },
   statTile: { flex: 1, minHeight: 112, borderRadius: 18, padding: 14, borderWidth: 1 },
   statArrow: { fontSize: 16, fontWeight: "900", marginBottom: 8 },
@@ -308,7 +309,8 @@ const styles = StyleSheet.create({
   netValue: { maxWidth: "48%", fontSize: 17, fontWeight: "900" },
   budgetCard: { ...shadow, backgroundColor: COLORS.white, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: COLORS.border },
   budgetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-  budgetPeriodText: { color: COLORS.muted2, fontSize: 11, fontWeight: "500" },
+  budgetPeriodText: { color: COLORS.muted, fontSize: 11, fontWeight: "600", marginTop: 2 },
+  budgetCardTitle: { color: COLORS.text, fontSize: 15, fontWeight: "900" },
   budgetStatusChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
   budgetStatusText: { fontSize: 12, fontWeight: "900" },
   budgetProgressRow: { flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 10 },

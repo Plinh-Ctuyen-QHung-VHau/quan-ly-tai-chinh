@@ -122,8 +122,7 @@ export function TransactionEditScreen() {
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
       {/* ── Header Area ── */}
       <View style={styles.header}>
-        <Text style={styles.screenKicker}>CHỈNH SỬA</Text>
-        <Text style={styles.screenTitle}>Cập nhật thông tin</Text>
+        <Text style={styles.screenTitle}>Cập nhật giao dịch</Text>
       </View>
 
       <View style={styles.formCard}>

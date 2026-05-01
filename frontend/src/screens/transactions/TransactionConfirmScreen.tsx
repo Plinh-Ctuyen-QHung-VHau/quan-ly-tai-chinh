@@ -281,9 +281,6 @@ export function TransactionConfirmScreen() {
         <View style={styles.heroContent}>
           <Text style={styles.heroKicker}>XÁC NHẬN GIAO DỊCH</Text>
           <Text style={styles.heroTitle}>Kiểm tra thông tin</Text>
-          <Text style={styles.heroSubtitle}>
-            OCR đã tự điền thông tin. Hãy xác nhận hoặc chỉnh sửa trước khi lưu.
-          </Text>
         </View>
 
       </View>
@@ -321,7 +318,6 @@ export function TransactionConfirmScreen() {
         <Text style={[styles.amountCardValue, { color: amountColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
           {formatAmount(amount)}
         </Text>
-        <Text style={styles.amountCardDate}>{displayDate}</Text>
       </View>
 
       {/* ── Loại giao dịch ── */}
@@ -399,7 +395,7 @@ export function TransactionConfirmScreen() {
         <View style={styles.fieldGroup}>
           <View style={styles.fieldLabelRow}>
             <Text style={styles.fieldLabel}>Danh mục</Text>
-            {loading && <Text style={styles.loadingHint}>Đang tải...</Text>}
+
           </View>
           {!loading && safeCategories.length === 0 ? (
             <Text style={styles.emptyHint}>Chưa có danh mục phù hợp.</Text>
@@ -463,7 +459,7 @@ export function TransactionConfirmScreen() {
           setShowDatePicker(false);
         }}
       />
-    </ScrollView>
+    </ScrollView >
   );
 }
 
@@ -525,7 +521,7 @@ const styles = StyleSheet.create({
 
   // Actions
   actionsWrap: { gap: 10, marginBottom: 16 },
-  backBtn: { height: 52, borderRadius: 18, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" },
+  backBtn: { height: 52, borderRadius: 18, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center" },
   backBtnPressed: { opacity: 0.8 },
   backBtnDisabled: { opacity: 0.5 },
   backBtnText: { color: COLORS.text, fontSize: 15, fontWeight: "900" },

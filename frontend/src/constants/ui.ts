@@ -4,8 +4,8 @@ export const COLORS = {
   dark2: "#172033",
   white: "#FFFFFF",
   text: "#0F172A",
-  muted: "#64748B",
-  muted2: "#94A3B8",
+  muted: "#475569",
+  muted2: "#64748B",
   border: "#D9E3EE",
 
   blue: "#2563EB",

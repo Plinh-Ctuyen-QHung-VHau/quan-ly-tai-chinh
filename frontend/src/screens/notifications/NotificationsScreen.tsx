@@ -151,7 +151,7 @@ export function NotificationsScreen() {
             subtitle={
               hasUnread
                 ? `${unreadCount} thông báo chưa đọc`
-                : "Tất cả đã được đọc"
+                : "Tất cả thông báo đã được đọc"
             }
           />
 

@@ -37,7 +37,7 @@ export function BudgetScreen() {
   const appData = useAppDataStore();
   const budgetStatus = appData.budgetStatus;
   const loading = appData.isInitializing || appData.isRefreshing;
-  
+
   const [editLoading, setEditLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -205,10 +205,11 @@ export function BudgetScreen() {
           <>
 
             <View style={styles.progressRow}>
+              <Text style={styles.percentHint}>Đã chi</Text>
               <Text style={[styles.percent, { color: progressColor }]}>
                 {Math.round(budgetPercent)}%
               </Text>
-              <Text style={styles.percentHint}>đã sử dụng</Text>
+              <Text style={styles.percentHint}> ngân sách</Text>
             </View>
 
             {/* Progress bar */}

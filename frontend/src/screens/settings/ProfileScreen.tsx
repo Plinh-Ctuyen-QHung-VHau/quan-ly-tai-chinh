@@ -81,7 +81,6 @@ export function ProfileScreen() {
       <ScreenHero
         kicker="Hồ sơ"
         title="Thông tin tài khoản"
-        subtitle="Xem và cập nhật thông tin cá nhân của bạn."
       />
 
       {error ? (
