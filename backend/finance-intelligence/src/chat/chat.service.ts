@@ -214,13 +214,31 @@ export class ChatService {
           };
         }
 
+        // Lấy lịch sử giao dịch để làm rõ chi tiết cho AI
+        let history = [];
+        try { history = await this.transactionClient.getHistory(user_id); } catch (e) {}
+
         const summary = anomalies.map(a => {
-          const typeLabel = a.anomaly_type === "daily_spike" ? "Tổng chi trong ngày đột biến" : "Tần suất giao dịch bất thường";
-          const date = new Date(a.detected_at).toLocaleDateString("vi-VN");
-          return `- ${date}: ${typeLabel} | Mức độ: ${a.severity} | Thực tế: ${Number(a.actual_value).toLocaleString("vi-VN")}đ vs Ngưỡng bình thường: ${Number(a.threshold_value).toLocaleString("vi-VN")}đ`;
+          const typeLabel = a.anomaly_type === "daily_spike" ? "Tổng chi đột biến" : "Tần suất giao dịch bất thường";
+          const dateStr = a.detected_at.slice(0, 10);
+          const dateObj = new Date(a.detected_at).toLocaleDateString("vi-VN");
+          
+          let detailStr = "";
+          const dayHistory = history.find(d => d.date === dateStr);
+          if (dayHistory && dayHistory.transactions) {
+             const topTx = [...dayHistory.transactions]
+                .filter(tx => tx.type === 'expense')
+                .sort((x, y) => Number(y.amount) - Number(x.amount))
+                .slice(0, 2);
+             if (topTx.length > 0) {
+                 detailStr = ` (Khoản lớn nhất trong ngày: ${topTx.map(t => `${t.category_name || 'Khác'} ${Number(t.amount).toLocaleString('vi-VN')}đ`).join(', ')})`;
+             }
+          }
+
+          return `- Ngày ${dateObj}: ${typeLabel} | Mức độ: ${a.severity} | Tổng chi trong ngày: ${Number(a.actual_value).toLocaleString("vi-VN")}đ (Ngưỡng bình thường: ${Number(a.threshold_value).toLocaleString("vi-VN")}đ)${detailStr}`;
         }).join("\n");
 
-        const prompt = `Bạn là trợ lý tài chính. Dựa vào dữ liệu bất thường thực tế sau đây, hãy tóm tắt ngắn gọn, tự nhiên bằng tiếng Việt cho người dùng. Đừng liệt kê dữ liệu thô, hãy diễn đạt như đang nói chuyện:\n\n${summary}\n\nKết thúc bằng 1 lời khuyên ngắn.`;
+        const prompt = `Bạn là trợ lý tài chính. Dựa vào dữ liệu bất thường thực tế sau đây, hãy trả lời tự nhiên bằng tiếng Việt cho người dùng. BẮT BUỘC phải chỉ rõ ra ngày mấy, tổng chi bao nhiêu, và liệt kê các GIAO DỊCH LỚN NHẤT (bao nhiêu tiền, danh mục nào) đã gây ra sự bất thường này.\n\n${summary}\n\nKết thúc bằng 1 lời khuyên ngắn gọn.`;
 
         const reply = await this.nlpService.generateTextReply(prompt, []);
         return {

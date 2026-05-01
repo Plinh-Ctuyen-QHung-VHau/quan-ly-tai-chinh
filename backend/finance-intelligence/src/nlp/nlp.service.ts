@@ -24,7 +24,7 @@ export class NlpService {
     return [
       {
         name: "get_spending_summary",
-        description: "Lấy tổng thu nhập hoặc chi tiêu trong khoảng thời gian, hỗ trợ lọc theo danh mục cụ thể hoặc xem các danh mục chiếm nhiều nhất.",
+        description: "Dùng để trả lời các câu hỏi về: tổng chi tiêu, tổng thu nhập, số dư còn lại, hoặc số tiền đã chi CHO MỘT DANH MỤC CỤ THỂ (ví dụ: chi bao nhiêu cho ăn uống, tiền điện, học tập). Cũng dùng để tìm xem danh mục nào chiếm nhiều tiền nhất.",
         parameters: {
           type: "OBJECT",
           properties: {
@@ -84,7 +84,7 @@ export class NlpService {
       },
       {
         name: "get_budget_status",
-        description: "Lấy thông tin ngân sách hiện tại của người dùng (tổng ngân sách, đã tiêu, còn lại, phần trăm).",
+        description: "CHỈ DÙNG khi người dùng hỏi cụ thể về NGÂN SÁCH (budget) hoặc tiến độ tiêu ngân sách (tôi còn bao nhiêu ngân sách, tôi có vượt ngân sách không).",
         parameters: {
           type: "OBJECT",
           properties: {},
@@ -134,6 +134,9 @@ NGUYÊN TẮC BẮT BUỘC:
       if (error.response?.status === 429) {
         return { type: "text", text: "Hệ thống AI đang xử lý quá nhiều yêu cầu cùng lúc (Quá tải). Vui lòng đợi khoảng 1 phút rồi thử lại nhé!" };
       }
+      if (error.response?.status === 503) {
+        return { type: "text", text: "Hệ thống AI hiện đang bảo trì hoặc quá tải. Vui lòng thử lại sau vài phút nhé!" };
+      }
       this.logger.error("Gemini API Error", error.response?.data || error.message);
       throw error;
     }
@@ -155,6 +158,9 @@ NGUYÊN TẮC BẮT BUỘC:
     } catch (error: any) {
       if (error.response?.status === 429) {
         return "Hệ thống AI đang xử lý quá nhiều yêu cầu cùng lúc (Quá tải). Vui lòng đợi khoảng 1 phút rồi thử lại nhé!";
+      }
+      if (error.response?.status === 503) {
+        return "Hệ thống AI hiện đang bảo trì hoặc quá tải. Vui lòng thử lại sau vài phút nhé!";
       }
       this.logger.error("Gemini API Error (Text Reply)", error.response?.data || error.message);
       throw error;
