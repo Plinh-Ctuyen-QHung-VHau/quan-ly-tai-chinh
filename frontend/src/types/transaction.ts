@@ -1,6 +1,6 @@
 import { TransactionType } from "./category";
 
-export type TransactionSource = "camera" | "gallery" | "ocr";
+export type TransactionSource = "camera" | "gallery";
 
 /** Shape nhận từ API (snake_case — Supabase trả nguyên bản) */
 export interface Transaction {

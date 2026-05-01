@@ -72,7 +72,6 @@ export function TransactionHistoryFiltersCard({
       <View style={styles.cardHeader}>
         <View>
           <Text style={styles.sectionTitle}>Bộ lọc</Text>
-          <Text style={styles.sectionSubtitle}>Chọn để lọc ngay, bấm lại để bỏ lọc</Text>
         </View>
 
       </View>

@@ -259,7 +259,7 @@ export function BudgetScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 16, paddingBottom: 120, backgroundColor: COLORS.bg },
+  container: { flexGrow: 1, padding: 16, paddingTop: 40, paddingBottom: 120, backgroundColor: COLORS.bg },
   card: { ...shadow, padding: 20, borderRadius: 24, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 10 },
   cardTitle: { color: COLORS.text, fontSize: 16, fontWeight: "800", marginBottom: 3 },

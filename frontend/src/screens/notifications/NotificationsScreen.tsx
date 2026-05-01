@@ -71,7 +71,7 @@ export function NotificationsScreen() {
   const unreadCount = safeNotifications.filter((item) => !item.is_read).length;
 
   const loadNotifications = useCallback(async () => {
-    setLoading(true);
+    if (notifications.length === 0) setLoading(true);
     setError("");
     try {
       const result = await getNotifications();
@@ -237,7 +237,7 @@ export function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 16, paddingBottom: 120, backgroundColor: COLORS.bg },
+  container: { flexGrow: 1, padding: 16, paddingTop: 40, paddingBottom: 120, backgroundColor: COLORS.bg },
 
   actionCard: {
     ...shadow,

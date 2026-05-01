@@ -167,7 +167,7 @@ export function AddTransactionScreen() {
     >
       <ScreenHero
         kicker="Giao dịch"
-        title="Thêm từ hóa đơn"
+        title="Thêm giao dịch"
         subtitle="Chụp hoặc chọn ảnh hóa đơn, hệ thống sẽ tự nhận diện số tiền, ngày và cửa hàng."
       />
 

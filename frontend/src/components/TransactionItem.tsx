@@ -12,10 +12,6 @@ interface TransactionItemProps {
   onPress: () => void;
 }
 
-function hasValidImage(url?: string | null): url is string {
-  return !!url && (url.startsWith("http://") || url.startsWith("https://"));
-}
-
 export function TransactionItem({
   transaction,
   onPress,
@@ -26,7 +22,6 @@ export function TransactionItem({
   const amountBorderColor = isExpense ? "#FECACA" : "#BBF7D0";
   const typeLabel = isExpense ? "Chi tiêu" : "Thu nhập";
   const signedUrl = useSignedUrl(transaction.image_url);
-  const showImage = !!signedUrl;
   const [showFullImage, setShowFullImage] = useState(false);
 
   return (
@@ -38,22 +33,16 @@ export function TransactionItem({
       ]}
     >
       <View style={styles.row}>
-        {/* Receipt thumbnail */}
-        {showImage ? (
+        {/* Receipt thumbnail only - hide entirely if no image */}
+        {signedUrl ? (
           <Pressable onLongPress={() => setShowFullImage(true)}>
             <Image
-              source={{ uri: signedUrl! }}
+              source={{ uri: signedUrl }}
               style={styles.thumbnail}
               resizeMode="cover"
             />
           </Pressable>
-        ) : (
-          <View style={[styles.iconCircle, { backgroundColor: amountBg, borderColor: amountBorderColor }]}>
-            <Text style={[styles.iconText, { color: amountColor }]}>
-              {transaction.category_icon || (isExpense ? "💸" : "💰")}
-            </Text>
-          </View>
-        )}
+        ) : null}
 
         <ImageViewerModal
           visible={showFullImage}

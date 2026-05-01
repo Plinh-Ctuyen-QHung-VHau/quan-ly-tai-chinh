@@ -63,13 +63,18 @@ export async function signUp(payload: RegisterPayload) {
   }
 }
 
-export async function signOut() {
+export async function signOut(skipApiCall = false) {
   // Xóa push token khỏi DB trước khi đăng xuất
   // để tránh gửi thông báo nhầm khi user khác đăng nhập trên cùng thiết bị
-  try {
-    await updateNotificationSettings({ push_token: null } as any);
-  } catch {
-    // Không chặn đăng xuất nếu xóa token thất bại
+  if (!skipApiCall) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await updateNotificationSettings({ push_token: null } as any);
+      }
+    } catch {
+      // Không chặn đăng xuất nếu xóa token thất bại
+    }
   }
 
   const { error } = await supabase.auth.signOut();

@@ -283,7 +283,7 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, paddingHorizontal: 18, paddingTop: 14, paddingBottom: 120, backgroundColor: COLORS.bg },
+  container: { flexGrow: 1, paddingHorizontal: 18, paddingTop: 40, paddingBottom: 120, backgroundColor: COLORS.bg },
   pressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
   currencyBadge: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.12)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   currencyBadgeText: { color: "#E2E8F0", fontSize: 12, fontWeight: "900" },

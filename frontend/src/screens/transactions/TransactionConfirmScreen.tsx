@@ -289,7 +289,7 @@ export function TransactionConfirmScreen() {
       {previewImage ? (
         <Pressable
           style={({ pressed }) => [styles.receiptCard, pressed && { opacity: 0.93 }]}
-          onPress={() => setShowFullImage(true)}
+          onLongPress={() => setShowFullImage(true)}
         >
           <Image
             source={{ uri: previewImage }}
@@ -299,7 +299,7 @@ export function TransactionConfirmScreen() {
           <View style={styles.receiptOverlay}>
             <View style={styles.receiptLabelWrap}>
               <Text style={styles.receiptLabelTitle}>Hóa đơn đính kèm</Text>
-              <Text style={styles.receiptLabelSub}>Nhấn để xem toàn màn hình</Text>
+              <Text style={styles.receiptLabelSub}>Nhấn giữ để xem toàn màn hình</Text>
             </View>
           </View>
           <ImageViewerModal
@@ -464,7 +464,7 @@ export function TransactionConfirmScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingBottom: 40 },
+  container: { flexGrow: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingBottom: 40, paddingTop: 40 },
 
   // Hero
   heroWrap: { marginTop: 12, marginBottom: 20, borderRadius: 32, backgroundColor: COLORS.dark, overflow: "hidden", padding: 24, paddingBottom: 20 },

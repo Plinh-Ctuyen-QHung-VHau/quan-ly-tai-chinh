@@ -16,6 +16,7 @@ import { BudgetFormScreen } from "../screens/budget/BudgetFormScreen";
 import { ProfileScreen } from "../screens/settings/ProfileScreen";
 import { NotificationSettingsScreen } from "../screens/settings/NotificationSettingsScreen";
 import { LoadingView } from "../components/LoadingView";
+import { COLORS } from "../constants/ui";
 import { supabase } from "../services/supabaseClient";
 import { getSession, signOut } from "../services/authService";
 import { useAuthStore } from "../store/authStore";
@@ -39,6 +40,8 @@ export type RootStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+import { StatusBar } from "expo-status-bar";
 
 export function AppNavigator() {
   const insets = useSafeAreaInsets();
@@ -81,7 +84,7 @@ export function AppNavigator() {
   useEffect(() => {
     setUnauthorizedHandler(async () => {
       try {
-        await signOut();
+        await signOut(true);
       } catch (error) {
         console.warn("Unable to sign out after 401", error);
       }
@@ -149,6 +152,7 @@ export function AppNavigator() {
 
   return (
     <NavigationContainer>
+      <StatusBar style="dark" />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           <>
@@ -156,29 +160,29 @@ export function AppNavigator() {
             <Stack.Screen
               name="AddTransaction"
               component={AddTransactionScreen}
-              options={{ contentStyle: safeContentStyle }}
+              options={{ contentStyle: { backgroundColor: COLORS.bg } }}
             />
             <Stack.Screen
               name="TransactionConfirm"
               component={TransactionConfirmScreen}
-              options={{ contentStyle: safeContentStyle }}
+              options={{ contentStyle: { backgroundColor: COLORS.bg } }}
             />
             <Stack.Screen
               name="TransactionDetail"
               component={TransactionDetailScreen}
-              options={{ contentStyle: safeContentStyle }}
+              options={{ contentStyle: { backgroundColor: COLORS.bg } }}
             />
             <Stack.Screen
               name="TransactionEdit"
               component={TransactionEditScreen}
-              options={{ contentStyle: safeContentStyle }}
+              options={{ contentStyle: { backgroundColor: COLORS.bg } }}
             />
-            <Stack.Screen name="BudgetForm" component={BudgetFormScreen} options={{ contentStyle: safeContentStyle }} />
-            <Stack.Screen name="Profile" component={ProfileScreen} options={{ contentStyle: safeContentStyle }} />
+            <Stack.Screen name="BudgetForm" component={BudgetFormScreen} options={{ contentStyle: { backgroundColor: COLORS.bg } }} />
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ contentStyle: { backgroundColor: COLORS.bg } }} />
             <Stack.Screen
               name="NotificationSettings"
               component={NotificationSettingsScreen}
-              options={{ contentStyle: safeContentStyle }}
+              options={{ contentStyle: { backgroundColor: COLORS.bg } }}
             />
           </>
         ) : (

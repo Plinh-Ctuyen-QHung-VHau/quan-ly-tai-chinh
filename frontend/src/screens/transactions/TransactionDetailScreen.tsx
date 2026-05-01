@@ -116,8 +116,7 @@ export function TransactionDetailScreen() {
     switch (source) {
       case "camera": return "Chụp ảnh";
       case "gallery": return "Thư viện ảnh";
-      case "ocr": return "Hệ thống AI";
-      default: return "Thủ công";
+      default: return "Chatbot";
     }
   };
 
@@ -190,16 +189,20 @@ export function TransactionDetailScreen() {
           )}
         </View>
 
-        {receiptSignedUrl && (
+        {receiptSignedUrl ? (
           <Pressable
             onLongPress={() => setShowFullImage(true)}
             style={styles.imageCard}
           >
             <Text style={styles.imageTitle}>Hóa đơn đính kèm</Text>
-            <Image source={{ uri: receiptSignedUrl }} style={styles.receiptImage} resizeMode="cover" />
+            <Image
+              source={{ uri: receiptSignedUrl }}
+              style={styles.receiptImage}
+              resizeMode="cover"
+            />
             <Text style={styles.imageHint}>Nhấn giữ để xem ảnh toàn màn hình</Text>
           </Pressable>
-        )}
+        ) : null}
 
         <ImageViewerModal
           visible={showFullImage}
@@ -235,7 +238,7 @@ export function TransactionDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+  container: { flex: 1, backgroundColor: COLORS.bg, },
   scrollContent: { paddingBottom: 120 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20 },
   error: { color: COLORS.expense, fontSize: 16, fontWeight: "700" },

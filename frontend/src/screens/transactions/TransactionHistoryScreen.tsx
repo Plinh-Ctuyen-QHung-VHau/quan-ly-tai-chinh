@@ -293,7 +293,7 @@ export function TransactionHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 18, paddingTop: 16, paddingBottom: 130, backgroundColor: COLORS.bg },
+  container: { paddingHorizontal: 18, paddingTop: 40, paddingBottom: 130, backgroundColor: COLORS.bg },
   typeBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: COLORS.blue },
   typeBadgeText: { color: COLORS.white, fontSize: 12, fontWeight: "800" },
   heroStatsRow: { flexDirection: "row", gap: 12, marginBottom: 16 },

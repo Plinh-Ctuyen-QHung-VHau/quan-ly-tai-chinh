@@ -24,7 +24,7 @@ export interface CreateTransactionRequest {
   amount: number;
   category_id: string;
   transaction_date: string;
-  source: "camera" | "gallery" | "ocr" | "chatbot";
+  source: "camera" | "gallery" | "chatbot";
   note?: string;
   merchant_name?: string;
 }
