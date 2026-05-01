@@ -9,6 +9,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -143,10 +144,13 @@ export const ChatBubble = () => {
       </Animated.View>
 
       <Modal visible={isOpen} animationType="slide" transparent statusBarTranslucent>
-        <View style={styles.modalRoot}>
+        <KeyboardAvoidingView
+          style={styles.modalRoot}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0}
+        >
           <Pressable style={styles.backdrop} onPress={() => setIsOpen(false)} />
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
-            <View style={styles.sheet}>
+          <View style={styles.sheet}>
               <View style={styles.handleBar} />
 
               {/* Header */}
@@ -204,7 +208,7 @@ export const ChatBubble = () => {
                           onPress={() => sendText(s.text)}
                           activeOpacity={0.65}
                         >
-                          <Text style={styles.suggestText}>{s.icon}  {s.text}</Text>
+                          <Text style={styles.suggestText}>{s.text}</Text>
                           <Text style={styles.suggestArrow}>›</Text>
                         </TouchableOpacity>
                       ))}
@@ -283,8 +287,7 @@ export const ChatBubble = () => {
               </View>
             </View>
           </KeyboardAvoidingView>
-        </View>
-      </Modal>
+        </Modal>
     </>
   );
 };
@@ -302,8 +305,9 @@ const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,23,42,0.45)' },
   sheet: {
     backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
     maxHeight: SCREEN.height * 0.85, minHeight: SCREEN.height * 0.60,
+    width: '100%',
     shadowColor: '#000', shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.12, shadowRadius: 20, elevation: 20,
   },
@@ -394,13 +398,17 @@ const styles = StyleSheet.create({
   // Input
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end',
-    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4,
+    paddingHorizontal: 16, paddingTop: 12,
+    paddingBottom: Platform.OS === 'android' ? 8 : 4,
     gap: 10,
   },
   input: {
     flex: 1, minHeight: 44, maxHeight: 120,
     borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 22,
-    paddingHorizontal: 16, paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 10 : 10,
+    paddingBottom: Platform.OS === 'android' ? 10 : 10,
+    textAlignVertical: 'center',
     fontSize: 15, color: '#0F172A', backgroundColor: '#F8FAFC',
   },
   sendBtn: {
