@@ -17,6 +17,11 @@ export interface TransactionSummary {
   total_income: number;
   total_expense: number;
   balance: number;
+  category_breakdown?: {
+    category_name: string;
+    amount: number;
+    type: string;
+  }[];
 }
 
 export interface CreateTransactionRequest {

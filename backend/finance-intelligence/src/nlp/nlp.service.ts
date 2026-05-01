@@ -24,13 +24,15 @@ export class NlpService {
     return [
       {
         name: "get_spending_summary",
-        description: "Lấy tổng thu nhập hoặc chi tiêu trong khoảng thời gian.",
+        description: "Lấy tổng thu nhập hoặc chi tiêu trong khoảng thời gian, hỗ trợ lọc theo danh mục cụ thể hoặc xem các danh mục chiếm nhiều nhất.",
         parameters: {
           type: "OBJECT",
           properties: {
-            type: { type: "STRING", enum: ["income", "expense"], description: "Thu nhập hay chi tiêu" },
+            type: { type: "STRING", enum: ["income", "expense", "all"], description: "Thu nhập, chi tiêu, hoặc tất cả (để xem số dư)" },
             fromDate: { type: "STRING", description: "Ngày bắt đầu YYYY-MM-DD" },
             toDate: { type: "STRING", description: "Ngày kết thúc YYYY-MM-DD" },
+            category_name: { type: "STRING", description: "Tên danh mục cụ thể nếu người dùng hỏi (VD: ăn uống, học tập)" },
+            get_top_categories: { type: "BOOLEAN", description: "Set true nếu người dùng hỏi chi nhiều nhất cho cái gì hoặc danh mục nổi bật" },
           },
           required: ["type"]
         }
@@ -75,6 +77,24 @@ export class NlpService {
           properties: {
             limit: { type: "NUMBER", description: "Số lượng bất thường muốn xem, mặc định 5" },
           },
+          required: []
+        }
+      },
+      {
+        name: "get_budget_status",
+        description: "Lấy thông tin ngân sách hiện tại của người dùng (tổng ngân sách, đã tiêu, còn lại, phần trăm).",
+        parameters: {
+          type: "OBJECT",
+          properties: {},
+          required: []
+        }
+      },
+      {
+        name: "analyze_financial_health",
+        description: "Phân tích sức khỏe tài chính và đưa ra lời khuyên (cắt giảm khoản nào, danh mục nào tăng mạnh).",
+        parameters: {
+          type: "OBJECT",
+          properties: {},
           required: []
         }
       }

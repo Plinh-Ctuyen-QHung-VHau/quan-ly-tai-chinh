@@ -230,7 +230,7 @@ export class TransactionsRepository {
 
     let query = this.supabase
       .from("transactions")
-      .select("type, amount")
+      .select("type, amount, categories!category_id(name)")
       .eq("user_id", user_id);
 
     if (fromDate) query = query.gte("transaction_date", fromDate);
@@ -245,17 +245,28 @@ export class TransactionsRepository {
 
     let total_income = 0;
     let total_expense = 0;
+    const categoryMap: Record<string, { category_name: string, amount: number, type: string }> = {};
 
     for (const row of data || []) {
       const amount = parseFloat(row.amount);
-      if (row.type === "income") total_income += amount;
-      else if (row.type === "expense") total_expense += amount;
+      const type = row.type;
+      const category_name = (row.categories as any)?.name || "Khác";
+
+      if (type === "income") total_income += amount;
+      else if (type === "expense") total_expense += amount;
+
+      const catKey = `${type}_${category_name}`;
+      if (!categoryMap[catKey]) {
+        categoryMap[catKey] = { category_name, amount: 0, type };
+      }
+      categoryMap[catKey].amount += amount;
     }
 
     return {
       total_income,
       total_expense,
       balance: total_income - total_expense,
+      category_breakdown: Object.values(categoryMap).sort((a, b) => b.amount - a.amount)
     };
   }
 }

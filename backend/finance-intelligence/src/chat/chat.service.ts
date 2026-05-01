@@ -89,13 +89,79 @@ export class ChatService {
   private async executeFunction(user_id: string, name: string, args: any, categories: any[]) {
     switch (name) {
       case "get_spending_summary": {
-        const summary = await this.analyticsService.getSpendingSummary(user_id, args.fromDate, args.toDate, args.type);
+        // Lấy type="all" để có thể tính balance hoặc bóc tách tuỳ ý
+        const queryType = args.type === "all" ? undefined : args.type;
+        const summary = await this.analyticsService.getSpendingSummary(user_id, args.fromDate, args.toDate, queryType);
         if (!summary) return { reply: "Không có dữ liệu trong khoảng thời gian này.", data: null };
 
+        const timeStr = args.fromDate ? `từ ${args.fromDate} đến ${args.toDate || 'nay'}` : "trong thời gian này";
+
+        // 1. Hỏi số dư (Còn lại bao nhiêu)
+        if (args.type === "all") {
+          return { reply: `Tổng thu nhập của bạn ${timeStr} là **${summary.total_income.toLocaleString("vi-VN")}đ** và tổng chi tiêu là **${summary.total_expense.toLocaleString("vi-VN")}đ**. Bạn còn lại **${summary.balance.toLocaleString("vi-VN")}đ**.`, data: summary };
+        }
+
+        // 2. Hỏi danh mục nổi bật (Chi/Thu nhiều nhất cho gì)
+        if (args.get_top_categories && summary.category_breakdown) {
+          const filtered = summary.category_breakdown.filter(c => c.type === args.type);
+          if (filtered.length === 0) return { reply: "Không có khoản nào đáng chú ý.", data: summary };
+          const top1 = filtered[0];
+          const label = args.type === "income" ? "thu nhập" : "chi tiêu";
+          return { reply: `Khoản ${label} lớn nhất của bạn ${timeStr} là **${top1.category_name}** với số tiền **${top1.amount.toLocaleString("vi-VN")}đ**.`, data: summary };
+        }
+
+        // 3. Hỏi theo danh mục cụ thể (Ví dụ: Tiền ăn uống)
+        if (args.category_name && summary.category_breakdown) {
+          const cat = summary.category_breakdown.find(c => c.category_name.toLowerCase().includes(args.category_name.toLowerCase()) && c.type === args.type);
+          const amt = cat ? cat.amount : 0;
+          return { reply: `Bạn đã chi tiêu **${amt.toLocaleString("vi-VN")}đ** cho mục **${args.category_name}** ${timeStr}.`, data: summary };
+        }
+
+        // 4. Mặc định: Hỏi tổng quát (Chi/Thu bao nhiêu)
         const amount = args.type === "income" ? (summary.total_income || 0) : (summary.total_expense || 0);
         const label = args.type === "income" ? "thu nhập" : "chi tiêu";
-        const timeStr = args.fromDate ? `từ ${args.fromDate} đến ${args.toDate || 'nay'}` : "30 ngày qua";
         return { reply: `Tổng ${label} của bạn ${timeStr} là **${amount.toLocaleString("vi-VN")}đ**.`, data: summary };
+      }
+
+      case "get_budget_status": {
+        try {
+          const status = await this.budgetClient.getCurrentStatus(user_id);
+          if (!status) return { reply: "Bạn chưa thiết lập ngân sách nào cho thời gian này.", data: null };
+          
+          let advice = "";
+          if (status.status === "danger") advice = "Bạn đã vượt ngân sách! Hãy ngừng chi tiêu ngay lập tức.";
+          else if (status.status === "warning") advice = "Bạn sắp hết ngân sách. Hãy cẩn thận!";
+          else advice = "Bạn đang chi tiêu rất an toàn trong tầm kiểm soát.";
+
+          return {
+            reply: `Ngân sách của bạn là **${status.budget_amount.toLocaleString("vi-VN")}đ**. Bạn đã dùng **${status.spent_amount.toLocaleString("vi-VN")}đ** (${status.percent_used}%). Bạn còn lại **${status.remaining_amount.toLocaleString("vi-VN")}đ**. ${advice}`,
+            data: status
+          };
+        } catch (err) {
+          return { reply: "Không thể lấy thông tin ngân sách lúc này.", data: null };
+        }
+      }
+
+      case "analyze_financial_health": {
+        try {
+          // Lấy dữ liệu chi tiêu 30 ngày qua
+          const summary = await this.analyticsService.getSpendingSummary(user_id);
+          // Lấy ngân sách hiện tại
+          let budget = null;
+          try { budget = await this.budgetClient.getCurrentStatus(user_id); } catch (e) {}
+
+          // Gom dữ liệu nạp vào LLM để sinh lời khuyên
+          const prompt = `Dựa vào dữ liệu sau, hãy đưa ra 1-2 lời khuyên tài chính ngắn gọn gọn (dưới 4 câu) giúp người dùng tiết kiệm hơn:
+- Tổng thu: ${summary.total_income}đ
+- Tổng chi: ${summary.total_expense}đ
+- Các khoản chi lớn nhất: ${JSON.stringify(summary.category_breakdown?.filter(c => c.type === 'expense').slice(0, 3) || [])}
+- Tình trạng ngân sách: ${budget ? `Đã dùng ${budget.percent_used}%. Còn ${budget.remaining_amount}đ` : 'Không thiết lập'}
+`;
+          const reply = await this.nlpService.generateTextReply(prompt, []);
+          return { reply, data: summary };
+        } catch (err) {
+          return { reply: "Không thể phân tích lúc này.", data: null };
+        }
       }
 
       case "analyze_trends": {
