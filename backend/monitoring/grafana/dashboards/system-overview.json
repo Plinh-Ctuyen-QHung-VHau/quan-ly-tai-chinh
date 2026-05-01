@@ -149,17 +149,17 @@
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "targets": [
         {
-          "expr": "sum(increase(transactions_created_total[1h]))",
+          "expr": "sum(transactions_created_total)",
           "legendFormat": "Created",
           "refId": "A"
         },
         {
-          "expr": "sum(increase(transactions_updated_total[1h]))",
+          "expr": "sum(transactions_updated_total)",
           "legendFormat": "Updated",
           "refId": "B"
         },
         {
-          "expr": "sum(increase(transactions_deleted_total[1h]))",
+          "expr": "sum(transactions_deleted_total)",
           "legendFormat": "Deleted",
           "refId": "C"
         }
@@ -177,17 +177,17 @@
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "targets": [
         {
-          "expr": "sum(increase(ocr_success_total[1h]))",
+          "expr": "sum(ocr_success_total)",
           "legendFormat": "Success",
           "refId": "A"
         },
         {
-          "expr": "sum(increase(ocr_failures_total[1h]))",
+          "expr": "sum(ocr_failures_total)",
           "legendFormat": "Failures",
           "refId": "B"
         },
         {
-          "expr": "sum(increase(ocr_timeout_total[1h]))",
+          "expr": "sum(ocr_timeout_total)",
           "legendFormat": "Timeouts",
           "refId": "C"
         }
