@@ -122,11 +122,19 @@ NGUYÊN TẮC BẮT BUỘC:
       generationConfig: { temperature: 0.1 }
     };
 
-    const response = await firstValueFrom(this.httpService.post(url, body));
-    const part = response.data?.candidates?.[0]?.content?.parts?.[0];
-    return part?.functionCall
-      ? { type: "function_call", call: part.functionCall }
-      : { type: "text", text: part?.text || "Xin lỗi, tôi chưa hiểu ý bạn." };
+    try {
+      const response = await firstValueFrom(this.httpService.post(url, body));
+      const part = response.data?.candidates?.[0]?.content?.parts?.[0];
+      return part?.functionCall
+        ? { type: "function_call", call: part.functionCall }
+        : { type: "text", text: part?.text || "Xin lỗi, tôi chưa hiểu ý bạn." };
+    } catch (error: any) {
+      if (error.response?.status === 429) {
+        return { type: "text", text: "Hệ thống AI đang xử lý quá nhiều yêu cầu cùng lúc (Quá tải). Vui lòng đợi khoảng 1 phút rồi thử lại nhé!" };
+      }
+      this.logger.error("Gemini API Error", error.response?.data || error.message);
+      throw error;
+    }
   }
 
   // Chỉ dùng cho các câu hỏi dạng text, KHÔNG dùng cho data số liệu
@@ -139,7 +147,15 @@ NGUYÊN TẮC BẮT BUỘC:
       ],
       generationConfig: { temperature: 0.2 }
     };
-    const response = await firstValueFrom(this.httpService.post(url, body));
-    return response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    try {
+      const response = await firstValueFrom(this.httpService.post(url, body));
+      return response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    } catch (error: any) {
+      if (error.response?.status === 429) {
+        return "Hệ thống AI đang xử lý quá nhiều yêu cầu cùng lúc (Quá tải). Vui lòng đợi khoảng 1 phút rồi thử lại nhé!";
+      }
+      this.logger.error("Gemini API Error (Text Reply)", error.response?.data || error.message);
+      throw error;
+    }
   }
 }
