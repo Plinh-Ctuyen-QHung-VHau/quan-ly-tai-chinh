@@ -48,3 +48,9 @@ scrape_configs:
       - targets: ["budget-notification-service:3004"]
     metrics_path: /metrics
     scrape_interval: 15s
+
+  - job_name: "finance-intelligence"
+    static_configs:
+      - targets: ["finance-intelligence:3006"]
+    metrics_path: /metrics
+    scrape_interval: 15s
