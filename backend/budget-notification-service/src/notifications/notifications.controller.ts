@@ -65,4 +65,14 @@ export class NotificationsController {
       type: "reminder",
     });
   }
+
+  @Post("anomaly")
+  async triggerAnomalyAlert(@Body() payload: {
+    userId: string;
+    anomalyId?: string;
+    transactionId?: string;
+    reason?: string;
+  }) {
+    return this.notificationsService.handleAnomalyDetected(payload);
+  }
 }

@@ -134,6 +134,9 @@ export class BudgetsRepository {
         budget_period: updateBudgetDto.budget_period,
         start_date: updateBudgetDto.start_date,
         end_date: updateBudgetDto.end_date,
+        alert_80_sent: false,
+        alert_100_sent: false,
+        status: "active",
       })
       .eq("id", id)
       .eq("user_id", user_id)

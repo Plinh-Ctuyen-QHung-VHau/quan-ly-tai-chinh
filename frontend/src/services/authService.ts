@@ -118,11 +118,17 @@ export async function getSession() {
   try {
     const { data, error } = await supabase.auth.getSession();
     if (error) {
+      if (error.message && (error.message.includes("Refresh Token Not Found") || error.message.includes("Invalid Refresh Token"))) {
+        return null;
+      }
       throw mapAuthError(error);
     }
 
     return data.session;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message && (error.message.includes("Refresh Token Not Found") || error.message.includes("Invalid Refresh Token"))) {
+      return null;
+    }
     throw mapAuthError(error);
   }
 }
