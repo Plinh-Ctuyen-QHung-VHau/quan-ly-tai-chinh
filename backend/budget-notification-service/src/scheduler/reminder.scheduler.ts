@@ -19,15 +19,20 @@ export class ReminderScheduler {
    * Gửi nhắc nhở cho user chưa có giao dịch hôm nay
    * và có enable_daily_reminder = true.
    */
-  @Cron("0 20 * * *")
+  @Cron("* * * * *")
   async runDailyReminderForAllUsers() {
-    this.logger.log("Running daily reminder check for all eligible users...");
+    const now = new Date();
+    const vnTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    const hh = String(vnTime.getHours()).padStart(2, '0');
+    const mm = String(vnTime.getMinutes()).padStart(2, '0');
+    const timeStr = `${hh}:${mm}`;
 
     try {
-      // Lấy tất cả user có enable_daily_reminder = true và enable_all = true
-      const eligibleUsers = await this.notificationsRepository.getUsersWithDailyReminderEnabled();
+      const eligibleUsers = await this.notificationsRepository.getUsersForReminder(timeStr);
+      
+      if (eligibleUsers.length === 0) return;
 
-      this.logger.log(`Found ${eligibleUsers.length} users eligible for daily reminder`);
+      this.logger.log(`[${timeStr}] Found ${eligibleUsers.length} users eligible for reminder`);
 
       for (const userId of eligibleUsers) {
         try {

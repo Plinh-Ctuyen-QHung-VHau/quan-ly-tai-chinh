@@ -82,6 +82,9 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${session.access_token}`;
     }
 
+    config.headers["Bypass-Tunnel-Reminder"] = "true";
+    config.headers["ngrok-skip-browser-warning"] = "69420";
+
     return config;
   },
 );
@@ -92,14 +95,14 @@ apiClient.interceptors.response.use(
     const data = response.data;
     if (data && typeof data === "object" && data.success === false) {
       const nestedStatus = data.error?.details?.statusCode;
-      const isBudgetStatus404 = 
-        nestedStatus === 404 && 
+      const isBudgetStatus404 =
+        nestedStatus === 404 &&
         response.config.url?.includes(endpoints.budgets.currentStatus);
 
       if (isBudgetStatus404) {
         // Trả về response lỗi để handleApiResponse có thể xử lý, 
         // nhưng không in log console.error ở đây.
-        return response; 
+        return response;
       }
     }
     return response;
@@ -108,7 +111,7 @@ apiClient.interceptors.response.use(
     // Retry tự động khi Network Error
     const isNetworkError =
       axios.isAxiosError(error) && !error.response && error.code !== "ERR_CANCELED";
-    
+
     if (isNetworkError) {
       const config = (error as any).config;
       if (!config || !config._retryCount || config._retryCount < 2) {
@@ -119,15 +122,15 @@ apiClient.interceptors.response.use(
     const normalizedError = normalizeAxiosError(error);
 
     // Xác định xem có nên bỏ qua log lỗi này không
-    const isBudgetStatus404 = 
-      normalizedError.statusCode === 404 && 
+    const isBudgetStatus404 =
+      normalizedError.statusCode === 404 &&
       axios.isAxiosError(error) &&
       error.config?.url?.includes(endpoints.budgets.currentStatus);
 
-    const isTransactionDetail404 = 
+    const isTransactionDetail404 =
       normalizedError.statusCode === 404 &&
       axios.isAxiosError(error) &&
-      error.config?.url?.includes("/api/transactions/") && 
+      error.config?.url?.includes("/api/transactions/") &&
       error.config?.method?.toLowerCase() === "get";
 
     // Bỏ qua hoàn toàn lỗi 401 khi user đang đăng xuất chủ động

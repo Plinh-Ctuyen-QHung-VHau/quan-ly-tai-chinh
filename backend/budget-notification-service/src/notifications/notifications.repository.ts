@@ -223,6 +223,19 @@ export class NotificationsRepository {
     return (data || []).map((row: any) => row.user_id);
   }
 
+  async getUsersForReminder(timeString: string): Promise<string[]> {
+    // timeString có định dạng HH:mm
+    const { data, error } = await this.supabase
+      .from("notification_settings")
+      .select("user_id")
+      .eq("enable_all", true)
+      .eq("enable_daily_reminder", true)
+      .eq("reminder_time", `${timeString}:00`);
+
+    if (error) throw new Error(error.message);
+    return (data || []).map((row: any) => row.user_id);
+  }
+
   private mapToNotification(row: any): Notification {
     if (!row) return null;
     return {
