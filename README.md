@@ -75,8 +75,8 @@ iOS: Sau khi Expo khởi động, dùng Camera iOS quét mã QR hiển thị tro
 **Tài khoản thử nghiệm**
 
 ```
-Email   : dev@gmail.com
-Password: 123456
+Email   : truongvanhau0511@gmail.com
+Password: 1234567
 ```
 
 Đồ án chuyên ngành — Khoa CNTT, Trường Đại học Sài Gòn
