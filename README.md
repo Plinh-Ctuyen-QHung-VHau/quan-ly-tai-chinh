@@ -79,6 +79,10 @@ Email   : truongvanhau0511@gmail.com
 Password: 1234567
 ```
 
+## Demo
+
+https://drive.google.com/drive/u/0/folders/1DmiLFqAQDG6AMn9rlcI195tgFObR39Mf
+
 Đồ án chuyên ngành — Khoa CNTT, Trường Đại học Sài Gòn
 
 GVHD: PGS. TS. Nguyễn Tuấn Đăng
