@@ -28,13 +28,12 @@ export class TransactionClient {
           params: { fromDate: start_date, toDate: end_date },
         }),
       );
-      // Assuming the actual summary is in response.data.data
+
       return response.data.data;
     } catch (error) {
-      // console.error('Error fetching transaction summary:', error);
       throw new AppError(
         "SERVICE_UNAVAILABLE",
-        "Failed to fetch transaction summary.",
+        "Không thể lấy báo cáo tổng quan từ Transaction Service",
         error,
       );
     }

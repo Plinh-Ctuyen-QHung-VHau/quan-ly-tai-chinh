@@ -26,7 +26,7 @@ export class BudgetNotificationClient {
       return response.data?.data;
     } catch (error) {
       throw new AppError(
-        "Failed to fetch budget status",
+        "Không thể gọi sang Budget Service để lấy ngân sách hiện tại",
         ERROR_CODES.SERVICE_UNAVAILABLE,
         error,
       );

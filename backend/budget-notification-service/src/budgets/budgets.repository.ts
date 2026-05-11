@@ -5,7 +5,6 @@ import { UpdateBudgetDto } from "./dto/update-budget.dto";
 
 const SCHEMA = process.env.SUPABASE_DB_SCHEMA || "budget";
 
-// This is a simplified entity representation
 export interface Budget {
   id: string;
   user_id: string;
@@ -44,7 +43,6 @@ export class BudgetsRepository {
     const end_date =
       (createBudgetDto as any).end_date ?? (createBudgetDto as any).endDate;
 
-    // Đảm bảo chỉ có 1 budget hoạt động: Xóa các budget cũ đang active
     await this.supabase
       .from("budgets")
       .update({ status: "deleted" })
@@ -81,7 +79,7 @@ export class BudgetsRepository {
   }
 
   async findCurrentActive(user_id: string): Promise<Budget | null> {
-    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD" for date comparison
+    const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await this.supabase
       .from("budgets")
       .select("*")
@@ -192,7 +190,6 @@ export class BudgetsRepository {
     return data ? this.mapToBudget(data) : null;
   }
 
-  // ─── Budget Snapshots ────────────────────────────────────────────────
 
   async createSnapshot(params: {
     budget_id: string;
@@ -244,7 +241,6 @@ export class BudgetsRepository {
     return data || [];
   }
 
-  // ─── Mapping ────────────────────────────────────────────────────────
 
   private toDate(value: string | Date | null | undefined): Date | null {
     if (!value) return null;

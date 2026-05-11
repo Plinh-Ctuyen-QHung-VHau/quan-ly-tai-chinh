@@ -1,7 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// ─── Types ───────────────────────────────────────────────────────────
 
 export interface ParsedOcrResult {
   extracted_text: string;
@@ -14,7 +13,6 @@ export interface ParsedOcrResult {
   parsed_fields_json: Record<string, any>;
 }
 
-// ─── Parser ──────────────────────────────────────────────────────────
 
 @Injectable()
 export class OcrParser {
@@ -28,7 +26,7 @@ export class OcrParser {
   ): Promise<ParsedOcrResult> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not set. Please configure it in .env file.");
+      throw new Error("Thiếu key GEMINI_API_KEY, vui lòng bổ sung vào .env");
     }
     return await this.parseWithGemini(rawText, ocrData, ocrEngine, ocrLanguage, apiKey);
   }
@@ -126,7 +124,7 @@ QUY TẮC BẮT BUỘC CHUNG:
 
     try {
       const model = genAI.getGenerativeModel({ model: modelName });
-      console.log(`[OCR Parser] Using model: ${modelName}`);
+      console.log(`[OCR Parser] Đang dùng model: ${modelName}`);
 
       const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -136,14 +134,14 @@ QUY TẮC BẮT BUỘC CHUNG:
       });
 
       responseText = result.response.text();
-      console.log(`[OCR Parser] Successfully parsed with ${modelName}`);
+      console.log(`[OCR Parser] Bóc tách thành công bằng ${modelName}`);
     } catch (error: any) {
-      console.error(`[OCR Parser] Model ${modelName} failed:`, error.message);
+      console.error(`[OCR Parser] Gọi model ${modelName} bị lỗi:`, error.message);
       throw error;
     }
 
     if (!responseText) {
-      throw new Error(`Gemini model ${modelName} returned empty response.`);
+      throw new Error(`Model Gemini ${modelName} trả về kết quả rỗng.`);
     }
     const json = JSON.parse(responseText);
 

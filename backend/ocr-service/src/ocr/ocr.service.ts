@@ -32,7 +32,7 @@ export class OcrService {
     @Inject(configuration.KEY)
     private readonly appConfig: ConfigType<typeof configuration>,
   ) {
-    this.logger.log(`OCR engine: ${primaryEngine.name} (Tesseract + Gemini 3 Flash Preview)`);
+    this.logger.log(`[Khởi tạo] Sử dụng OCR engine: ${primaryEngine.name} kết hợp model Gemini`);
   }
 
   async scan(user_id: string, scanOcrDto: ScanOcrDto) {
@@ -60,7 +60,7 @@ export class OcrService {
         map(() => {
           throw new AppError(
             "OCR_PROCESSING_FAILED",
-            "OCR process timed out.",
+            "Hệ thống phản hồi quá lâu, vui lòng chụp lại ảnh nhé.",
             { reason: "OCR_TIMEOUT" },
           );
         }),
@@ -96,7 +96,7 @@ export class OcrService {
       };
     } catch (error) {
       this.logger.error(
-        `OCR scanning failed for request ${ocrRequest.id}`,
+        `Tiến trình OCR thất bại đối với request: ${ocrRequest.id}`,
         error,
       );
 
@@ -130,34 +130,34 @@ export class OcrService {
   }
 
   private async performOcr(image_url: string) {
-    this.logger.log(`Starting OCR pipeline for: ${image_url}`);
+    this.logger.log(`Bắt đầu chạy luồng OCR cho ảnh: ${image_url}`);
     const t0 = Date.now();
 
-    // 1. Download image
+
     const rawBuffer = await this.storageReader.downloadImage(image_url);
-    this.logger.log(`[perf] Download: ${Date.now() - t0}ms (${(rawBuffer.length / 1024).toFixed(0)} KB)`);
+    this.logger.log(`[Thời gian] Tải ảnh: ${Date.now() - t0}ms (${(rawBuffer.length / 1024).toFixed(0)} KB)`);
 
-    // 2. Resize if needed
+
     const imageBuffer = await this.resizeIfNeeded(rawBuffer, 1600);
-    this.logger.log(`[perf] After resize: ${(imageBuffer.length / 1024).toFixed(0)} KB`);
+    this.logger.log(`[Thời gian] Sau khi nén: ${(imageBuffer.length / 1024).toFixed(0)} KB`);
 
-    // 3. Preprocess (OpenCV) for Tesseract
+
     const tPre = Date.now();
     const processedBuffer = await this.imagePreprocessor.preprocess(imageBuffer, "standard");
-    this.logger.log(`[perf] Preprocess: ${Date.now() - tPre}ms`);
+    this.logger.log(`[Thời gian] Xử lý OpenCV: ${Date.now() - tPre}ms`);
 
-    // 4. Run Tesseract OCR
+
     const ocrResult = await this.primaryEngine.recognize(processedBuffer);
-    this.logger.log(`[perf] ${this.primaryEngine.name}: ${ocrResult.durationMs}ms`);
+    this.logger.log(`[Thời gian] Nhận diện chữ bằng ${this.primaryEngine.name}: ${ocrResult.durationMs}ms`);
 
     if (!ocrResult.rawText || ocrResult.rawText.trim().length < 5) {
       throw new AppError(
         "OCR_NO_TEXT_DETECTED",
-        "Could not detect sufficient text in the image.",
+        "Ảnh mờ quá hoặc không có chữ, vui lòng chụp lại hóa đơn rõ hơn nha.",
       );
     }
 
-    // 5. Parse with Gemini 3 Flash Preview
+
     const parsedResult = await this.ocrParser.parse(
       ocrResult.rawText,
       ocrResult,
@@ -167,20 +167,20 @@ export class OcrService {
 
     parsedResult.parsed_fields_json.selected_ocr_engine = this.primaryEngine.name;
 
-    this.logger.log(`[perf] Total OCR pipeline: ${Date.now() - t0}ms`);
+    this.logger.log(`[Thời gian] Tổng cộng luồng OCR tốn: ${Date.now() - t0}ms`);
 
     return { ...parsedResult, image_url };
   }
 
   /**
-   * Resize image to maxWidth if larger, using sharp.
+   * Nén ảnh về kích thước an toàn (maxWidth) bằng sharp để tiết kiệm RAM.
    */
   private async resizeIfNeeded(buffer: Buffer, maxWidth: number): Promise<Buffer> {
     try {
       const sharp = require("sharp");
       const meta = await sharp(buffer).metadata();
       if (meta.width && meta.width > maxWidth) {
-        this.logger.log(`Resizing from ${meta.width}x${meta.height} → maxWidth=${maxWidth}`);
+        this.logger.log(`Đang resize ảnh từ ${meta.width}x${meta.height} về giới hạn maxWidth=${maxWidth}`);
         return await sharp(buffer)
           .resize({ width: maxWidth, withoutEnlargement: true })
           .jpeg({ quality: 90 })
@@ -188,7 +188,7 @@ export class OcrService {
       }
       return buffer;
     } catch (err) {
-      this.logger.warn(`Resize skipped: ${err.message}`);
+      this.logger.warn(`Bỏ qua bước nén ảnh vì lỗi: ${err.message}`);
       return buffer;
     }
   }

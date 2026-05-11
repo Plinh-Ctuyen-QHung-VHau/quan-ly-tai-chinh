@@ -55,14 +55,12 @@ async function processReceiptImage(params: {
   user_id: string;
   source_type: "camera" | "gallery";
 }) {
-  // uploadReceiptImage now returns the storage path (e.g. userId/filename.png)
   const storagePath = await uploadReceiptImage(params.imageUri, params.user_id);
 
   if (!storagePath) {
     throw new Error("Ảnh tải lên không hợp lệ.");
   }
 
-  // Generate a fresh signed URL just for OCR (requires an HTTP URL)
   const { getReceiptSignedUrl } = await import("../../services/storageService");
   const ocrImageUrl = await getReceiptSignedUrl(storagePath);
 
@@ -93,7 +91,6 @@ async function processReceiptImage(params: {
     }
   }
 
-  // Return the storage path (not the signed URL) to be stored in the DB
   return { image_url: storagePath, ocrResult };
 }
 

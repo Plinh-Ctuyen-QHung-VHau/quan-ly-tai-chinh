@@ -59,7 +59,6 @@ export class ProxyService {
     const { method, body, headers, query } = req;
     const user = req["user"];
 
-    // Dùng originalUrl để tránh việc req.path bị stripped prefix bởi NestJS
     const path = req.originalUrl.split("?")[0];
 
     const target = this.getTargetUrl(path);

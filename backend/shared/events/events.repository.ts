@@ -22,12 +22,12 @@ export class EventsRepository {
         .maybeSingle();
 
       if (error) {
-        this.logger.error(`[EventsRepository] isProcessed error: ${error.message}`);
+        this.logger.error(`[EventsRepository] Lỗi khi kiểm tra event isProcessed: ${error.message}`);
         return false;
       }
       return Boolean(data);
     } catch (err) {
-      this.logger.error(`[EventsRepository] isProcessed exception:`, err);
+      this.logger.error(`[EventsRepository] Ngoại lệ khi chạy isProcessed:`, err);
       return false;
     }
   }
@@ -41,10 +41,10 @@ export class EventsRepository {
       });
 
       if (error) {
-         this.logger.error(`[EventsRepository] markProcessed error: ${error.message}`);
+         this.logger.error(`[EventsRepository] Lỗi khi đánh dấu markProcessed: ${error.message}`);
       }
     } catch (err) {
-       this.logger.error(`[EventsRepository] markProcessed exception:`, err);
+       this.logger.error(`[EventsRepository] Ngoại lệ khi chạy markProcessed:`, err);
     }
   }
 }

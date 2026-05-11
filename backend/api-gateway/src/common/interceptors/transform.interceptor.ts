@@ -19,18 +19,15 @@ export class TransformInterceptor<T> implements NestInterceptor<
 > {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
-    // Do not wrap health and metrics endpoints
     if (request.url.includes("/health") || request.url.includes("/metrics")) {
       return next.handle();
     }
 
     return next.handle().pipe(
       map((data) => {
-        // If data is already in our standard format, return it as is
         if (data && typeof data.success === "boolean") {
           return data;
         }
-        // Otherwise, wrap it
         return successResponse(data, "Request successful");
       }),
     );

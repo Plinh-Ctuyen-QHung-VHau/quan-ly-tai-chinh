@@ -34,7 +34,7 @@ export class BudgetsService {
     const budget = await this.budgetsRepository.findCurrentActive(user_id);
     if (!budget) {
       throw new NotFoundException(
-        "No active budget found for the current period.",
+        "Không tìm thấy ngân sách nào đang hoạt động trong kỳ này.",
       );
     }
     return budget;
@@ -55,7 +55,6 @@ export class BudgetsService {
     const percent_used =
       budget_amount > 0 ? (spent_amount / budget_amount) * 100 : 0;
 
-    // Tính status theo percent_used để FE hiển thị đúng
     let frontendStatus: "healthy" | "warning" | "danger";
     if (percent_used >= 100) {
       frontendStatus = "danger";
@@ -79,7 +78,6 @@ export class BudgetsService {
       end_date: budget.end_date,
     };
 
-    // Ghi snapshot vào budget_snapshots
     try {
       await this.budgetsRepository.createSnapshot({
         budget_id: budget.id,
@@ -89,14 +87,12 @@ export class BudgetsService {
         percent_used: roundedPercent,
       });
       this.logger.log(
-        `Budget snapshot saved: budget=${budget.id}, spent=${spent_amount}, remaining=${remaining_amount}, used=${roundedPercent}%`,
+        `Đã lưu snapshot ngân sách: budget=${budget.id}, đã tiêu=${spent_amount}, còn lại=${remaining_amount}, mức sử dụng=${roundedPercent}%`,
       );
     } catch (err) {
-      // Snapshot lưu thất bại không nên block response
-      this.logger.warn(`Failed to save budget snapshot: ${err.message}`);
+      this.logger.warn(`Lưu snapshot ngân sách thất bại (không sao, không chặn user): ${err.message}`);
     }
 
-    // Check and trigger alerts
     await this.checkBudgetThresholds(budget, status);
 
     return status;
@@ -109,7 +105,7 @@ export class BudgetsService {
       updateBudgetDto,
     );
     if (!budget) {
-      throw new NotFoundException(`Budget with ID ${id} not found.`);
+      throw new NotFoundException(`Không tìm thấy ngân sách có ID ${id}.`);
     }
     this.metrics.budgetsUpdatedTotal.inc();
     this.eventPublisher.publish("budget.updated", budget, "budget-notification-service").catch(err => console.error(err));
@@ -117,14 +113,14 @@ export class BudgetsService {
   }
 
   async remove(id: string, user_id: string) {
-    const budget = await this.budgetsRepository.findCurrentActive(user_id); // Fetch before delete to get payload
+    const budget = await this.budgetsRepository.findCurrentActive(user_id);
     const success = await this.budgetsRepository.softDelete(id, user_id);
     if (!success) {
-      throw new NotFoundException(`Budget with ID ${id} not found.`);
+      throw new NotFoundException(`Không tìm thấy ngân sách có ID ${id}.`);
     }
     this.metrics.budgetsDeletedTotal.inc();
     this.eventPublisher.publish("budget.deleted", { id, user_id }, "budget-notification-service").catch(err => console.error(err));
-    return { success: true, message: "Budget deleted successfully." };
+    return { success: true, message: "Đã xóa ngân sách." };
   }
 
   async getHistory(user_id: string, limit?: number) {
@@ -134,14 +130,12 @@ export class BudgetsService {
   }
 
   private async checkBudgetThresholds(budget, status) {
-    // 100% threshold
     if (status.percent_used >= 100 && !budget.alert_100_sent) {
       const notification = await this.notificationsService.createBudgetAlert(
         budget.user_id,
         budget.id,
         100,
       );
-      // Only mark as sent if notification was actually created (not blocked by settings)
       if (notification) {
         await this.budgetsRepository.updateAlertSent(budget.id, "100");
         await this.budgetsRepository.updateStatus(budget.id, "exceeded");
@@ -153,7 +147,6 @@ export class BudgetsService {
         this.metrics.budgetThresholdReachedTotal.inc({ threshold: "100" });
       }
     }
-    // 80% threshold
     else if (status.percent_used >= 80 && !budget.alert_80_sent) {
       const notification = await this.notificationsService.createBudgetAlert(
         budget.user_id,

@@ -85,7 +85,7 @@ export async function getReceiptSignedUrl(image_url: string | null | undefined):
   }
 
   let storagePath = image_url;
-  
+
   if (image_url.startsWith("http")) {
     try {
       const url = new URL(image_url);
@@ -99,7 +99,7 @@ export async function getReceiptSignedUrl(image_url: string | null | undefined):
       if (match) storagePath = match[1];
     }
   }
-  
+
   storagePath = storagePath.split("?")[0];
 
   try {
@@ -109,7 +109,7 @@ export async function getReceiptSignedUrl(image_url: string | null | undefined):
 
     if (error || !data?.signedUrl) {
       console.warn("[SignedUrl] Failed:", error?.message);
-      return image_url; // Fallback
+      return image_url;
     }
 
     SIGNED_URL_CACHE.set(image_url, {

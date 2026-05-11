@@ -15,7 +15,7 @@ import { ImagePreprocessorService } from "../preprocess/image-preprocessor.servi
 import { AppMetrics } from "../metrics/app.metrics";
 
 /**
- * Primary engine factory — always uses Tesseract.
+ * Factory tạo engine chính — luôn ưu tiên dùng Tesseract cho nhanh.
  */
 const primaryEngineFactory = {
   provide: OCR_ENGINE_ADAPTER,

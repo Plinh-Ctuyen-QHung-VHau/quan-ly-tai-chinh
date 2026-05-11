@@ -26,7 +26,6 @@ import { ImageViewerModal } from "../../components/ImageViewerModal";
 export function TransactionConfirmScreen() {
   const navigation = useNavigation<any>();
 
-  // Get draft data from store
   const draftReceiptPath = useTransactionStore((state) => state.draftReceiptPath);
   const draftOcrResult = useTransactionStore((state) => state.draftOcrResult);
   const draftsource_type = useTransactionStore((state) => state.draftsource_type);
@@ -56,14 +55,12 @@ export function TransactionConfirmScreen() {
 
   const signedUrl = useSignedUrl(draftReceiptPath);
 
-  // Sync categories when type changes
   useEffect(() => {
     const load = async () => {
       setLoadingCategories(true);
       try {
         const list = await getCategories(type);
         setCategories(list);
-        // Try auto-select category from OCR if possible
         const suggestedCatId = draftOcrResult?.suggestedcategory_id;
         if (suggestedCatId) {
           setcategory_id(suggestedCatId);

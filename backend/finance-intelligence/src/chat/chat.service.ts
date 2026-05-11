@@ -20,13 +20,13 @@ export class ChatService {
     private readonly budgetClient: BudgetNotificationClient,
     private readonly transactionClient: TransactionClient,
     private readonly eventPublisher: EventPublisher,
-  ) {}
+  ) { }
 
   async chat(input: ChatInputSecureDto): Promise<ChatResponseDto> {
     const session_id = await this.resolveSessionId(input.user_id, input.context);
     await this.chatRepository.saveMessage({ session_id, sender_type: "user", content: input.message });
 
-    // Lớp nhanh: Câu chào hỏi đơn giản
+
     const quickReply = this.getQuickReply(input.message);
     if (quickReply) {
       await this.chatRepository.saveMessage({ session_id, sender_type: "assistant", content: quickReply });
@@ -47,22 +47,22 @@ export class ChatService {
     } else if (result.type === "function_call") {
       const { name, args } = result.call;
       intent = name;
-      this.logger.log(`[AI] ${name}: ${JSON.stringify(args)}`);
+      this.logger.log(`[Chatbot Gọi Hàm] ${name}: ${JSON.stringify(args)}`);
 
       try {
         const execution = await this.executeFunction(input.user_id, name, args, categories);
         reply = execution.reply;
         actionPerformed = !!execution.actionPerformed;
-        this.logger.log(`[DATA] ${JSON.stringify(execution.data)}`); // Log ra terminal, không trả về user
+        this.logger.log(`[Dữ liệu trả về] ${JSON.stringify(execution.data)}`);
       } catch (err) {
-        this.logger.error(`[FAIL] ${name}: ${err.message}`);
+        this.logger.error(`[Lỗi Chatbot] ${name}: ${err.message}`);
         reply = "Xin lỗi, tôi gặp lỗi khi lấy dữ liệu.";
       }
     }
 
     await this.chatRepository.saveMessage({ session_id, sender_type: "assistant", content: reply });
-    
-    // Phát event chatbot.interaction
+
+
     this.eventPublisher.publish("chatbot.interaction", {
       user_id: input.user_id,
       session_id,
@@ -72,11 +72,10 @@ export class ChatService {
       args: result.type === "function_call" ? result.call.args : undefined,
     }, "finance-intelligence").catch(err => console.error(err));
 
-    // Trả về intent + args để frontend biết AI hiểu đúng không
-    return { 
-      reply, 
+    return {
+      reply,
       metadata: { nlp_source: "ai", intent, args: result.type === "function_call" ? result.call.args : undefined },
-      actionPerformed // Gửi về FE để trigger reload
+      actionPerformed
     };
   }
 
@@ -89,19 +88,16 @@ export class ChatService {
   private async executeFunction(user_id: string, name: string, args: any, categories: any[]) {
     switch (name) {
       case "get_spending_summary": {
-        // Lấy type="all" để có thể tính balance hoặc bóc tách tuỳ ý
         const queryType = args.type === "all" ? undefined : args.type;
         const summary = await this.analyticsService.getSpendingSummary(user_id, args.fromDate, args.toDate, queryType);
         if (!summary) return { reply: "Không có dữ liệu trong khoảng thời gian này.", data: null };
 
         const timeStr = args.fromDate ? `từ ${args.fromDate} đến ${args.toDate || 'nay'}` : "trong thời gian này";
 
-        // 1. Hỏi số dư (Còn lại bao nhiêu)
         if (args.type === "all") {
           return { reply: `Tổng thu nhập của bạn ${timeStr} là **${summary.total_income.toLocaleString("vi-VN")}đ** và tổng chi tiêu là **${summary.total_expense.toLocaleString("vi-VN")}đ**. Bạn còn lại **${summary.balance.toLocaleString("vi-VN")}đ**.`, data: summary };
         }
 
-        // 2. Hỏi danh mục nổi bật (Chi/Thu nhiều nhất cho gì)
         if (args.get_top_categories && summary.category_breakdown) {
           const filtered = summary.category_breakdown.filter(c => c.type === args.type);
           if (filtered.length === 0) return { reply: "Không có khoản nào đáng chú ý.", data: summary };
@@ -110,14 +106,12 @@ export class ChatService {
           return { reply: `Khoản ${label} lớn nhất của bạn ${timeStr} là **${top1.category_name}** với số tiền **${top1.amount.toLocaleString("vi-VN")}đ**.`, data: summary };
         }
 
-        // 3. Hỏi theo danh mục cụ thể (Ví dụ: Tiền ăn uống)
         if (args.category_name && summary.category_breakdown) {
           const cat = summary.category_breakdown.find(c => c.category_name.toLowerCase().includes(args.category_name.toLowerCase()) && c.type === args.type);
           const amt = cat ? cat.amount : 0;
           return { reply: `Bạn đã chi tiêu **${amt.toLocaleString("vi-VN")}đ** cho mục **${args.category_name}** ${timeStr}.`, data: summary };
         }
 
-        // 4. Mặc định: Hỏi tổng quát (Chi/Thu bao nhiêu)
         const amount = args.type === "income" ? (summary.total_income || 0) : (summary.total_expense || 0);
         const label = args.type === "income" ? "thu nhập" : "chi tiêu";
         return { reply: `Tổng ${label} của bạn ${timeStr} là **${amount.toLocaleString("vi-VN")}đ**.`, data: summary };
@@ -127,7 +121,7 @@ export class ChatService {
         try {
           const status = await this.budgetClient.getCurrentStatus(user_id);
           if (!status) return { reply: "Bạn chưa thiết lập ngân sách nào cho thời gian này.", data: null };
-          
+
           let advice = "";
           if (status.status === "danger") advice = "Bạn đã vượt ngân sách! Hãy ngừng chi tiêu ngay lập tức.";
           else if (status.status === "warning") advice = "Bạn sắp hết ngân sách. Hãy cẩn thận!";
@@ -144,13 +138,10 @@ export class ChatService {
 
       case "analyze_financial_health": {
         try {
-          // Lấy dữ liệu chi tiêu 30 ngày qua
           const summary = await this.analyticsService.getSpendingSummary(user_id);
-          // Lấy ngân sách hiện tại
           let budget = null;
-          try { budget = await this.budgetClient.getCurrentStatus(user_id); } catch (e) {}
+          try { budget = await this.budgetClient.getCurrentStatus(user_id); } catch (e) { }
 
-          // Gom dữ liệu nạp vào LLM để sinh lời khuyên
           const prompt = `Dựa vào dữ liệu sau, hãy đưa ra 1-2 lời khuyên tài chính ngắn gọn gọn (dưới 4 câu) giúp người dùng tiết kiệm hơn:
 - Tổng thu: ${summary.total_income}đ
 - Tổng chi: ${summary.total_expense}đ
@@ -195,10 +186,10 @@ export class ChatService {
           note: args.note || args.category_name
         });
         const label = args.type === "income" ? "Thu nhập" : "Chi tiêu";
-        return { 
-          reply: `✅ ${label} **${args.amount.toLocaleString("vi-VN")}đ** (${category.name}) đã được ghi lại.`, 
+        return {
+          reply: `✅ ${label} **${args.amount.toLocaleString("vi-VN")}đ** (${category.name}) đã được ghi lại.`,
           data: tx,
-          actionPerformed: true // Thêm flag này để FE reload
+          actionPerformed: true
         };
       }
 
@@ -214,25 +205,24 @@ export class ChatService {
           };
         }
 
-        // Lấy lịch sử giao dịch để làm rõ chi tiết cho AI
         let history = [];
-        try { history = await this.transactionClient.getHistory(user_id); } catch (e) {}
+        try { history = await this.transactionClient.getHistory(user_id); } catch (e) { }
 
         const summary = anomalies.map(a => {
           const typeLabel = a.anomaly_type === "daily_spike" ? "Tổng chi đột biến" : "Tần suất giao dịch bất thường";
           const dateStr = a.detected_at.slice(0, 10);
           const dateObj = new Date(a.detected_at).toLocaleDateString("vi-VN");
-          
+
           let detailStr = "";
           const dayHistory = history.find(d => d.date === dateStr);
           if (dayHistory && dayHistory.transactions) {
-             const topTx = [...dayHistory.transactions]
-                .filter(tx => tx.type === 'expense')
-                .sort((x, y) => Number(y.amount) - Number(x.amount))
-                .slice(0, 2);
-             if (topTx.length > 0) {
-                 detailStr = ` (Khoản lớn nhất trong ngày: ${topTx.map(t => `${t.category_name || 'Khác'} ${Number(t.amount).toLocaleString('vi-VN')}đ`).join(', ')})`;
-             }
+            const topTx = [...dayHistory.transactions]
+              .filter(tx => tx.type === 'expense')
+              .sort((x, y) => Number(y.amount) - Number(x.amount))
+              .slice(0, 2);
+            if (topTx.length > 0) {
+              detailStr = ` (Khoản lớn nhất trong ngày: ${topTx.map(t => `${t.category_name || 'Khác'} ${Number(t.amount).toLocaleString('vi-VN')}đ`).join(', ')})`;
+            }
           }
 
           return `- Ngày ${dateObj}: ${typeLabel} | Mức độ: ${a.severity} | Tổng chi trong ngày: ${Number(a.actual_value).toLocaleString("vi-VN")}đ (Ngưỡng bình thường: ${Number(a.threshold_value).toLocaleString("vi-VN")}đ)${detailStr}`;
@@ -261,15 +251,12 @@ export class ChatService {
   }
 
   private async resolveSessionId(user_id: string, context?: string) {
-    // Ưu tiên session_id từ context (frontend truyền vào)
     const sessionId = context?.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0];
     if (sessionId && await this.chatRepository.getSession(sessionId)) return sessionId;
-    
-    // Nếu không có, lấy session mới nhất của user (không tạo mới)
+
     const latest = await this.chatRepository.getLatestSession(user_id);
     if (latest) return latest.id;
 
-    // Chỉ tạo mới nếu user chưa có session nào
     const session = await this.chatRepository.createSession(user_id, "Finance Chat");
     return session.id;
   }

@@ -22,7 +22,7 @@ export class UsersRepository {
       .maybeSingle();
 
     if (error) {
-      throw new AppError(error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
+      throw new AppError("Lỗi truy vấn cơ sở dữ liệu (findProfile): " + error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
     }
     return data;
   }
@@ -39,7 +39,7 @@ export class UsersRepository {
       .single();
 
     if (error) {
-      throw new AppError(error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
+      throw new AppError("Lỗi cập nhật hồ sơ (updateProfile): " + error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
     }
     return data;
   }
@@ -52,7 +52,7 @@ export class UsersRepository {
       .maybeSingle();
 
     if (error) {
-      throw new AppError(error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
+      throw new AppError("Lỗi lấy cài đặt (findSettings): " + error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
     }
     if (!data) {
       return this.createDefaultSettings(user_id);
@@ -73,7 +73,7 @@ export class UsersRepository {
       .single();
 
     if (error) {
-      throw new AppError("Settings not found for user", ERROR_CODES.NOT_FOUND);
+      throw new AppError("Không tìm thấy cài đặt của người dùng", ERROR_CODES.NOT_FOUND);
     }
     return data;
   }
@@ -88,7 +88,7 @@ export class UsersRepository {
       .single();
 
     if (error) {
-      throw new AppError(error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
+      throw new AppError("Lỗi khởi tạo cài đặt mặc định: " + error.message, ERROR_CODES.INTERNAL_SERVER_ERROR);
     }
     return data;
   }

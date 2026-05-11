@@ -20,23 +20,19 @@ const DEFAULT_NOTIF_SETTINGS: NotificationSettings = {
 };
 
 interface AppDataState {
-  // Transaction & Budget
   summary: TransactionSummary | null;
   budgetStatus: BudgetStatus | null;
   transactions: Transaction[];
   expenseCategories: Category[];
   incomeCategories: Category[];
 
-  // Profile
   profile: UserProfile | null;
   userEmail: string;
   emailConfirmed: string | null;
   userCreatedAt: string | null;
 
-  // Notification Settings
   notificationSettings: NotificationSettings;
 
-  // Status
   isInitializing: boolean;
   isRefreshing: boolean;
   error: string | null;
@@ -44,7 +40,6 @@ interface AppDataState {
   initialize: () => Promise<void>;
   refresh: () => Promise<void>;
 
-  // Profile helpers
   setProfile: (profile: UserProfile) => void;
   setNotificationSettings: (settings: NotificationSettings) => void;
 }
@@ -70,7 +65,6 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
   initialize: async () => {
     set({ isInitializing: true, error: null });
     try {
-      // Lấy thông tin user từ Supabase auth
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
 
@@ -85,7 +79,6 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         getNotifications().catch(() => []),
       ]);
 
-      // Đặt notifications vào notificationStore riêng
       useNotificationStore.getState().setNotifications(Array.isArray(notifList) ? notifList : []);
 
       set({

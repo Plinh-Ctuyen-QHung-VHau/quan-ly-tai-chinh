@@ -68,8 +68,6 @@ export function AppNavigator() {
 
     const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (event === "PASSWORD_RECOVERY") {
-        // Đang trong flow reset password — KHÔNG navigate vào app
-        // ForgotPasswordScreen sẽ tự gọi setSession sau khi đổi mật khẩu xong
         return;
       }
       setSession(nextSession);
@@ -94,13 +92,9 @@ export function AppNavigator() {
     return () => setUnauthorizedHandler(null);
   }, []);
 
-  // Listener: user tap notification -> navigate đến tab Notifications
-  // Listener: foreground nhận push -> realtime đã tự prepend, không cần thêm
   useEffect(() => {
     const responseSub = Notifications.addNotificationResponseReceivedListener(() => {
       setTimeout(() => {
-        // NavigationContainer chưa expose ref trực tiếp ở đây,
-        // realtime store sẽ prepend notification tự động
       }, 300);
     });
 
@@ -139,7 +133,6 @@ export function AppNavigator() {
     if (!isAuthenticated) return;
 
     const unsubscribe = dataInvalidation.subscribe((key) => {
-      // Logic refresh đã được chuyển vào hàm invalidateData trung tâm để có delay chuẩn
       console.log(`[AppNavigator] Data invalidation event received: ${key}`);
     });
 

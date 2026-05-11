@@ -16,7 +16,7 @@ export class NlpService {
     private readonly appConfig: ConfigType<typeof configuration>,
   ) {}
 
-  // Build tools với category enum động từ dữ liệu thật của user
+
   private buildTools(categories: any[]) {
     const expenseCategories = categories.filter(c => c.type === "expense").map(c => c.name);
     const incomeCategories = categories.filter(c => c.type === "income").map(c => c.name);
@@ -58,7 +58,7 @@ export class NlpService {
           properties: {
             type: { type: "STRING", enum: ["income", "expense"] },
             amount: { type: "NUMBER", description: "Số tiền" },
-            // Ép AI chỉ được chọn từ danh sách category thật
+
             category_name: {
               type: "STRING",
               enum: [...expenseCategories, ...incomeCategories],
@@ -142,7 +142,7 @@ NGUYÊN TẮC BẮT BUỘC:
     }
   }
 
-  // Chỉ dùng cho các câu hỏi dạng text, KHÔNG dùng cho data số liệu
+
   async generateTextReply(message: string, history: any[]) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.appConfig.gemini.model}:generateContent?key=${this.appConfig.gemini.apiKey}`;
     const body = {

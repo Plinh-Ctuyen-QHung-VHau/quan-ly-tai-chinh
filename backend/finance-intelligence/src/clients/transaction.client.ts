@@ -27,7 +27,7 @@ export class TransactionClient {
       return response.data?.data || [];
     } catch (error) {
       throw new AppError(
-        "Failed to fetch transaction history",
+        "Không thể gọi sang Transaction Service để lấy lịch sử",
         ERROR_CODES.SERVICE_UNAVAILABLE,
         error,
       );
@@ -41,18 +41,18 @@ export class TransactionClient {
     type?: string,
   ): Promise<TransactionSummary> {
     const url = `${this.appConfig.transactionServiceUrl}/transactions/summary`;
-    this.logger.log(`Fetching summary from: ${url} with params: fromDate=${fromDate}, toDate=${toDate}`);
+    this.logger.log(`Đang gọi lấy summary từ: ${url} (từ ${fromDate} đến ${toDate})`);
     try {
       const response = await firstValueFrom(
         this.httpService.get(url, {
           headers: { "x-user-id": user_id },
-          params: { fromDate, toDate }, // Bỏ type ở đây để tránh lỗi 400/404 nếu service chưa update
+          params: { fromDate, toDate },
         }),
       );
       return response.data?.data;
     } catch (error) {
       throw new AppError(
-        "Failed to fetch transaction summary",
+        "Không thể lấy báo cáo tổng quan từ Transaction Service",
         ERROR_CODES.SERVICE_UNAVAILABLE,
         error,
       );
@@ -72,9 +72,9 @@ export class TransactionClient {
       );
       return response.data?.data;
     } catch (error) {
-      this.logger.error(`createTransaction failed: ${JSON.stringify(error.response?.data)}`);
+      this.logger.error(`Lỗi khi tạo giao dịch qua Transaction Service: ${JSON.stringify(error.response?.data)}`);
       throw new AppError(
-        "Failed to create transaction",
+        "Không thể gọi sang Transaction Service để tạo giao dịch",
         ERROR_CODES.SERVICE_UNAVAILABLE,
         error,
       );
@@ -91,7 +91,7 @@ export class TransactionClient {
       );
       return response.data?.data || [];
     } catch (error) {
-      this.logger.warn("Failed to fetch categories", error);
+      this.logger.warn("Lỗi khi lấy danh sách danh mục từ Transaction Service", error);
       return [];
     }
   }

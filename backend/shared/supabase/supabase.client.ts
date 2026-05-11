@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * Creates a Supabase admin client using service role key.
+ * Tạo instance Supabase Admin bằng service role key (bỏ qua RLS).
  * NEVER log or expose the key.
  */
 export function createSupabaseAdminClient() {
@@ -9,10 +9,10 @@ export function createSupabaseAdminClient() {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl) {
-        throw new Error("SUPABASE_URL is required");
+        throw new Error("Thiếu cấu hình SUPABASE_URL trong file .env");
     }
     if (!serviceRoleKey) {
-        throw new Error("SUPABASE_SERVICE_ROLE_KEY is required");
+        throw new Error("Thiếu cấu hình SUPABASE_SERVICE_ROLE_KEY trong file .env");
     }
 
     return createClient(supabaseUrl, serviceRoleKey, {

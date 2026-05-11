@@ -44,8 +44,7 @@ export class CreateTransactionDto {
 
   @IsOptional()
   @IsString()
-  image_url?: string; // storage path (e.g. userId/filename.png) or URL
-
+  image_url?: string;
   @IsOptional()
   @IsString()
   merchant_name?: string;

@@ -24,28 +24,28 @@ export class TesseractOcrEngineAdapter
 
   private async initialize(): Promise<void> {
     try {
-      this.logger.log(`Initializing Tesseract with lang: ${this.lang}`);
+      this.logger.log(`Đang khởi tạo Tesseract với ngôn ngữ: ${this.lang}`);
       this.worker = await createWorker("vie+eng", OEM.DEFAULT, {});
       await this.worker.setParameters({
         preserve_interword_spaces: "1",
         tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
       });
       this.is_ready = true;
-      this.logger.log("Tesseract worker initialized successfully.");
+      this.logger.log("Khởi tạo Tesseract thành công.");
     } catch (error) {
-      this.logger.error("Failed to initialize Tesseract worker", error);
+      this.logger.error("Lỗi: Không thể khởi tạo Tesseract worker", error);
       this.is_ready = false;
     }
   }
 
   async recognize(image: Buffer): Promise<OcrEngineResult> {
     if (!this.is_ready || !this.worker) {
-      this.logger.warn("Tesseract worker not ready, attempting to re-initialize.");
+      this.logger.warn("Tesseract worker chưa sẵn sàng, đang thử khởi tạo lại...");
       await this.initialize();
       if (!this.is_ready || !this.worker) {
         throw new AppError(
           "TESSERACT_NOT_INITIALIZED",
-          "Tesseract worker could not be initialized.",
+          "Hệ thống đọc ảnh đang bận, vui lòng thử lại sau.",
           { reason: "TESSERACT_FAILED" },
         );
       }
@@ -53,10 +53,10 @@ export class TesseractOcrEngineAdapter
 
     const t0 = Date.now();
     try {
-      this.logger.log("Starting Tesseract recognition...");
+      this.logger.log("Bắt đầu chạy Tesseract để đọc chữ...");
       const { data: { text, confidence, blocks } } = await this.worker.recognize(image);
 
-      // Map Tesseract blocks → paragraphs → lines → words into OcrLine[]
+
       const lines: OcrLine[] = [];
       if (blocks) {
         for (const block of blocks) {
@@ -79,7 +79,7 @@ export class TesseractOcrEngineAdapter
       }
 
       const durationMs = Date.now() - t0;
-      this.logger.log(`Tesseract done in ${durationMs}ms, confidence: ${confidence}`);
+      this.logger.log(`Tesseract đọc xong trong ${durationMs}ms, độ tin cậy: ${confidence}`);
 
       return {
         engine: "tesseract",
@@ -91,10 +91,10 @@ export class TesseractOcrEngineAdapter
         warnings: [],
       };
     } catch (error) {
-      this.logger.error("Tesseract recognition failed", error);
+      this.logger.error("Tesseract không đọc được ảnh này", error);
       throw new AppError(
         "OCR_PROCESSING_FAILED",
-        "Tesseract failed to process the image.",
+        "Có lỗi khi xử lý ảnh, bạn gửi lại ảnh khác giúp mình nhé.",
         { reason: "TESSERACT_FAILED", originalError: error.message },
       );
     }
@@ -103,7 +103,7 @@ export class TesseractOcrEngineAdapter
   async terminate(): Promise<void> {
     if (this.worker) {
       await this.worker.terminate();
-      this.logger.log("Tesseract worker terminated.");
+      this.logger.log("Đã tắt Tesseract worker.");
       this.is_ready = false;
     }
   }

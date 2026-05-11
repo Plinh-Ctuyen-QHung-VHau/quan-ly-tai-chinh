@@ -17,7 +17,7 @@ export class UsersService {
   async logAuthEvent(user_id: string, dto: AuthEventDto) {
     const validActions = ["login", "logout", "password_reset"];
     if (!validActions.includes(dto.action)) {
-      throw new AppError("Invalid auth action", ERROR_CODES.VALIDATION_ERROR);
+      throw new AppError("Hành động xác thực không hợp lệ", ERROR_CODES.VALIDATION_ERROR);
     }
     
     let eventName = "";
@@ -32,7 +32,7 @@ export class UsersService {
   async getProfile(user_id: string) {
     const profile = await this.usersRepository.findProfileById(user_id);
     if (!profile) {
-      throw new AppError("User profile not found", ERROR_CODES.NOT_FOUND);
+      throw new AppError("Không tìm thấy hồ sơ người dùng", ERROR_CODES.NOT_FOUND);
     }
     return profile;
   }
@@ -49,7 +49,7 @@ export class UsersService {
   async getSettings(user_id: string) {
     const settings = await this.usersRepository.findSettingsByuser_id(user_id);
     if (!settings) {
-      throw new AppError("User settings not found", ERROR_CODES.NOT_FOUND);
+      throw new AppError("Không tìm thấy cài đặt người dùng", ERROR_CODES.NOT_FOUND);
     }
     return settings;
   }

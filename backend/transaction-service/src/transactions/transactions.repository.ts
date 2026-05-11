@@ -70,7 +70,6 @@ export class TransactionsRepository {
       keyword,
     } = queryDto;
 
-    // --- Count query ---
     let countQuery = this.supabase
       .from("transactions")
       .select("*", { count: "exact", head: true })
@@ -94,7 +93,6 @@ export class TransactionsRepository {
     const { count: totalItems, error: countError } = await countQuery;
     if (countError) throw new Error(countError.message);
 
-    // --- Data query with category join ---
     const validSortBy = ["transaction_date", "amount", "created_at"];
     const safeSortBy = validSortBy.includes(sortBy)
       ? sortBy
@@ -124,7 +122,7 @@ export class TransactionsRepository {
     const { data, error: dataError } = await dataQuery;
     if (dataError) throw new Error(dataError.message);
 
-    // Flatten the nested categories join
+
     const rows = (data || []).map((row: any) => {
       const { categories, ...rest } = row;
       return {
@@ -181,12 +179,7 @@ export class TransactionsRepository {
     return (count || 0) > 0;
   }
 
-  /**
-   * Returns transactions grouped by date for the last 30 days.
-   * NOTE: GROUP BY + json_agg not supported in Supabase JS client.
-   * Grouping is done in TypeScript.
-   * TODO: Consider a DB RPC/view for better performance on large datasets.
-   */
+
   async getHistory(user_id: string) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -202,10 +195,10 @@ export class TransactionsRepository {
 
     if (error) throw new Error(error.message);
 
-    // Group by date in JS
+
     const grouped: Record<string, any[]> = {};
     for (const row of data || []) {
-      const date = (row.transaction_date as string).slice(0, 10); // YYYY-MM-DD
+      const date = (row.transaction_date as string).slice(0, 10);
       if (!grouped[date]) grouped[date] = [];
       const { categories, ...rest } = row as any;
       grouped[date].push({
@@ -235,7 +228,7 @@ export class TransactionsRepository {
 
     if (fromDate) query = query.gte("transaction_date", fromDate);
     if (toDate) {
-      // Nếu toDate chỉ có ngày (YYYY-MM-DD), thêm giờ để bao phủ hết ngày đó
+
       const finalToDate = toDate.length === 10 ? `${toDate}T23:59:59.999Z` : toDate;
       query = query.lte("transaction_date", finalToDate);
     }

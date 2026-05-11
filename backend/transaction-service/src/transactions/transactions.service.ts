@@ -51,13 +51,13 @@ export class TransactionsService {
       user_id,
     );
     if (!category) {
-      throw new AppError("Category not found", ERROR_CODES.VALIDATION_ERROR, {
+      throw new AppError("Không tìm thấy danh mục", ERROR_CODES.VALIDATION_ERROR, {
         field: "category_id",
       });
     }
     if (category.type !== dto.type) {
       throw new AppError(
-        `Category type "${category.type}" does not match transaction type "${dto.type}"`,
+        `Loại danh mục "${category.type}" không khớp với loại giao dịch "${dto.type}"`,
         ERROR_CODES.VALIDATION_ERROR,
         { field: "category_id" },
       );
@@ -81,7 +81,7 @@ export class TransactionsService {
     const end = this.queryDuration.startTimer();
     const transaction = await this.transactionsRepository.findById(id, user_id);
     if (!transaction) {
-      throw new AppError("Transaction not found", ERROR_CODES.NOT_FOUND);
+      throw new AppError("Không tìm thấy giao dịch", ERROR_CODES.NOT_FOUND);
     }
     end({ method: "findOne" });
     this.transactionsRead.inc();
@@ -94,7 +94,7 @@ export class TransactionsService {
       user_id,
     );
     if (!existingTransaction) {
-      throw new AppError("Transaction not found", ERROR_CODES.NOT_FOUND);
+      throw new AppError("Không tìm thấy giao dịch", ERROR_CODES.NOT_FOUND);
     }
 
     if (dto.category_id) {
@@ -103,14 +103,14 @@ export class TransactionsService {
         user_id,
       );
       if (!category) {
-        throw new AppError("Category not found", ERROR_CODES.VALIDATION_ERROR, {
+        throw new AppError("Không tìm thấy danh mục", ERROR_CODES.VALIDATION_ERROR, {
           field: "category_id",
         });
       }
       const transactionType = dto.type || existingTransaction.type;
       if (category.type !== transactionType) {
         throw new AppError(
-          `Category type "${category.type}" does not match transaction type "${transactionType}"`,
+          `Loại danh mục "${category.type}" không khớp với loại giao dịch "${transactionType}"`,
           ERROR_CODES.VALIDATION_ERROR,
           { field: "category_id" },
         );
@@ -124,7 +124,7 @@ export class TransactionsService {
     );
     this.transactionsUpdated.inc({ type: updatedTransaction.type });
     
-    // category object is only available if dto.category_id is provided
+
     let updatedCategory;
     if (dto.category_id) {
        updatedCategory = await this.categoriesRepository.findById(dto.category_id, user_id);
@@ -137,7 +137,7 @@ export class TransactionsService {
   async remove(id: string, user_id: string) {
     const transaction = await this.transactionsRepository.findById(id, user_id);
     if (!transaction) {
-      throw new AppError("Transaction not found", ERROR_CODES.NOT_FOUND);
+      throw new AppError("Không tìm thấy giao dịch", ERROR_CODES.NOT_FOUND);
     }
 
     const success = await this.transactionsRepository.delete(id, user_id);
@@ -182,7 +182,7 @@ export class TransactionsService {
       }
     };
 
-    // Log the event to app_common.event_logs
+
     this.eventPublisher.publish(
       event, 
       payload,
@@ -192,8 +192,8 @@ export class TransactionsService {
     this.httpService.post(url, payload).subscribe({
       next: () => {},
       error: (err) => {
-        // Just log the error, don't fail the transaction creation
-        console.error(`Failed to emit ${event} to finance-intelligence:`, err.message);
+
+        console.error(`Lỗi không thể gửi event ${event} sang finance-intelligence:`, err.message);
       }
     });
   }

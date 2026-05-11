@@ -20,7 +20,7 @@ import { TransformInterceptor } from "../common/interceptors/transform.intercept
 @UseInterceptors(TransformInterceptor)
 @UseFilters(AllExceptionsFilter)
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(private readonly notificationsService: NotificationsService) { }
 
   @Get()
   findAll(@Getuser_id() user_id: string, @Query() query: FindNotificationsDto) {
@@ -55,7 +55,6 @@ export class NotificationsController {
     return this.notificationsService.markAsRead(id, user_id);
   }
 
-  // 🧪 Endpoint để test nhanh thông báo (Chỉ dùng trong development)
   @Post("test-reminder/:userId")
   async testReminder(@Param("userId") userId: string) {
     return this.notificationsService.createNotification({

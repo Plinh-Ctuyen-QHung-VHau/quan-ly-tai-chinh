@@ -17,6 +17,6 @@ async function bootstrap() {
 
   const port = configService.get<number>("port");
   await app.listen(port);
-  console.log(`Identity Service is running on: ${await app.getUrl()}`);
+  console.log(`[Identity Service] Server đã khởi chạy thành công tại: ${await app.getUrl()}`);
 }
 bootstrap();

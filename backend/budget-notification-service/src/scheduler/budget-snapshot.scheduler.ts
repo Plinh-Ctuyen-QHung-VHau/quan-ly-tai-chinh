@@ -18,24 +18,24 @@ export class BudgetSnapshotScheduler {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async updateAllBudgetSnapshots() {
-    this.logger.log("Starting background budget snapshot update for all active budgets...");
+    this.logger.log("Bắt đầu tiến trình ngầm để chụp lại trạng thái tất cả ngân sách...");
 
     try {
       const activeBudgets = await this.budgetsRepository.findAllActiveBudgets();
-      this.logger.log(`Found ${activeBudgets.length} active budgets to update.`);
+      this.logger.log(`Tìm thấy ${activeBudgets.length} ngân sách đang hoạt động để cập nhật.`);
 
       for (const budget of activeBudgets) {
         try {
-          // getCurrentStatus đã chứa logic ghi snapshot
+
           await this.budgetsService.getCurrentStatus(budget.user_id);
         } catch (err) {
-          this.logger.error(`Failed to update snapshot for budget ${budget.id}: ${err.message}`);
+          this.logger.error(`Lỗi khi chụp snapshot cho budget ${budget.id}: ${err.message}`);
         }
       }
 
-      this.logger.log("Background budget snapshot update completed.");
+      this.logger.log("Đã chạy xong tiến trình chụp snapshot ngân sách ngầm.");
     } catch (err) {
-      this.logger.error("Global budget snapshot update cron failed:", err);
+      this.logger.error("Tiến trình cron chạy snapshot ngân sách tổng bị lỗi:", err);
     }
   }
 }

@@ -10,7 +10,6 @@ export class UpdateProfileDto {
   @IsOptional()
   avatar_url?: string;
 
-  // NOTE: username, website do NOT exist in identity.profiles schema — removed
 }
 
 export class UpdateUserSettingsDto {
@@ -26,5 +25,4 @@ export class UpdateUserSettingsDto {
   @IsOptional()
   theme?: "light" | "dark";
 
-  // NOTE: currency does NOT exist in identity.user_settings schema — removed
 }

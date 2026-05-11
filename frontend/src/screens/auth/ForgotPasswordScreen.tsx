@@ -336,7 +336,6 @@ const styles = StyleSheet.create({
 
   card: { borderRadius: 22, padding: 20, borderColor: "#dbe5f0" },
 
-  // OTP
   otpHint: { color: COLORS.muted, fontSize: 13, marginBottom: 16, textAlign: "center" },
   otpEmail: { color: COLORS.blue, fontWeight: "700" },
   otpContainer: {

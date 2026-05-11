@@ -17,6 +17,6 @@ export class FindNotificationsDto extends PaginationDto {
   @IsIn(["reminder", "budget_alert", "anomaly_alert", "financial_tip"])
   type?: string;
 
-  // Override default sortBy from PaginationDto (transaction_date → created_at)
+
   sortBy: string = "created_at";
 }

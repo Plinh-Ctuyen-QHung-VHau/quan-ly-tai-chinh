@@ -12,9 +12,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     res.on("finish", () => {
       const { statusCode } = res;
       const contentLength = res.get("content-length");
-      this.logger.log(
-        `${method} ${originalUrl} ${statusCode} ${contentLength} - ${userAgent}`,
-      );
+      this.logger.log(`[Yêu cầu HTTP] ${method} ${originalUrl} | Mã: ${statusCode} | Kích thước: ${contentLength} - UserAgent: ${userAgent}`);
     });
 
     next();

@@ -12,7 +12,7 @@ export class ImagePreprocessorService {
     @Inject(configuration.KEY)
     private readonly appConfig: ConfigType<typeof configuration>,
     private readonly metrics: AppMetrics,
-  ) {}
+  ) { }
 
   async process(imageBuffer: Buffer): Promise<Buffer> {
     if (!this.appConfig.ocr.preprocess.enabled) {
@@ -42,7 +42,6 @@ export class ImagePreprocessorService {
         "Image preprocessing failed. Falling back to original image buffer.",
         error.stack,
       );
-      // Fallback to the original buffer if preprocessing fails
       return imageBuffer;
     }
   }

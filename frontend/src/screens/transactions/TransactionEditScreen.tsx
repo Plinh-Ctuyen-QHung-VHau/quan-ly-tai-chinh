@@ -64,7 +64,7 @@ export function TransactionEditScreen() {
       setAmount(String(result.amount));
       setcategory_id(result.category_id);
       setNote(result.note ?? "");
-      settransaction_date(result.transaction_date.slice(0, 10)); // Ensure YYYY-MM-DD
+      settransaction_date(result.transaction_date.slice(0, 10));
       setmerchant_name(result.merchant_name ?? "");
     } finally {
       setLoading(false);
@@ -82,7 +82,6 @@ export function TransactionEditScreen() {
       try {
         const list = await getCategories(type);
         setCategories(Array.isArray(list) ? list : []);
-        // Reset category khi đổi type (trừ lần đầu load)
         if (!isInitialMount.current) {
           setcategory_id("");
         }

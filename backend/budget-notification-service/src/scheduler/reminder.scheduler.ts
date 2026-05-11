@@ -32,11 +32,11 @@ export class ReminderScheduler {
       
       if (eligibleUsers.length === 0) return;
 
-      this.logger.log(`[${timeStr}] Found ${eligibleUsers.length} users eligible for reminder`);
+      this.logger.log(`[${timeStr}] Tìm thấy ${eligibleUsers.length} user cần được gửi nhắc nhở`);
 
       for (const userId of eligibleUsers) {
         try {
-          // Kiểm tra user có giao dịch hôm nay không
+
           const today = new Date().toISOString().slice(0, 10);
           let hasTransactionsToday = false;
 
@@ -44,17 +44,17 @@ export class ReminderScheduler {
             const summary = await this.transactionClient.getTransactionSummary(userId, today, today);
             hasTransactionsToday = (summary.total_income + summary.total_expense) > 0;
           } catch {
-            // Nếu không lấy được summary, cứ gửi reminder
+
             hasTransactionsToday = false;
           }
 
           await this.notificationsService.runDailyReminderCheck(userId, hasTransactionsToday);
         } catch (err) {
-          this.logger.error(`Failed to send reminder for user ${userId}:`, err);
+          this.logger.error(`Lỗi khi gửi nhắc nhở cho user ${userId}:`, err);
         }
       }
     } catch (err) {
-      this.logger.error("Daily reminder cron failed:", err);
+      this.logger.error("Tiến trình gửi nhắc nhở hàng ngày bị lỗi:", err);
     }
   }
 }

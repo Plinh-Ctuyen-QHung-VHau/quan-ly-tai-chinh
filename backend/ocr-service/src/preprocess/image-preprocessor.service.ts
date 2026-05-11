@@ -16,18 +16,18 @@ export class ImagePreprocessorService {
 
   constructor() {
     this.isEnabled = process.env.OCR_PREPROCESS_ENABLED === "true";
-    // The script is copied to the root of the /app directory in Docker
+
     this.scriptPath = path.join(process.cwd(), "scripts", "preprocess.py");
     if (this.isEnabled) {
-      this.logger.log("OpenCV preprocessing is ENABLED.");
+      this.logger.log("Đã BẬT bộ tiền xử lý ảnh OpenCV.");
     } else {
-      this.logger.log("OpenCV preprocessing is DISABLED.");
+      this.logger.log("Đã TẮT bộ tiền xử lý ảnh OpenCV.");
     }
   }
 
   async preprocess(inputBuffer: Buffer, variant: string = "standard"): Promise<Buffer> {
     if (!this.isEnabled) {
-      this.logger.log("Skipping OpenCV preprocessing (disabled).");
+      this.logger.log("Bỏ qua bước tiền xử lý OpenCV vì tính năng đang tắt.");
       return inputBuffer;
     }
 
@@ -36,51 +36,51 @@ export class ImagePreprocessorService {
     const outputPath = path.join(os.tmpdir(), `${id}_output.png`);
 
     try {
-      this.logger.log(`Writing temporary input file to ${inputPath}`);
+      this.logger.log(`Ghi file ảnh gốc tạm thời vào ${inputPath}`);
       await fs.writeFile(inputPath, inputBuffer);
 
-      this.logger.log(`Executing OpenCV script: ${this.scriptPath} with variant: ${variant}`);
+      this.logger.log(`Thực thi script OpenCV: ${this.scriptPath} với mode: ${variant}`);
       const { stdout, stderr } = await execFileAsync(
         "python3",
         [this.scriptPath, inputPath, outputPath, variant],
-        { timeout: 20000 }, // 20 seconds timeout
+        { timeout: 20000 },
       );
 
-      if (stdout) this.logger.log(`OpenCV script stdout: ${stdout.trim()}`);
-      if (stderr) this.logger.warn(`OpenCV script stderr: ${stderr.trim()}`);
+      if (stdout) this.logger.log(`Log từ OpenCV script (stdout): ${stdout.trim()}`);
+      if (stderr) this.logger.warn(`Lỗi từ OpenCV script (stderr): ${stderr.trim()}`);
 
-      this.logger.log(`Reading processed output file from ${outputPath}`);
+      this.logger.log(`Đọc lại file ảnh đã qua xử lý từ ${outputPath}`);
       const outputBuffer = await fs.readFile(outputPath);
 
       if (!outputBuffer.length) {
         this.logger.warn(
-          "OpenCV output buffer is empty, falling back to original image.",
+          "Dữ liệu ảnh trả về từ OpenCV bị rỗng, sẽ dùng lại ảnh gốc cho chắc.",
         );
         return inputBuffer;
       }
 
       this.logger.log(
-        "OpenCV preprocessing successful, returning processed buffer.",
+        "Chạy xong tiền xử lý OpenCV, trả về ảnh đã tối ưu.",
       );
       return outputBuffer;
     } catch (error) {
       this.logger.warn(
-        `OpenCV preprocessing failed, falling back to original image. Error: ${error.message}`,
+        `Lỗi khi chạy bộ lọc ảnh OpenCV, fallback về dùng ảnh gốc. Chi tiết lỗi: ${error.message}`,
       );
-      // In case of error, we return the original buffer to not fail the whole OCR process
+
       return inputBuffer;
     } finally {
-      // Cleanup temporary files
-      this.logger.log("Cleaning up temporary files.");
+
+      this.logger.log("Đang dọn dẹp xóa các file ảnh tạm.");
       await fs
         .rm(inputPath, { force: true })
         .catch((err) =>
-          this.logger.warn(`Failed to delete temp input file: ${err.message}`),
+          this.logger.warn(`Xóa file ảnh tạm đầu vào thất bại: ${err.message}`),
         );
       await fs
         .rm(outputPath, { force: true })
         .catch((err) =>
-          this.logger.warn(`Failed to delete temp output file: ${err.message}`),
+          this.logger.warn(`Xóa file ảnh tạm đầu ra thất bại: ${err.message}`),
         );
     }
   }

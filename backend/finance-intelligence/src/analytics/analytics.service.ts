@@ -4,7 +4,7 @@ import { TransactionSummary } from "../clients/types";
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private readonly transactionClient: TransactionClient) {}
+  constructor(private readonly transactionClient: TransactionClient) { }
 
   async getSpendingSummary(
     user_id: string,
@@ -12,7 +12,6 @@ export class AnalyticsService {
     toDate?: string,
     type?: string,
   ): Promise<TransactionSummary> {
-    // NẾU CÓ NGÀY TỪ AI, DÙNG LUÔN. NẾU KHÔNG CÓ MỚI TÍNH TOÁN DEFAULT
     const finalFrom = fromDate || this.getDefaultStartDate();
     const finalTo = toDate || new Date().toISOString().slice(0, 10);
 

@@ -1,4 +1,3 @@
-// ─── Shared OCR types ────────────────────────────────────────────────
 
 export const OCR_ENGINE_ADAPTER = "OcrEngineAdapter";
 

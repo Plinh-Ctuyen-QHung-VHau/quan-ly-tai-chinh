@@ -34,7 +34,7 @@ export interface NotificationSettings {
   enable_budget_alert: boolean;
   enable_anomaly_alert: boolean;
   enable_daily_reminder: boolean;
-  reminder_time: string; // time
+  reminder_time: string;
   push_token: string | null;
   created_at: string;
   updated_at: string;
@@ -88,7 +88,7 @@ export class NotificationsRepository {
     } = findDto;
     const offset = (page - 1) * limit;
 
-    // Count query
+
     let countQuery = this.supabase
       .from("notifications")
       .select("*", { count: "exact", head: true })
@@ -104,7 +104,7 @@ export class NotificationsRepository {
     const { count: total, error: countError } = await countQuery;
     if (countError) throw new Error(countError.message);
 
-    // Data query
+
     let dataQuery = this.supabase
       .from("notifications")
       .select("*")
@@ -165,7 +165,7 @@ export class NotificationsRepository {
   }
 
   async hasReminderToday(user_id: string): Promise<boolean> {
-    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const today = new Date().toISOString().slice(0, 10);
     const { count, error } = await this.supabase
       .from("notifications")
       .select("*", { count: "exact", head: true })
@@ -193,7 +193,7 @@ export class NotificationsRepository {
     user_id: string,
     settings: UpdateNotificationSettingsDto,
   ): Promise<NotificationSettings> {
-    // Only include defined fields to avoid overwriting existing values
+
     const payload: Record<string, any> = { user_id };
     if (settings.enable_all !== undefined) payload.enable_all = settings.enable_all;
     if (settings.enable_budget_alert !== undefined) payload.enable_budget_alert = settings.enable_budget_alert;
@@ -224,7 +224,6 @@ export class NotificationsRepository {
   }
 
   async getUsersForReminder(timeString: string): Promise<string[]> {
-    // timeString có định dạng HH:mm
     const { data, error } = await this.supabase
       .from("notification_settings")
       .select("user_id")

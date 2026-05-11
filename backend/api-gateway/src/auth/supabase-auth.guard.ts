@@ -51,14 +51,12 @@ export class SupabaseAuthGuard implements CanActivate {
         });
       }
 
-      // Attach user info to the request object
       request["user"] = {
         user_id: user.id,
         email: user.email,
         roles: user.app_metadata?.roles || [],
       };
 
-      // Also add convenience fields as requested
       request["user_id"] = user.id;
 
       return true;

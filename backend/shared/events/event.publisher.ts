@@ -26,10 +26,10 @@ export class EventPublisher {
         });
 
       if (error) {
-        this.logger.error(`Failed to publish event ${eventType}:`, error.message);
+        this.logger.error(`Lỗi không thể gửi event ${eventType}:`, error.message);
       }
     } catch (error) {
-      this.logger.error(`Failed to publish event ${eventType}:`, error);
+      this.logger.error(`Lỗi ngoại lệ khi gửi event ${eventType}:`, error);
     }
   }
 }

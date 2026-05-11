@@ -9,7 +9,7 @@ export const Getuser_id = createParamDecorator(
     const request = ctx.switchToHttp().getRequest();
     const user_id = request.headers["x-user-id"];
     if (!user_id) {
-      // This should not happen if the API Gateway is configured correctly
+
       throw new InternalServerErrorException(
         "User ID not found in request headers",
       );

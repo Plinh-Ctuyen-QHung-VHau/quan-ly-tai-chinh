@@ -56,7 +56,7 @@ export class NotificationsService {
       return null;
     }
 
-    // Check user settings
+
     const settings = await this.getOrCreateSettings(userId);
 
     if (!settings.enable_all) {
@@ -90,7 +90,7 @@ export class NotificationsService {
     this.metrics.notificationsCreatedTotal.inc({ type });
     this.eventPublisher.publish("notification.created", notification, "budget-notification-service").catch(err => console.error(err));
 
-    // Send push notification if push_token exists
+
     if (settings.push_token) {
       await this.sendPushNotification(settings.push_token, title, content, {
         type,
@@ -183,7 +183,7 @@ export class NotificationsService {
       return null;
     }
 
-    // Check if reminder already sent today
+
     const alreadySent = await this.notificationsRepository.hasReminderToday(userId);
     if (alreadySent) {
       this.logger.debug(`Reminder already sent today for user ${userId}`);

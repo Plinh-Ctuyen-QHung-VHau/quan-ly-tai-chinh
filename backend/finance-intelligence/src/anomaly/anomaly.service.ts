@@ -30,7 +30,7 @@ export class AnomalyService {
     private readonly metrics: AppMetrics,
     @Inject(configuration.KEY)
     private readonly appConfig: ConfigType<typeof configuration>,
-  ) {}
+  ) { }
 
   async processTransactionEvent(eventType: string, data: TransactionEventData) {
     const amount = typeof data.amount === "number" ? data.amount : 0;
@@ -66,7 +66,7 @@ export class AnomalyService {
         if (frequencySpike) anomalies.push(frequencySpike);
       } else {
         this.logger.debug(
-          `Skipping spike/frequency check: only ${historicalDayCount} historical day(s) for user ${data.user_id}`,
+          `Bỏ qua kiểm tra bất thường: User ${data.user_id} mới có ${historicalDayCount} ngày lịch sử giao dịch.`,
         );
       }
     }
@@ -95,7 +95,7 @@ export class AnomalyService {
 
     if (anomalies.length > 0 && data.transaction_id) {
       await this.anomalyRepository.updateTransactionAnomalyFlag(data.transaction_id, maxScore);
-      this.logger.log(`Marked transaction ${data.transaction_id} as anomaly with score ${maxScore}`);
+      this.logger.log(`Đã đánh dấu giao dịch ${data.transaction_id} là bất thường (điểm: ${maxScore})`);
     }
 
     return created;
@@ -110,12 +110,6 @@ export class AnomalyService {
   }
 
   async recheckTransaction(transaction_id: string) {
-    // For recheck, we need the actual transaction data.
-    // However, processTransactionEvent usually takes event data.
-    // We would need to fetch the transaction from transactionClient first.
-    // Let's assume we have a getTransaction method or similar.
-    // For now, let's just trigger a re-run if we can find the data.
-    // This is a simplified implementation.
     return { status: "recheck_triggered", transaction_id };
   }
 
@@ -123,7 +117,7 @@ export class AnomalyService {
     try {
       return await this.transactionClient.getHistory(user_id);
     } catch (error) {
-      this.logger.warn("Failed to load transaction history", error as Error);
+      this.logger.warn("Lấy lịch sử giao dịch thất bại, có thể service kia đang sập", error as Error);
       return [];
     }
   }
@@ -138,7 +132,6 @@ export class AnomalyService {
     const dayKey = transactionDate.toISOString().slice(0, 10);
     const isCurrentExpense = transactionType !== "income";
 
-    // Tách lịch sử thành: các ngày trước (để tính trung bình) và ngày hôm nay
     const historicalStats: { total: number; count: number }[] = [];
     const todayFromHistory = { total: 0, count: 0 };
 
@@ -154,16 +147,13 @@ export class AnomalyService {
       }
 
       if (day.date === dayKey) {
-        // Các giao dịch đã tồn tại hôm nay (trước transaction hiện tại)
         todayFromHistory.total = dayStats.total;
         todayFromHistory.count = dayStats.count;
       } else {
-        // Ngày khác → đưa vào baseline để tính average
         historicalStats.push(dayStats);
       }
     }
 
-    // Average chỉ tính từ các ngày LỊCH SỬ, không bao gồm hôm nay
     const averageDaily = historicalStats.length
       ? historicalStats.reduce((sum, d) => sum + d.total, 0) / historicalStats.length
       : 0;
@@ -171,7 +161,6 @@ export class AnomalyService {
       ? historicalStats.reduce((sum, d) => sum + d.count, 0) / historicalStats.length
       : 0;
 
-    // Tổng hôm nay = đã có trong lịch sử + transaction hiện tại (nếu là expense)
     const dailyTotal = todayFromHistory.total + (isCurrentExpense ? amount : 0);
     const dailyCount = todayFromHistory.count + (isCurrentExpense ? 1 : 0);
 

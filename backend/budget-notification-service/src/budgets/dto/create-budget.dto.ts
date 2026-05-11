@@ -23,5 +23,5 @@ export class CreateBudgetDto {
 
   @IsDateString()
   @IsNotEmpty()
-  end_date: string; // NOT NULL in DB
+  end_date: string;
 }

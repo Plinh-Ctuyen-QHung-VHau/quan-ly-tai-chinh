@@ -26,7 +26,6 @@ export const configuration = registerAs("app", () => ({
   },
   eventLogSchema: process.env.EVENT_LOG_SCHEMA || "app_common",
   processedEventsSchema: process.env.PROCESSED_EVENTS_SCHEMA || "app_common",
-  // TODO: Move GEMINI_API_KEY to secret manager or infrastructure vault.
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
     model: process.env.GEMINI_MODEL,

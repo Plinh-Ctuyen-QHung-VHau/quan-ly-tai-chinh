@@ -9,7 +9,7 @@ export class AppMetrics {
   public readonly passwordResetRequestsTotal: Counter;
 
   constructor() {
-    // Ensure metrics are not registered multiple times
+
     if (register.getSingleMetric("identity_service_users_created_total")) {
       this.usersCreatedTotal = register.getSingleMetric(
         "identity_service_users_created_total",

@@ -33,7 +33,7 @@ export function detectDailySpike(
     type: "daily_spike",
     score,
     severity,
-    reason: `Daily total ${dailyTotal} exceeds average spike threshold ${threshold}`,
+    reason: `Tổng chi tiêu trong ngày (${dailyTotal}) vượt mức trung bình bình thường (${threshold})`,
     thresholdValue: threshold,
     actualValue: dailyTotal,
   };
@@ -61,7 +61,7 @@ export function detectFrequency(
     type: "frequency",
     score,
     severity,
-    reason: `Daily count ${dailyCount} exceeds frequency threshold ${threshold}`,
+    reason: `Số lần giao dịch trong ngày (${dailyCount}) cao bất thường so với mức trung bình (${threshold})`,
     thresholdValue: threshold,
     actualValue: dailyCount,
   };

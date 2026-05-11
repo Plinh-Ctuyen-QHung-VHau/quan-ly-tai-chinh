@@ -115,7 +115,6 @@ export function TransactionHistoryScreen() {
   const [rangePreset, setRangePreset] = useState<RangePreset>("custom");
   const [showIosPicker, setShowIosPicker] = useState<DateField | null>(null);
 
-  // Dummy cho FiltersCard
 
   const categories = type === "income" ? incomeCategories : expenseCategories;
   const safeCategories = (() => {

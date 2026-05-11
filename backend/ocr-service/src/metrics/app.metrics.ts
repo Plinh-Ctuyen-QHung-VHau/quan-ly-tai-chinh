@@ -17,7 +17,7 @@ export class AppMetrics {
   public readonly ocrPreprocessingDurationSeconds: Histogram;
 
   constructor() {
-    // Ensure metrics are not registered multiple times
+
     if (register.getSingleMetric("ocr_requests_total")) {
       this.ocrRequestsTotal = register.getSingleMetric(
         "ocr_requests_total",

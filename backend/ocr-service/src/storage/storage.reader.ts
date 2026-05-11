@@ -17,9 +17,7 @@ export class StorageReader {
     this.bucketName = configService.get<string>("app.supabase.bucketName");
   }
 
-  /**
-   * Download image buffer from Supabase storage using a storage path.
-   */
+
   async downloadImage(path: string): Promise<Buffer> {
     const storagePath = this.getPathFromUrl(path);
     const { data, error } = await this.supabase.storage
@@ -28,7 +26,7 @@ export class StorageReader {
 
     if (error) {
       throw new AppError(
-        `Failed to download image from storage: ${error.message}`,
+        `Lỗi không thể tải ảnh từ storage: ${error.message}`,
         ERROR_CODES.SERVICE_UNAVAILABLE,
         { path },
       );
@@ -38,27 +36,21 @@ export class StorageReader {
     return buffer;
   }
 
-  /**
-   * Alias for downloadImage - kept for compatibility.
-   */
+
   async read(path: string): Promise<Buffer> {
     return this.downloadImage(path);
   }
 
-  /**
-   * Extract the storage path from a full URL or return the path as-is.
-   */
+
   getPathFromUrl(urlOrPath: string): string {
     try {
       const url = new URL(urlOrPath);
-      // Hỗ trợ cả public URL và signed URL:
-      // /storage/v1/object/public/<bucket>/path
-      // /storage/v1/object/sign/<bucket>/path?token=xxx
+
       const match = url.pathname.match(/\/storage\/v1\/object\/(?:public|sign)\/[^/]+\/(.+)/);
       if (match) return decodeURIComponent(match[1]);
       return urlOrPath;
     } catch {
-      // Not a URL, treat as path directly
+
       return urlOrPath;
     }
   }

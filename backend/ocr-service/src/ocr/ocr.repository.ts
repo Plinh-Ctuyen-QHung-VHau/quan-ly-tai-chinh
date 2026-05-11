@@ -54,8 +54,7 @@ export class OcrRepository {
     };
 
     if (failureReason) {
-      // Assuming failure_reason is for logging or another purpose, not a DB column
-      // If it were a column, it would be: updatePayload.failure_reason = failureReason;
+
     }
 
     const { error } = await this.supabase
@@ -98,11 +97,11 @@ export class OcrRepository {
     return data;
   }
   /**
-   * Find result by ID, ensuring it belongs to the given user via ocr_requests join.
-   * Uses 2-query approach since Supabase nested selects may not work for reverse joins.
+   * Lấy kết quả OCR theo ID, phải check kỹ xem có đúng của user đang request không
+   * Đoạn này bắt buộc phải dùng 2 query rời vì Supabase hay bị lỗi không join ngược (reverse joins) được.
    */
   async findResultById(id: string, user_id: string) {
-    // First verify the result exists
+
     const { data: result, error: resultError } = await this.supabase
       .from("ocr_results")
       .select("*")
@@ -112,7 +111,7 @@ export class OcrRepository {
     if (resultError) throw new Error(resultError.message);
     if (!result) return null;
 
-    // Verify the request belongs to the user
+
     const { data: request, error: requestError } = await this.supabase
       .from("ocr_requests")
       .select("id")
