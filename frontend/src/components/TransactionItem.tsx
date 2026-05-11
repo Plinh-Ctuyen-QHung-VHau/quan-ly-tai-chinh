@@ -34,7 +34,6 @@ export function TransactionItem({
       ]}
     >
       <View style={styles.row}>
-        {/* Receipt thumbnail only - hide entirely if no image */}
         {signedUrl ? (
           <Pressable onLongPress={() => setShowFullImage(true)}>
             <Image

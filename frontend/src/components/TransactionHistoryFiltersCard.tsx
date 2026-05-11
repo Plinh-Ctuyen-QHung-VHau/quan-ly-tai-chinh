@@ -68,7 +68,6 @@ export function TransactionHistoryFiltersCard({
 }: Props) {
   return (
     <AppCard style={styles.filterCard}>
-      {/* Header */}
       <View style={styles.cardHeader}>
         <View>
           <Text style={styles.sectionTitle}>Bộ lọc</Text>
@@ -76,7 +75,6 @@ export function TransactionHistoryFiltersCard({
 
       </View>
 
-      {/* Loại giao dịch */}
       <Text style={styles.label}>Loại giao dịch</Text>
       <View style={styles.typeRow}>
         {transactionTypeOptions.map((opt) => {
@@ -102,18 +100,15 @@ export function TransactionHistoryFiltersCard({
         })}
       </View>
 
-      {/* Danh mục */}
       <Text style={styles.label}>Danh mục</Text>
       <CategoryPicker
         items={categories}
         selectedId={category_id}
         onSelect={(id) => {
-          // Toggle: nếu bấm lại cùng category thì bỏ lọc
           setcategory_id(id === category_id ? "" : id);
         }}
       />
 
-      {/* Khoảng thời gian */}
       <View style={styles.rangeHeader}>
         <Text style={styles.label}>Khoảng thời gian</Text>
         {Boolean(fromDate || toDate) && (
@@ -122,7 +117,6 @@ export function TransactionHistoryFiltersCard({
         )}
       </View>
 
-      {/* Preset chips — bấm lại sẽ bỏ lọc */}
       <View style={styles.presetRow}>
         {PRESET_CHIPS.map(([preset, label]) => {
           const active = rangePreset === preset;
@@ -144,7 +138,6 @@ export function TransactionHistoryFiltersCard({
         })}
       </View>
 
-      {/* Date boxes */}
       <View style={styles.dateRow}>
         <DateBox
           label="Từ ngày"

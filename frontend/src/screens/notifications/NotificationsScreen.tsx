@@ -19,7 +19,6 @@ import { Notification } from "../../types/notification";
 import { formatDate } from "../../utils/formatDate";
 import { dataInvalidation } from "../../utils/dataInvalidation";
 
-/** Hiển thị tên loại thông báo thân thiện */
 function getTypeLabel(type: Notification["type"]) {
   switch (type) {
     case "budget_alert": return "Cảnh báo ngân sách";
@@ -56,7 +55,6 @@ export function NotificationsScreen() {
   const updateNotificationReadState = useNotificationStore(
     (state) => state.updateNotificationReadState,
   );
-  // Nếu appDataStore đã tải sẵn notifications thì không loading
   const [loading, setLoading] = useState(notifications.length === 0);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -65,7 +63,6 @@ export function NotificationsScreen() {
     notifications.length > 0 ? Date.now() : null
   );
 
-  // is_read là boolean theo đúng DB schema (không phải read_at)
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const hasUnread = safeNotifications.some((item) => !item.is_read);
   const unreadCount = safeNotifications.filter((item) => !item.is_read).length;
@@ -86,7 +83,6 @@ export function NotificationsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      // Chỉ gọi API nếu chưa từng load hoặc đã quá 60s
       if (!lastFetchedAt.current || Date.now() - lastFetchedAt.current > 60_000) {
         void loadNotifications();
       }
@@ -108,10 +104,8 @@ export function NotificationsScreen() {
     setSavingId(notification.id);
     try {
       await markNotificationAsRead(notification.id);
-      // Cập nhật is_read = true trong store (không dùng read_at)
       updateNotificationReadState(notification.id, new Date().toISOString());
     } catch {
-      // Silent fail — sẽ sync lại khi refresh
     } finally {
       setSavingId(null);
     }
@@ -123,7 +117,6 @@ export function NotificationsScreen() {
       await markAllNotificationsAsRead();
       await loadNotifications();
     } catch {
-      // Silent fail
     } finally {
       setSavingId(null);
     }
@@ -183,11 +176,9 @@ export function NotificationsScreen() {
                 pressed && styles.notifCardPressed,
               ]}
             >
-              {/* Left accent bar for unread */}
               {!isRead && <View style={styles.unreadAccent} />}
 
               <View style={styles.notifInner}>
-                {/* Type badge */}
                 <View style={[styles.typeBadge, { backgroundColor: typeBg }]}>
                   <Text style={[styles.typeBadgeText, { color: typeColor }]}>
                     {getTypeLabel(notification.type)}
@@ -198,7 +189,6 @@ export function NotificationsScreen() {
                   {notification.title}
                 </Text>
 
-                {/* content là field đúng theo DB schema, không phải message */}
                 <Text style={styles.notifBody} numberOfLines={3}>
                   {notification.content}
                 </Text>
@@ -250,7 +240,6 @@ const styles = StyleSheet.create({
 
   error: { color: COLORS.expense, marginTop: 10, fontWeight: "700" },
 
-  // Notification card
   notifCard: {
     ...shadow,
     flexDirection: "row",

@@ -27,7 +27,6 @@ const DEFAULT: NotificationSettings = {
   reminder_time: "20:00:00",
 };
 
-/** Chuyển "HH:mm:ss" hoặc "HH:mm" thành Date object (hôm nay) */
 function timeStringToDate(timeStr: string | null | undefined): Date {
   const d = new Date();
   const parts = (timeStr || "20:00:00").split(":");
@@ -35,14 +34,12 @@ function timeStringToDate(timeStr: string | null | undefined): Date {
   return d;
 }
 
-/** Chuyển Date thành "HH:mm:ss" */
 function dateToTimeString(date: Date): string {
   const hh = String(date.getHours()).padStart(2, "0");
   const mm = String(date.getMinutes()).padStart(2, "0");
   return `${hh}:${mm}:00`;
 }
 
-/** Hiển thị "HH:mm" thân thiện */
 function formatDisplayTime(timeStr: string | null | undefined): string {
   const parts = (timeStr || "20:00:00").split(":");
   return `${parts[0]}:${parts[1]}`;
@@ -107,7 +104,6 @@ export function NotificationSettingsScreen() {
         </View>
       ) : null}
 
-      {/* Master toggle */}
       <View style={styles.card}>
         <View style={styles.masterRow}>
           <View style={styles.masterLeft}>
@@ -127,7 +123,6 @@ export function NotificationSettingsScreen() {
         </View>
       </View>
 
-      {/* Các toggle chi tiết */}
       <View style={[styles.card, isDisabled && styles.cardDisabled]}>
         <Text style={styles.groupLabel}>Loại thông báo</Text>
 
@@ -160,7 +155,6 @@ export function NotificationSettingsScreen() {
         />
       </View>
 
-      {/* Time picker */}
       {settings.enable_daily_reminder && settings.enable_all && (
         <View style={styles.card}>
           <Text style={styles.groupLabel}>Thời gian nhắc nhở</Text>
@@ -185,7 +179,6 @@ export function NotificationSettingsScreen() {
             </View>
           </Pressable>
 
-          {/* Popup picker trên iOS */}
           {showTimePicker && Platform.OS === "ios" && (
             <Modal
               visible={showTimePicker}
@@ -218,7 +211,6 @@ export function NotificationSettingsScreen() {
         </View>
       )}
 
-      {/* Android time picker (modal) */}
       {showTimePicker && Platform.OS === "android" && (
         <DateTimePicker
           mode="time"
@@ -297,7 +289,6 @@ const styles = StyleSheet.create({
   },
   cardDisabled: { opacity: 0.5 },
 
-  // Master toggle
   masterRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -316,7 +307,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  // Toggle row
   toggleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -333,7 +323,6 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
 
-  // Time picker row
   timeRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -359,7 +348,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // iOS Modal picker
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(15,23,42,0.4)",

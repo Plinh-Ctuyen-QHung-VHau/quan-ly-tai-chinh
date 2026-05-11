@@ -202,7 +202,6 @@ const styles = StyleSheet.create({
   },
   errorText: { color: COLORS.expense, fontWeight: "700", fontSize: 13 },
 
-  // Avatar
   avatarCard: {
     ...shadow,
     backgroundColor: COLORS.white,
@@ -258,7 +257,6 @@ const styles = StyleSheet.create({
   },
   unverifiedText: { color: "#D97706", fontSize: 12, fontWeight: "800" },
 
-  // Card
   card: {
     ...shadow,
     backgroundColor: COLORS.white,
@@ -291,7 +289,6 @@ const styles = StyleSheet.create({
   },
   editBtnText: { color: COLORS.blue, fontWeight: "900", fontSize: 13 },
 
-  // Info rows
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -303,7 +300,6 @@ const styles = StyleSheet.create({
 
   divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 2 },
 
-  // Edit actions
   editActions: {
     flexDirection: "row",
     gap: 10,

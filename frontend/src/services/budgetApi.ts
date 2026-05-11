@@ -13,7 +13,7 @@ export type CreateBudgetPayload = {
   budget_amount: number;
   budget_period: budget_period;
   start_date: string;
-  end_date: string; // NOT NULL in DB — required
+  end_date: string;
 };
 
 export type UpdateBudgetPayload = Partial<CreateBudgetPayload>;
@@ -42,7 +42,6 @@ export async function getCurrentBudgetStatus(): Promise<BudgetStatus | null> {
     const payload = handleApiResponse<BudgetStatusApiResponse>(response);
     return normalizeBudgetStatus(payload);
   } catch (error: any) {
-    // Kiểm tra statusCode ở mọi vị trí có thể
     const status = 
       error?.statusCode ?? 
       error?.response?.status ?? 

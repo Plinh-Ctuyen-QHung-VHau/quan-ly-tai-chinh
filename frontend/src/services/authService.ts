@@ -66,13 +66,9 @@ export async function signUp(payload: RegisterPayload) {
 }
 
 export async function signOut(skipApiCall = false) {
-  // Set flags NGAY ĐẦU — trước mọi async operation khác
-  // để bỏ qua 401 từ bất kỳ request nào đang chạy ngầm
   setLoggingOut(true);
   cancelPendingRefresh();
 
-  // Xóa push token khỏi DB trước khi đăng xuất
-  // để tránh gửi thông báo nhầm khi user khác đăng nhập trên cùng thiết bị
   if (!skipApiCall) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -80,7 +76,6 @@ export async function signOut(skipApiCall = false) {
         await updateNotificationSettings({ push_token: null } as any);
       }
     } catch {
-      // Không chặn đăng xuất nếu xóa token thất bại
     }
   }
 
@@ -91,13 +86,11 @@ export async function signOut(skipApiCall = false) {
   }
 }
 
-/** Bước 1: Gửi mã OTP 6 số về email (dùng Reset Password template với {{ .Token }}) */
 export async function sendPasswordResetOtp(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email);
   if (error) throw mapAuthError(error);
 }
 
-/** Bước 2: Xác minh mã OTP 6 số từ email (type "recovery" cho reset password flow) */
 export async function verifyPasswordResetOtp(email: string, token: string) {
   const { data, error } = await supabase.auth.verifyOtp({
     email,
@@ -108,7 +101,6 @@ export async function verifyPasswordResetOtp(email: string, token: string) {
   return data.session;
 }
 
-/** Bước 3: Đặt mật khẩu mới (cần có session hợp lệ từ bước 2) */
 export async function updatePassword(newPassword: string) {
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw mapAuthError(error);

@@ -36,7 +36,6 @@ export async function registerForPushNotificationsAsync() {
       return;
     }
 
-    // Get projectId from constants
     const projectId = 
       Constants.expoConfig?.extra?.eas?.projectId || 
       Constants.easConfig?.projectId;

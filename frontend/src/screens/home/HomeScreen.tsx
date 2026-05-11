@@ -25,10 +25,6 @@ const EMPTY_SUMMARY: TransactionSummary = {
   balance: 0,
 };
 
-// colors and shadow imported from constants to reduce file size
-
-// Helper removed: inline check used for error status codes where needed
-
 function clampPercent(value: number) {
   if (!Number.isFinite(value) || Number.isNaN(value)) return 0;
   return Math.min(100, Math.max(0, value));
@@ -59,7 +55,6 @@ function getBudgetTheme(status?: BudgetStatus["status"]) {
   return { label: "" };
 }
 
-// StatTile and SmallMetric are provided by ../../components/MetricTiles
 
 export function HomeScreen() {
   const navigation = useNavigation<any>();

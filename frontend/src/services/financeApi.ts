@@ -4,14 +4,11 @@ import { invalidateData } from "../utils/dataInvalidation";
 import { handleApiResponse } from "../utils/responseHandler";
 
 export const financeApi = {
-  // Chatbot
   askChatbot: async (message: string, context?: string) => {
     const response = await apiClient.post(endpoints.chatbot.ask, { message, context });
     
-    // Sử dụng handleApiResponse để bóc tách data chuẩn (đã xử lý success: true/false)
     const result = handleApiResponse<any>(response);
     
-    // Kiểm tra flag reload từ Backend
     if (result?.actionPerformed === true) {
        console.log("[financeApi] AI Action detected, invalidating data...");
        invalidateData("transactions");
@@ -31,7 +28,6 @@ export const financeApi = {
     return response.data;
   },
 
-  // Anomalies
   getAnomalies: async () => {
     const response = await apiClient.get(endpoints.anomalies.list);
     return response.data;
@@ -48,7 +44,6 @@ export const financeApi = {
     return response.data;
   },
 
-  // Insights
   getInsights: async () => {
     const response = await apiClient.get(endpoints.insights.summary);
     return response.data;

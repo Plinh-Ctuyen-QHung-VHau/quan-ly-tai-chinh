@@ -47,7 +47,6 @@ export const ChatBubble = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  // Reset về welcome mỗi khi mở modal
   useEffect(() => {
     if (isOpen) {
       setShowWelcome(true);
@@ -153,7 +152,6 @@ export const ChatBubble = () => {
           <View style={styles.sheet}>
               <View style={styles.handleBar} />
 
-              {/* Header */}
               <View style={styles.header}>
                 <View style={styles.headerLeft}>
                   <View style={styles.avatarCircle}>
@@ -169,7 +167,6 @@ export const ChatBubble = () => {
                 </Pressable>
               </View>
 
-              {/* Messages / Welcome */}
               <ScrollView
                 ref={scrollRef}
                 style={styles.messages}
@@ -188,7 +185,6 @@ export const ChatBubble = () => {
               >
                 {showWelcome ? (
                   <View style={styles.welcomeWrap}>
-                    {/* Bot greeting */}
                     <View style={styles.rowBot}>
                       <View style={styles.botAvatar}>
                         <Text style={styles.botAvatarIcon}>💬</Text>
@@ -198,7 +194,6 @@ export const ChatBubble = () => {
                       </View>
                     </View>
 
-                    {/* Suggestion cards */}
                     <View style={styles.suggestBox}>
                       <Text style={styles.suggestTitle}>❓ Bạn muốn hỏi về:</Text>
                       {SUGGESTIONS.map((s, i) => (
@@ -244,7 +239,6 @@ export const ChatBubble = () => {
                 )}
               </ScrollView>
 
-              {/* Quick suggestion chips — luôn hiện phía trên input */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -259,7 +253,6 @@ export const ChatBubble = () => {
                 ))}
               </ScrollView>
 
-              {/* Input bar */}
               <View style={styles.inputBar}>
                 <TextInput
                   style={styles.input}
@@ -336,7 +329,6 @@ const styles = StyleSheet.create({
   messages: { flex: 1 },
   messagesContent: { padding: 16, gap: 10 },
 
-  // Welcome
   welcomeWrap: { gap: 16 },
   suggestBox: {
     backgroundColor: '#F8FAFC', borderRadius: 16,
@@ -359,14 +351,12 @@ const styles = StyleSheet.create({
   },
   historyBtnText: { fontSize: 13, color: '#64748B' },
 
-  // History button top of chat
   historyBtnTop: {
     alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 16,
     borderRadius: 14, backgroundColor: '#F1F5F9', marginBottom: 8,
   },
   historyBtnTopText: { fontSize: 12, color: '#64748B' },
 
-  // Messages
   rowUser: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 },
   rowBot: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 4 },
   botAvatar: {
@@ -380,7 +370,6 @@ const styles = StyleSheet.create({
   textUser: { color: '#FFFFFF', fontSize: 15, lineHeight: 22 },
   textBot: { color: '#0F172A', fontSize: 15, lineHeight: 22 },
 
-  // Chip bar
   chipBar: {
     borderTopWidth: 1, borderTopColor: '#F1F5F9',
     maxHeight: 48,
@@ -395,7 +384,6 @@ const styles = StyleSheet.create({
   },
   chipText: { fontSize: 12, color: '#1E40AF' },
 
-  // Input
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end',
     paddingHorizontal: 16, paddingTop: 12,

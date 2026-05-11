@@ -300,7 +300,6 @@ export function TransactionConfirmScreen() {
 const styles = StyleSheet.create({
   container: { backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingBottom: 40, paddingTop: 40 },
 
-  // Hero
   heroWrap: { marginTop: 12, marginBottom: 20, borderRadius: 32, backgroundColor: COLORS.dark, overflow: "hidden", padding: 24, paddingBottom: 20 },
   heroGlowLeft: { position: "absolute", left: -40, bottom: -40, width: 180, height: 180, borderRadius: 999, backgroundColor: "rgba(37,99,235,0.18)" },
   heroGlowRight: { position: "absolute", right: -20, top: -20, width: 120, height: 120, borderRadius: 999, backgroundColor: "rgba(124,58,237,0.15)" },
@@ -308,7 +307,7 @@ const styles = StyleSheet.create({
   heroKicker: { color: "#93C5FD", fontSize: 11, fontWeight: "900", letterSpacing: 2, marginBottom: 10 },
   heroTitle: { color: COLORS.white, fontSize: 34, fontWeight: "900", letterSpacing: -0.8, marginBottom: 8 },
   heroSubtitle: { color: "#94A3B8", fontSize: 14, lineHeight: 21 },
-  // Receipt image card
+
   receiptCard: { ...shadow, borderRadius: 24, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16, overflow: "hidden", height: 240 },
   receiptImage: { width: "100%", height: "100%" },
   receiptOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: "rgba(10,15,30,0.55)" },
@@ -316,13 +315,11 @@ const styles = StyleSheet.create({
   receiptLabelTitle: { color: "#FFFFFF", fontWeight: "900", fontSize: 14, letterSpacing: 0.2 },
   receiptLabelSub: { color: "rgba(255,255,255,0.7)", fontWeight: "600", fontSize: 12 },
 
-  // Amount card
   amountCard: { borderRadius: 28, borderWidth: 1.5, padding: 22, marginBottom: 16, ...shadow },
   amountCardLabel: { color: COLORS.muted, fontSize: 14, fontWeight: "800", marginBottom: 8 },
   amountCardValue: { fontSize: 44, fontWeight: "900", letterSpacing: -1.5, marginBottom: 6 },
   amountCardDate: { color: COLORS.muted, fontSize: 13, fontWeight: "700" },
 
-  // Type selector
   section: { marginBottom: 14 },
   sectionLabel: { color: COLORS.text, fontSize: 15, fontWeight: "900", marginBottom: 10 },
   typeSegment: { flexDirection: "row", gap: 10 },
@@ -332,7 +329,6 @@ const styles = StyleSheet.create({
   typeBtnText: { color: COLORS.muted, fontWeight: "900", fontSize: 15 },
   typeBtnTextActive: { color: COLORS.white },
 
-  // Form card
   formCard: { ...shadow, backgroundColor: COLORS.white, borderRadius: 28, padding: 20, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16 },
   fieldGroup: { marginBottom: 18 },
   fieldLabel: { color: COLORS.text, fontWeight: "900", fontSize: 14, marginBottom: 8 },
@@ -340,7 +336,6 @@ const styles = StyleSheet.create({
   loadingHint: { color: COLORS.muted, fontSize: 12, fontWeight: "700" },
   emptyHint: { color: COLORS.muted, fontSize: 13, paddingVertical: 8, fontWeight: "700" },
 
-  // Date field
   dateField: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: "#F8FAFC" },
   dateFieldPressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
   dateFieldRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
@@ -349,11 +344,9 @@ const styles = StyleSheet.create({
   dateEditBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: COLORS.blueLight, borderWidth: 1, borderColor: COLORS.blueSoft },
   dateEditBtnText: { color: COLORS.blue, fontWeight: "900", fontSize: 12 },
 
-  // Error
   errorBox: { backgroundColor: COLORS.expenseSoft, borderWidth: 1, borderColor: COLORS.expenseBorder, borderRadius: 16, padding: 14 },
   errorText: { color: COLORS.expense, fontWeight: "800", fontSize: 14, lineHeight: 20 },
 
-  // Actions
   backBtn: { marginTop: 12, height: 52, borderRadius: 18, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center" },
   backBtnPressed: { opacity: 0.8, transform: [{ scale: 0.99 }] },
   backBtnDisabled: { opacity: 0.5 },

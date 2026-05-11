@@ -24,7 +24,6 @@ export function unwrapApiResponse<T>(
 ): T {
   if (!payload.success) {
     const errorPayload = payload as ApiErrorPayload;
-    // Tìm statusCode trong details nếu Gateway bọc nó bên trong
     const nestedStatusCode = (errorPayload.error?.details as any)?.statusCode;
 
     throw new ApiError(payload.message, {

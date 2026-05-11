@@ -43,7 +43,6 @@ export function invalidateData(key: DataKey) {
   }
 }
 
-/** Hủy bỏ tất cả pending refresh để tránh gọi API sau khi logout */
 export function cancelPendingRefresh() {
   if (refreshTimeout) {
     clearTimeout(refreshTimeout);

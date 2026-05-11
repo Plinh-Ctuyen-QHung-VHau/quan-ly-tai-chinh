@@ -1,6 +1,5 @@
 import { TransactionType } from "./category";
 
-/** Shape chuẩn hóa (camelCase) dùng trong toàn bộ FE sau khi normalize */
 export interface OcrResult {
   id?: string;
   request_id?: string;
@@ -14,7 +13,6 @@ export interface OcrResult {
   parsed_fields_json?: Record<string, any> | null;
 }
 
-/** Shape thô từ API (snake_case — Supabase trả nguyên bản) */
 export interface OcrResultRaw {
   id?: string;
   request_id?: string;

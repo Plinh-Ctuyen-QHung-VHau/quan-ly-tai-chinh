@@ -17,7 +17,6 @@ import { BudgetStatus } from "../../types/budget";
 import { formatCurrency } from "../../utils/formatCurrency";
 import { formatDate } from "../../utils/formatDate";
 
-// BudgetStatus.status từ API: "healthy" | "warning" | "danger" | "no-budget"
 function getProgressColor(percent: number) {
   if (percent >= 90) return COLORS.expense;
   if (percent >= 70) return "#D97706";
@@ -95,7 +94,6 @@ export function BudgetScreen() {
     }
   };
 
-  // Tạo ngân sách MỚI SONG SONG — không xóa ngân sách cũ
   const openCreateBudget = () => {
     navigation.navigate("BudgetForm", { mode: "create" });
   };
@@ -171,7 +169,6 @@ export function BudgetScreen() {
       />
 
       <AppCard style={styles.card}>
-        {/* Compact card header */}
         <View style={styles.cardHeader}>
           <View>
             <Text style={styles.cardTitle}>Ngân sách</Text>
@@ -212,7 +209,6 @@ export function BudgetScreen() {
               <Text style={styles.percentHint}> ngân sách</Text>
             </View>
 
-            {/* Progress bar */}
             <View style={styles.progressTrack}>
               <View
                 style={[
@@ -225,7 +221,6 @@ export function BudgetScreen() {
               />
             </View>
 
-            {/* Inline 3-column stat row */}
             <View style={styles.statRow}>
               <View style={styles.statCol}>
                 <Text style={styles.statColLabel}>Ngân sách</Text>

@@ -1,5 +1,4 @@
 export type budget_period = "weekly" | "monthly";
-/** Alias for budget_period — used in API response normalization */
 export type BudgetPeriod = budget_period;
 
 export interface Budget {

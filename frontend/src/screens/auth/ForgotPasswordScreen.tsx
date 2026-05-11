@@ -62,7 +62,6 @@ export function ForgotPasswordScreen({
   const [loading, setLoading] = useState(false);
   const [sendError, setSendError] = useState("");
 
-  // ─── Bước 1: Gửi OTP ─────────────────────────────────────────────
   const handleSendOtp = async () => {
     setEmailError("");
     setSendError("");
@@ -86,7 +85,6 @@ export function ForgotPasswordScreen({
     }
   };
 
-  // ─── Bước 2: Xác minh OTP ────────────────────────────────────────
   const handleVerifyOtp = async () => {
     setOtpError("");
     const token = otp.join("");
@@ -96,8 +94,6 @@ export function ForgotPasswordScreen({
     }
     setLoading(true);
     try {
-      // Supabase tự cập nhật internal session sau verifyOtp
-      // KHÔNG gọi setSession ở đây — tránh AppNavigator navigate sang MainTabs
       await verifyPasswordResetOtp(email.trim(), token);
       setStep("newPassword");
     } catch (err) {
@@ -107,7 +103,6 @@ export function ForgotPasswordScreen({
     }
   };
 
-  // ─── Bước 3: Đặt mật khẩu mới ───────────────────────────────────
   const handleUpdatePassword = async () => {
     setPasswordError("");
     if (!validatePassword(newPassword)) {
@@ -121,7 +116,6 @@ export function ForgotPasswordScreen({
     setLoading(true);
     try {
       await updatePassword(newPassword);
-      // Lấy session mới nhất sau khi đổi mật khẩu → AppNavigator navigate vào app
       const { data } = await supabase.auth.getSession();
       setSession(data.session);
     } catch (err) {
@@ -133,7 +127,6 @@ export function ForgotPasswordScreen({
 
   const meta = STEP_LABELS[step];
 
-  // ─── OTP input handler ───────────────────────────────────────────
   const handleOtpChange = (value: string, index: number) => {
     const digit = value.replace(/[^0-9]/g, "").slice(-1);
     const next = [...otp];
@@ -167,7 +160,6 @@ export function ForgotPasswordScreen({
         <View style={styles.bgOrbTop} />
         <View style={styles.bgOrbBottom} />
 
-        {/* Back / close */}
         <Pressable
           style={styles.backBtn}
           onPress={canGoBack ? handleBack : () => navigation.goBack()}
@@ -186,7 +178,6 @@ export function ForgotPasswordScreen({
 
         <AppCard style={styles.card}>
 
-          {/* ── Bước 1: Email ─────────────────────────── */}
           {step === "email" && (
             <>
               <AppInput
@@ -213,7 +204,6 @@ export function ForgotPasswordScreen({
             </>
           )}
 
-          {/* ── Bước 2: OTP ───────────────────────────── */}
           {step === "otp" && (
             <>
               <Text style={styles.otpHint}>
@@ -271,7 +261,6 @@ export function ForgotPasswordScreen({
             </>
           )}
 
-          {/* ── Bước 3: Mật khẩu mới ─────────────────── */}
           {step === "newPassword" && (
             <>
               <AppInput

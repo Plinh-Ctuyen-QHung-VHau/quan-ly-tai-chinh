@@ -35,7 +35,6 @@ export function TransactionDetailScreen() {
       lastFetchedAt.current = Date.now();
     } catch (err: any) {
       const status = err?.statusCode ?? err?.response?.status;
-      // Nếu đang xóa thì bỏ qua lỗi 404
       if (status === 404 && !deleting) {
         navigation.goBack();
       }
@@ -62,7 +61,6 @@ export function TransactionDetailScreen() {
     return unsubscribe;
   }, [loadTransaction]);
 
-  // Hook phải luôn được gọi trước conditional return
   const receiptSignedUrl = useSignedUrl(transaction?.image_url);
 
   const expenseCategories = useAppDataStore((state) => state.expenseCategories);
@@ -243,7 +241,6 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20 },
   error: { color: COLORS.expense, fontSize: 16, fontWeight: "700" },
 
-  // Header Background
   headerWrap: { backgroundColor: COLORS.dark, paddingTop: 60, paddingBottom: 40, borderBottomLeftRadius: 40, borderBottomRightRadius: 40, position: "relative", overflow: "hidden", ...shadow },
   glowLeft: { position: "absolute", left: -40, top: -40, width: 200, height: 200, borderRadius: 999, backgroundColor: "rgba(37,99,235,0.15)" },
   glowRight: { position: "absolute", right: -20, bottom: -20, width: 150, height: 150, borderRadius: 999, backgroundColor: "rgba(124,58,237,0.12)" },
@@ -254,7 +251,6 @@ const styles = StyleSheet.create({
   amount: { fontSize: 48, fontWeight: "900", letterSpacing: -1.5, marginBottom: 8, textAlign: "center" },
   date: { color: "#94A3B8", fontSize: 15, fontWeight: "700" },
 
-  // Details Card
   detailsCard: { backgroundColor: COLORS.white, borderRadius: 28, marginHorizontal: 16, marginTop: -20, padding: 24, borderWidth: 1, borderColor: COLORS.border, ...shadow },
   detailRow: { flexDirection: "row", alignItems: "center" },
   detailContent: { flex: 1 },
@@ -262,13 +258,11 @@ const styles = StyleSheet.create({
   detailValue: { color: COLORS.text, fontSize: 16, fontWeight: "800" },
   divider: { height: 1, backgroundColor: "#F1F5F9", marginVertical: 16 },
 
-  // Image Card
   imageCard: { backgroundColor: COLORS.white, borderRadius: 28, marginHorizontal: 16, marginTop: 16, padding: 20, borderWidth: 1, borderColor: COLORS.border, ...shadow },
   imageTitle: { color: COLORS.text, fontSize: 16, fontWeight: "900", marginBottom: 16 },
   receiptImage: { width: "100%", height: 300, borderRadius: 16, backgroundColor: "#F1F5F9" },
   imageHint: { color: COLORS.muted, fontSize: 12, fontWeight: "700", textAlign: "center", marginTop: 10 },
 
-  // Floating Action Bar
   floatingActionBar: {
     position: "absolute",
     bottom: 34,

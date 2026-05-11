@@ -23,7 +23,6 @@ export function setUnauthorizedHandler(
 
 export function setLoggingOut(value: boolean) {
   isLoggingOut = value;
-  // Auto-reset after 3s to avoid getting stuck in logout state
   if (value) setTimeout(() => { isLoggingOut = false; }, 3000);
 }
 
@@ -32,7 +31,6 @@ export const apiClient = axios.create({
   timeout: 30000,
 });
 
-// Retry helper cho Network Error (thiết bị treo, mạng yếu)
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -47,8 +45,6 @@ async function retryRequest(error: unknown, retries = 2): Promise<any> {
     if (config) {
       config._retryCount = (config._retryCount || 0) + 1;
       if (config._retryCount <= 2) {
-        // Use axios directly to bypass apiClient response interceptors if you want, or just let interceptor handle it via config flags
-        // Actually, since we use apiClient.request, it will hit the interceptor again. 
         return await apiClient.request(config);
       }
     }
@@ -91,7 +87,6 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Kiểm tra xem đây có phải là lỗi 404 của Budget bọc trong response thành công không
     const data = response.data;
     if (data && typeof data === "object" && data.success === false) {
       const nestedStatus = data.error?.details?.statusCode;
@@ -100,15 +95,12 @@ apiClient.interceptors.response.use(
         response.config.url?.includes(endpoints.budgets.currentStatus);
 
       if (isBudgetStatus404) {
-        // Trả về response lỗi để handleApiResponse có thể xử lý, 
-        // nhưng không in log console.error ở đây.
         return response;
       }
     }
     return response;
   },
   async (error: unknown) => {
-    // Retry tự động khi Network Error
     const isNetworkError =
       axios.isAxiosError(error) && !error.response && error.code !== "ERR_CANCELED";
 
@@ -121,7 +113,6 @@ apiClient.interceptors.response.use(
 
     const normalizedError = normalizeAxiosError(error);
 
-    // Xác định xem có nên bỏ qua log lỗi này không
     const isBudgetStatus404 =
       normalizedError.statusCode === 404 &&
       axios.isAxiosError(error) &&
@@ -133,7 +124,6 @@ apiClient.interceptors.response.use(
       error.config?.url?.includes("/api/transactions/") &&
       error.config?.method?.toLowerCase() === "get";
 
-    // Bỏ qua hoàn toàn lỗi 401 khi user đang đăng xuất chủ động
     const is401DuringLogout = normalizedError.statusCode === 401 && isLoggingOut;
 
     if (!isBudgetStatus404 && !isTransactionDetail404 && !is401DuringLogout) {

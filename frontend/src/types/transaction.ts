@@ -2,7 +2,6 @@ import { TransactionType } from "./category";
 
 export type TransactionSource = "camera" | "gallery" | "chatbot";
 
-/** Shape nhận từ API (snake_case — Supabase trả nguyên bản) */
 export interface Transaction {
   id: string;
   user_id?: string;
@@ -24,7 +23,6 @@ export interface Transaction {
   updated_at?: string;
 }
 
-/** Payload gửi lên backend (camelCase → DTO) */
 export interface CreateTransactionPayload {
   amount: number;
   type: TransactionType;
@@ -39,7 +37,6 @@ export interface CreateTransactionPayload {
 
 export type UpdateTransactionPayload = Partial<CreateTransactionPayload>;
 
-/** Backend trả camelCase từ JS object (bukan Supabase raw) */
 export interface TransactionSummary {
   total_income: number;
   total_expense: number;

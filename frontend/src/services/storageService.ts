@@ -68,52 +68,38 @@ export async function uploadReceiptImage(uri: string, user_id: string) {
     throw error;
   }
 
-  // Trả về storage path (không có bucket name) để lưu vào DB.
-  // getReceiptSignedUrl() sẽ tạo signed URL tươi khi cần hiển thị.
   console.log("[UPLOAD] uploaded path:", data.path);
 
   return data.path;
 }
 
-/**
- * Lấy signed URL từ image_url đã lưu trong DB.
- * Hỗ trợ cả publicUrl (extract path) và storage path trực tiếp.
- */
 const SIGNED_URL_CACHE = new Map<string, { url: string; expiresAt: number }>();
-const SIGNED_URL_TTL = 50 * 60 * 1000; // 50 phút (signed URL có hiệu lực 1 giờ)
+const SIGNED_URL_TTL = 50 * 60 * 1000;
 
 export async function getReceiptSignedUrl(image_url: string | null | undefined): Promise<string | null> {
   if (!image_url) return null;
 
-  // Nếu đã có signed URL hợp lệ trong cache
   const cached = SIGNED_URL_CACHE.get(image_url);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.url;
   }
 
-  // Trích xuất path từ URL Supabase. 
-  // Supabase URL thường có dạng: .../object/[public|sign]/receipts/[userId/filename.jpg]
-  // createSignedUrl yêu cầu path KHÔNG CÓ tên bucket.
   let storagePath = image_url;
   
   if (image_url.startsWith("http")) {
     try {
       const url = new URL(image_url);
       const pathParts = url.pathname.split("/");
-      // Tìm vị trí của bucket name 'receipts' trong path
       const bucketIndex = pathParts.indexOf("receipts");
       if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
-        // Lấy tất cả phần sau bucket name
         storagePath = pathParts.slice(bucketIndex + 1).join("/");
       }
     } catch (e) {
-      // Nếu không parse được URL, thử regex cũ làm fallback
       const match = image_url.match(/receipts\/(.+?)(\?|$)/);
       if (match) storagePath = match[1];
     }
   }
   
-  // Xóa các query params nếu còn sót (như ?token=...)
   storagePath = storagePath.split("?")[0];
 
   try {

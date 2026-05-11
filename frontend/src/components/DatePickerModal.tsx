@@ -32,11 +32,9 @@ export function DatePickerModal({
 
   useEffect(() => {
     if (visible) {
-      // Chỉ reset khi modal vừa mở, dùng value tại thời điểm mở
       const d = Number.isNaN(value.getTime()) ? new Date() : value;
       setTempDate(d);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   return (
