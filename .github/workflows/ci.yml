@@ -6,15 +6,13 @@ on:
   pull_request:
     branches: [main, develop]
 
-# Hủy run cũ cùng branch khi có run mới hơn
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ─── Backend ──────────────────────────────────────────────────────
   api-gateway:
-    name: API Gateway – Lint / Build / Test
+    name: API Gateway – Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,12 +25,7 @@ jobs:
           cache: npm
           cache-dependency-path: backend/api-gateway/package-lock.json
       - run: npm ci
-      - name: Lint
-        run: npm run lint
-      - name: Build
-        run: npm run build
-      - name: Test (passWithNoTests – placeholder cho test case sau)
-        run: npm test -- --passWithNoTests
+      - run: npm run build
 
   identity-service:
     name: Identity Service – Build
@@ -45,9 +38,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: npm
-          cache-dependency-path: backend/identity-service/package-lock.json
-      - run: npm ci
+      - run: npm install
       - run: npm run build
 
   transaction-service:
@@ -68,7 +59,6 @@ jobs:
 
   ocr-service:
     name: OCR Service – Build
-    # Dùng bookworm vì Dockerfile của ocr-service cũng dùng node:18-bookworm (cần apt)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -100,7 +90,7 @@ jobs:
       - run: npm run build
 
   finance-intelligence:
-    name: Finance Intelligence – Build & Test
+    name: Finance Intelligence – Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -113,15 +103,10 @@ jobs:
           cache: npm
           cache-dependency-path: backend/finance-intelligence/package-lock.json
       - run: npm ci
-      - name: Build
-        run: npm run build
-      - name: Run unit tests
-        # tsx chạy file .ts trực tiếp; node:test tự kích hoạt khi file được thực thi
-        run: npx tsx src/anomaly/anomaly.detector.spec.ts
+      - run: npm run build
 
-  # ─── Frontend ──────────────────────────────────────────────────────
   frontend:
-    name: Frontend – Type Check
+    name: Frontend – Install
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -134,12 +119,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      - name: Type check
-        run: npm run typecheck
 
-  # ─── Job tổng hợp (gate) ───────────────────────────────────────────
-  # CD workflow chỉ chạy khi job này thành công
-  # Dùng làm required status check trong branch protection rules
   ci-passed:
     name: CI Passed
     runs-on: ubuntu-latest

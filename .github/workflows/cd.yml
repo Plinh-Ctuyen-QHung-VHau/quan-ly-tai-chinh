@@ -1,8 +1,6 @@
 name: CD – Docker Build & Push
 
 on:
-  # Chỉ chạy khi CI workflow hoàn thành thành công trên nhánh main
-  # → đảm bảo KHÔNG bao giờ push Docker image từ code lỗi
   workflow_run:
     workflows: ["CI"]
     branches: [main]
@@ -16,7 +14,6 @@ jobs:
   docker:
     name: Build & Push – ${{ matrix.service }}
     runs-on: ubuntu-latest
-    # Dừng toàn bộ CD nếu CI không pass
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
