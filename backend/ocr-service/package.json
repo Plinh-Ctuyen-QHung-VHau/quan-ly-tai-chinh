@@ -24,6 +24,7 @@
     "moduleNameMapper": {
       "^@shared/(.*)$": "<rootDir>/../../shared/$1"
     },
+    "modulePaths": ["<rootDir>/../node_modules"],
     "testTimeout": 120000
   },
   "dependencies": {

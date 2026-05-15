@@ -21,6 +21,10 @@
     "collectCoverageFrom": ["**/*.(t|j)s"],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@shared/(.*)$": "<rootDir>/../../shared/$1"
+    },
+    "modulePaths": ["<rootDir>/../node_modules"],
     "testTimeout": 60000
   },
   "dependencies": {
