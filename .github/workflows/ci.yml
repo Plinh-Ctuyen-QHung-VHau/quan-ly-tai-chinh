@@ -28,15 +28,15 @@ jobs:
       BUDGET_NOTIFICATION_SERVICE_URL: http://localhost:3004
       FINANCE_INTELLIGENCE_SERVICE_URL: http://localhost:3006
       RATE_LIMIT_TTL: 60
-      RATE_LIMIT_LIMIT: 100
+      RATE_LIMIT_MAX: 100
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
           cache-dependency-path: backend/api-gateway/package-lock.json
-      - run: npm ci
+      - run: npm install
       - run: npm run build
       - run: npm run test:ci
 
@@ -57,10 +57,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
           cache-dependency-path: backend/identity-service/package-lock.json
-      - run: npm ci
+      - run: npm install
       - run: npm run build
       - run: npm run test:ci
 
@@ -82,10 +82,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
           cache-dependency-path: backend/transaction-service/package-lock.json
-      - run: npm ci
+      - run: npm install
       - run: npm run build
       - run: npm run test:ci
 
@@ -111,10 +111,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
           cache-dependency-path: backend/ocr-service/package-lock.json
-      - run: npm ci
+      - run: npm install
       - run: npm run build
       - run: npm run test:ci
 
@@ -138,10 +138,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
           cache-dependency-path: backend/budget-notification-service/package-lock.json
-      - run: npm ci
+      - run: npm install
       - run: npm run build
       - run: npm run test:ci
 
@@ -162,6 +162,7 @@ jobs:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_MODEL: gemini-2.0-flash
       GEMINI_TIMEOUT_MS: 30000
+      GEMINI_FORMAT_RESPONSE: "false"
       API_GATEWAY_URL: http://localhost:3000
       TRANSACTION_SERVICE_URL: http://localhost:3002
       BUDGET_NOTIFICATION_SERVICE_URL: http://localhost:3004
@@ -170,10 +171,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
           cache-dependency-path: backend/finance-intelligence/package-lock.json
-      - run: npm ci
+      - run: npm install
       - run: npm run build
       - run: npm run test:ci
 
@@ -187,10 +188,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+      - run: npm install
       - run: npm run typecheck
 
   ci-passed:
