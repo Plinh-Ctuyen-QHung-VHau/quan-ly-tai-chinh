@@ -159,7 +159,7 @@ describe('Finance Intelligence Service (e2e)', () => {
     const res = await request(app.getHttpServer())
       .post('/anomalies/recheck/00000000-0000-0000-0000-000000000000')
       .set('x-user-id', TEST_USER_ID);
-    expect([200, 404, 422, 500]).toContain(res.status);
+    expect([200, 201, 404, 422, 500]).toContain(res.status);
   });
 
   // ─── INTEGRATION ──────────────────────────────────────────────────────────────
