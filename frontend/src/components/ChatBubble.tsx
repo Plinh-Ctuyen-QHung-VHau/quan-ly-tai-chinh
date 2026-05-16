@@ -17,6 +17,8 @@ import {
   View,
 } from 'react-native';
 import { financeApi } from '../services/financeApi';
+import { BotMessageRenderer } from './BotMessageRenderer';
+import { ChatChart } from './ChatChart';
 
 const SCREEN = Dimensions.get('window');
 const BUBBLE_SIZE = 58;
@@ -28,7 +30,14 @@ const SUGGESTIONS = [
   { text: 'Thu nhập tháng này của tôi là bao nhiêu?' },
 ];
 
-type ChatMessage = { id: string; sender: 'user' | 'bot'; text: string };
+type ChatMessage = {
+  id: string;
+  sender: 'user' | 'bot';
+  text: string;
+  intent?: string;
+  chartData?: any;
+  chartArgs?: any;
+};
 
 function mapSessionMessage(m: any): ChatMessage {
   return {
@@ -100,7 +109,14 @@ export const ChatBubble = () => {
     try {
       const res = await financeApi.askChatbot(text);
       const reply = res?.reply || 'Tôi chưa có câu trả lời phù hợp.';
-      setMessages(prev => [...prev, { id: Date.now() + 'b', sender: 'bot', text: reply }]);
+      setMessages(prev => [...prev, {
+        id: Date.now() + 'b',
+        sender: 'bot',
+        text: reply,
+        intent: res?.metadata?.intent,
+        chartData: res?.data ?? null,
+        chartArgs: res?.metadata?.args ?? null,
+      }]);
     } catch (error: any) {
       setMessages(prev => [...prev, { id: Date.now() + 'e', sender: 'bot', text: `Lỗi: ${error.message}` }]);
     } finally {
@@ -150,137 +166,151 @@ export const ChatBubble = () => {
         >
           <Pressable style={styles.backdrop} onPress={() => setIsOpen(false)} />
           <View style={styles.sheet}>
-              <View style={styles.handleBar} />
+            <View style={styles.handleBar} />
 
-              <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarIcon}>💬</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.headerTitle}>Trợ lý tài chính AI</Text>
-                    <Text style={styles.headerSub}>Luôn sẵn sàng hỗ trợ bạn</Text>
-                  </View>
+            <View style={styles.header}>
+              <View style={styles.headerLeft}>
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarIcon}>💬</Text>
                 </View>
-                <Pressable onPress={() => setIsOpen(false)} style={styles.closeBtn} hitSlop={10}>
-                  <Text style={styles.closeBtnText}>✕</Text>
-                </Pressable>
+                <View>
+                  <Text style={styles.headerTitle}>Trợ lý tài chính AI</Text>
+                  <Text style={styles.headerSub}>Luôn sẵn sàng hỗ trợ bạn</Text>
+                </View>
               </View>
+              <Pressable onPress={() => setIsOpen(false)} style={styles.closeBtn} hitSlop={10}>
+                <Text style={styles.closeBtnText}>✕</Text>
+              </Pressable>
+            </View>
 
-              <ScrollView
-                ref={scrollRef}
-                style={styles.messages}
-                contentContainerStyle={styles.messagesContent}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={historyLoading}
-                    onRefresh={handleLoadHistory}
-                    tintColor="#2563EB"
-                    title="Đang tải lịch sử..."
-                    titleColor="#64748B"
-                  />
-                }
-              >
-                {showWelcome ? (
-                  <View style={styles.welcomeWrap}>
+            <ScrollView
+              ref={scrollRef}
+              style={styles.messages}
+              contentContainerStyle={styles.messagesContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={historyLoading}
+                  onRefresh={handleLoadHistory}
+                  tintColor="#2563EB"
+                  title="Đang tải lịch sử..."
+                  titleColor="#64748B"
+                />
+              }
+            >
+              {showWelcome ? (
+                <View style={styles.welcomeWrap}>
+                  <View style={styles.rowBot}>
+                    <View style={styles.botAvatar}>
+                      <Text style={styles.botAvatarIcon}>💬</Text>
+                    </View>
+                    <View style={[styles.bubble2, styles.bubbleBot]}>
+                      <BotMessageRenderer text="Xin chào! Tôi là trợ lý tài chính của bạn. Tôi có thể giúp bạn theo dõi chi tiêu, phân tích tài chính và trả lời các câu hỏi về ngân sách 😊" />
+                    </View>
+                  </View>
+
+                  <View style={styles.suggestBox}>
+                    <Text style={styles.suggestTitle}>❓ Bạn muốn hỏi về:</Text>
+                    {SUGGESTIONS.map((s, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        style={[styles.suggestItem, i > 0 && styles.suggestItemBorder]}
+                        onPress={() => sendText(s.text)}
+                        activeOpacity={0.65}
+                      >
+                        <Text style={styles.suggestText}>{s.text}</Text>
+                        <Text style={styles.suggestArrow}>›</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                </View>
+              ) : (
+                <>
+
+                  {messages.map((m) => (
+                    <View key={m.id} style={m.sender === 'user' ? styles.rowUser : styles.rowBot}>
+                      {m.sender === 'bot' && (
+                        <View style={styles.botAvatar}>
+                          <Text style={styles.botAvatarIcon}>💬</Text>
+                        </View>
+                      )}
+                      <View style={[
+                        styles.bubble2,
+                        m.sender === 'user' ? styles.bubbleUser : styles.bubbleBot,
+                        m.sender === 'bot' && m.chartData ? styles.bubbleBotWide : null,
+                      ]}>
+                        {m.sender === 'user'
+                          ? <Text style={styles.textUser}>{m.text}</Text>
+                          : <BotMessageRenderer text={m.text} />
+                        }
+                        {m.sender === 'bot' && (
+                          <ChatChart
+                            intent={m.intent}
+                            data={m.chartData}
+                            args={m.chartArgs}
+                          />
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                  {isSending && (
                     <View style={styles.rowBot}>
                       <View style={styles.botAvatar}>
                         <Text style={styles.botAvatarIcon}>💬</Text>
                       </View>
                       <View style={[styles.bubble2, styles.bubbleBot]}>
-                        <Text style={styles.textBot}>Xin chào! Tôi là trợ lý tài chính của bạn. Tôi có thể giúp bạn theo dõi chi tiêu, phân tích tài chính và trả lời các câu hỏi về ngân sách 😊</Text>
+                        <Text style={styles.textBot}>Đang trả lời...</Text>
                       </View>
                     </View>
+                  )}
+                </>
+              )}
+            </ScrollView>
 
-                    <View style={styles.suggestBox}>
-                      <Text style={styles.suggestTitle}>❓ Bạn muốn hỏi về:</Text>
-                      {SUGGESTIONS.map((s, i) => (
-                        <TouchableOpacity
-                          key={i}
-                          style={[styles.suggestItem, i > 0 && styles.suggestItemBorder]}
-                          onPress={() => sendText(s.text)}
-                          activeOpacity={0.65}
-                        >
-                          <Text style={styles.suggestText}>{s.text}</Text>
-                          <Text style={styles.suggestArrow}>›</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.chipBar}
+              contentContainerStyle={styles.chipBarContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {SUGGESTIONS.map((s, i) => (
+                <TouchableOpacity key={i} style={styles.chip} onPress={() => sendText(s.text)} activeOpacity={0.7}>
+                  <Text style={styles.chipText}>{s.text}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
 
-                  </View>
-                ) : (
-                  <>
-
-                    {messages.map((m) => (
-                      <View key={m.id} style={m.sender === 'user' ? styles.rowUser : styles.rowBot}>
-                        {m.sender === 'bot' && (
-                          <View style={styles.botAvatar}>
-                            <Text style={styles.botAvatarIcon}>💬</Text>
-                          </View>
-                        )}
-                        <View style={[styles.bubble2, m.sender === 'user' ? styles.bubbleUser : styles.bubbleBot]}>
-                          <Text style={m.sender === 'user' ? styles.textUser : styles.textBot}>{m.text}</Text>
-                        </View>
-                      </View>
-                    ))}
-                    {isSending && (
-                      <View style={styles.rowBot}>
-                        <View style={styles.botAvatar}>
-                          <Text style={styles.botAvatarIcon}>💬</Text>
-                        </View>
-                        <View style={[styles.bubble2, styles.bubbleBot]}>
-                          <Text style={styles.textBot}>Đang trả lời...</Text>
-                        </View>
-                      </View>
-                    )}
-                  </>
-                )}
-              </ScrollView>
-
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.chipBar}
-                contentContainerStyle={styles.chipBarContent}
-                keyboardShouldPersistTaps="handled"
+            <View style={styles.inputBar}>
+              <TextInput
+                style={styles.input}
+                value={message}
+                onChangeText={setMessage}
+                placeholder="Nhập câu hỏi..."
+                placeholderTextColor="#94A3B8"
+                editable={!isSending}
+                multiline
+                maxLength={500}
+                onSubmitEditing={handleSend}
+                returnKeyType="send"
+              />
+              <Pressable
+                onPress={handleSend}
+                disabled={isSending || !message.trim()}
+                style={({ pressed }) => [
+                  styles.sendBtn,
+                  (isSending || !message.trim()) && styles.sendBtnDisabled,
+                  pressed && styles.sendBtnPressed,
+                ]}
               >
-                {SUGGESTIONS.map((s, i) => (
-                  <TouchableOpacity key={i} style={styles.chip} onPress={() => sendText(s.text)} activeOpacity={0.7}>
-                    <Text style={styles.chipText}>{s.text}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <View style={styles.inputBar}>
-                <TextInput
-                  style={styles.input}
-                  value={message}
-                  onChangeText={setMessage}
-                  placeholder="Nhập câu hỏi..."
-                  placeholderTextColor="#94A3B8"
-                  editable={!isSending}
-                  multiline
-                  maxLength={500}
-                  onSubmitEditing={handleSend}
-                  returnKeyType="send"
-                />
-                <Pressable
-                  onPress={handleSend}
-                  disabled={isSending || !message.trim()}
-                  style={({ pressed }) => [
-                    styles.sendBtn,
-                    (isSending || !message.trim()) && styles.sendBtnDisabled,
-                    pressed && styles.sendBtnPressed,
-                  ]}
-                >
-                  <Text style={styles.sendBtnText}>➤</Text>
-                </Pressable>
-              </View>
+                <Text style={styles.sendBtnText}>➤</Text>
+              </Pressable>
             </View>
-          </KeyboardAvoidingView>
-        </Modal>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </>
   );
 };
@@ -299,7 +329,7 @@ const styles = StyleSheet.create({
   sheet: {
     backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28,
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-    maxHeight: SCREEN.height * 0.85, minHeight: SCREEN.height * 0.60,
+    maxHeight: SCREEN.height * 0.95, minHeight: SCREEN.height * 0.70,
     width: '100%',
     shadowColor: '#000', shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.12, shadowRadius: 20, elevation: 20,
@@ -367,6 +397,7 @@ const styles = StyleSheet.create({
   bubble2: { maxWidth: '75%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18 },
   bubbleUser: { backgroundColor: '#2563EB', borderBottomRightRadius: 4 },
   bubbleBot: { backgroundColor: '#F1F5F9', borderBottomLeftRadius: 4 },
+  bubbleBotWide: { maxWidth: '88%' },
   textUser: { color: '#FFFFFF', fontSize: 15, lineHeight: 22 },
   textBot: { color: '#0F172A', fontSize: 15, lineHeight: 22 },
 

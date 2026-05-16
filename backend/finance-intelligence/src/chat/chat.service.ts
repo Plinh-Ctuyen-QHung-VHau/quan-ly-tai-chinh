@@ -52,6 +52,7 @@ export class ChatService {
       try {
         const execution = await this.executeFunction(input.user_id, name, args, categories);
         reply = execution.reply;
+        data = execution.data ?? null;
         actionPerformed = !!execution.actionPerformed;
         this.logger.log(`[Dữ liệu trả về] ${JSON.stringify(execution.data)}`);
       } catch (err) {
@@ -74,6 +75,7 @@ export class ChatService {
 
     return {
       reply,
+      data,
       metadata: { nlp_source: "ai", intent, args: result.type === "function_call" ? result.call.args : undefined },
       actionPerformed
     };
@@ -95,7 +97,7 @@ export class ChatService {
         const timeStr = args.fromDate ? `từ ${args.fromDate} đến ${args.toDate || 'nay'}` : "trong thời gian này";
 
         if (args.type === "all") {
-          return { reply: `Tổng thu nhập của bạn ${timeStr} là **${summary.total_income.toLocaleString("vi-VN")}đ** và tổng chi tiêu là **${summary.total_expense.toLocaleString("vi-VN")}đ**. Bạn còn lại **${summary.balance.toLocaleString("vi-VN")}đ**.`, data: summary };
+          return { reply: `Thu nhập: **${summary.total_income.toLocaleString("vi-VN")}đ** | Chi tiêu: **${summary.total_expense.toLocaleString("vi-VN")}đ**\nSố dư: **${summary.balance.toLocaleString("vi-VN")}đ**.`, data: summary };
         }
 
         if (args.get_top_categories && summary.category_breakdown) {
@@ -165,8 +167,9 @@ export class ChatService {
         const v2 = args.type === "income" ? (p2?.total_income || 0) : (p2?.total_expense || 0);
         const diff = Math.abs(v1 - v2);
         const compare = v1 > v2 ? "nhiều hơn" : v1 < v2 ? "ít hơn" : "bằng";
+        const trend = v1 > v2 ? "giảm" : v1 < v2 ? "tăng" : "không đổi";
         return {
-          reply: `Kỳ 1 (${args.period1?.from}→${args.period1?.to}): **${v1.toLocaleString("vi-VN")}đ**\nKỳ 2 (${args.period2?.from}→${args.period2?.to}): **${v2.toLocaleString("vi-VN")}đ**\n→ Kỳ 1 ${label} ${compare} kỳ 2 **${diff.toLocaleString("vi-VN")}đ**.`,
+          reply: `${label.charAt(0).toUpperCase() + label.slice(1)} kỳ 1: **${v1.toLocaleString("vi-VN")}đ**\nKỳ 2: **${v2.toLocaleString("vi-VN")}đ**\n→ ${trend === "không đổi" ? "Không thay đổi." : `Kỳ này ${trend} **${diff.toLocaleString("vi-VN")}đ** so với kỳ trước.`}`,
           data: { period1: p1, period2: p2 }
         };
       }
@@ -187,7 +190,7 @@ export class ChatService {
         });
         const label = args.type === "income" ? "Thu nhập" : "Chi tiêu";
         return {
-          reply: `✅ ${label} **${args.amount.toLocaleString("vi-VN")}đ** (${category.name}) đã được ghi lại.`,
+          reply: `✅ Đã lưu khoản ${label.toLowerCase()} **${args.amount.toLocaleString("vi-VN")}đ** vào **${category.name}**.`,
           data: tx,
           actionPerformed: true
         };

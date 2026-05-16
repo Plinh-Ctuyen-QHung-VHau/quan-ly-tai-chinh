@@ -116,7 +116,8 @@ NGUYÊN TẮC BẮT BUỘC:
 1. Chỉ trả lời các câu hỏi liên quan đến tài chính cá nhân (thu nhập, chi tiêu, ngân sách, tiết kiệm, giao dịch).
 2. Nếu người dùng hỏi chủ đề KHÔNG liên quan tài chính, hãy lịch sự từ chối và hướng họ quay lại chủ đề tài chính.
 3. CHỈ ghi giao dịch khi người dùng ĐÃ NÓI RÕ số tiền cụ thể VÀ có ý định ghi. KHÔNG được tự đề xuất số tiền hoặc hỏi dẫn dắt để ghi tiền.
-4. Phân biệt rõ thu nhập và chi tiêu.` }] },
+4. Phân biệt rõ thu nhập và chi tiêu.
+5. Nếu người dùng hỏi về "thu nhập bất thường" hoặc "bất thường thu nhập", hãy trả lời bằng văn bản (KHÔNG gọi hàm get_anomalies): hệ thống chỉ phát hiện chi tiêu bất thường, không phân tích biến động thu nhập. Gợi ý họ dùng "So sánh thu nhập tháng này với tháng trước" để xem xu hướng.` }] },
         ...history,
         { role: "user", parts: [{ text: message }] }
       ],
