@@ -2,94 +2,75 @@
 
 Ứng dụng di động hỗ trợ quản lý thu chi cá nhân, tích hợp OCR nhận diện hóa đơn, chatbot tài chính và phát hiện chi tiêu bất thường.
 
+## Điểm nổi bật
+
+- Quản lý giao dịch, danh mục và ngân sách cá nhân
+- OCR trích xuất dữ liệu từ ảnh hóa đơn
+- Chatbot hỗ trợ truy vấn và phân tích tài chính
+- Phát hiện các khoản chi tiêu bất thường
+- Dashboard giám sát bằng Prometheus và Grafana
+
 ## Kiến trúc
 
-Hệ thống Microservices triển khai qua Docker Compose, sử dụng Supabase làm cơ sở dữ liệu và xác thực.
+Hệ thống microservices triển khai bằng Docker Compose, sử dụng Supabase cho PostgreSQL và xác thực.
 
-| Service | Port | Mô tả |
-|---|---|---|
-| API Gateway | 3000 | Xác thực JWT, định tuyến request |
-| Identity Service | 3001 | Quản lý hồ sơ và cài đặt người dùng |
-| Transaction Service | 3002 | CRUD giao dịch, danh mục, lịch sử thu chi |
-| OCR Service | 3003 | Nhận diện và trích xuất dữ liệu từ ảnh hóa đơn |
-| Budget & Notification Service | 3004 | Quản lý ngân sách, gửi thông báo đẩy |
-| Finance Intelligence Service | 3006 | Chatbot AI, phát hiện chi tiêu bất thường |
-| Prometheus | 9090 | Thu thập metrics giám sát |
-| Grafana | 3005 | Dashboard trực quan hóa |
+| Service | Port | Trách nhiệm |
+|---|---:|---|
+| API Gateway | 3000 | Xác thực JWT và định tuyến request |
+| Identity Service | 3001 | Hồ sơ và cài đặt người dùng |
+| Transaction Service | 3002 | Giao dịch, danh mục và lịch sử thu chi |
+| OCR Service | 3003 | Nhận diện dữ liệu hóa đơn |
+| Budget & Notification Service | 3004 | Ngân sách và thông báo |
+| Finance Intelligence Service | 3006 | Chatbot và phát hiện bất thường |
+| Prometheus | 9090 | Thu thập metrics |
+| Grafana | 3005 | Dashboard giám sát |
 
 ## Công nghệ
 
-- **Frontend:** React Native, Expo, Zustand
+- **Mobile:** React Native, Expo, Zustand
 - **Backend:** NestJS, TypeScript
-- **Database:** Supabase PostgreSQL
+- **Database & Auth:** Supabase PostgreSQL
 - **AI:** Google Gemini API
 - **OCR:** Tesseract.js, Sharp
 - **Infrastructure:** Docker, Docker Compose, Prometheus, Grafana
 
-## Hướng dẫn chạy hệ thống
+## Chạy thử
 
-Yêu cầu: 1 máy host chạy cả Backend lẫn Frontend, có tài khoản Ngrok.
-
-**Bước 1 — Triển khai Backend**
-
-Tại thư mục `backend`, mở Terminal 1:
+1. Tạo các file môi trường từ template và điền credential của riêng bạn. Không commit token hoặc mật khẩu.
+2. Khởi động backend:
 
 ```bash
-docker-compose up --build -d
+cd backend
+docker compose up --build -d
 ```
 
-Mở Terminal 2, dùng tài khoản Ngrok thứ nhất để mở tunnel cho cổng 3000 và duy trì phiên này xuyên suốt quá trình kiểm thử:
+3. Cấu hình frontend:
 
-```bash
-ngrok http --domain=xbox-aware-deepen.ngrok-free.dev 3000
+```env
+EXPO_PUBLIC_API_BASE_URL=<YOUR_BACKEND_URL>
 ```
 
-**Bước 2 — Triển khai Frontend**
-
-Tại thư mục `frontend`, mở Terminal 3:
+4. Khởi động Expo:
 
 ```bash
+cd frontend
 npm install
-```
-
-Cấu hình file `.env`, đặt biến:
-
-```
-EXPO_PUBLIC_API_BASE_URL=https://xbox-aware-deepen.ngrok-free.dev
-```
-
-Dùng tài khoản Ngrok thứ hai để khởi chạy Expo Tunnel, tránh xung đột giới hạn kết nối với tài khoản đang vận hành Backend:
-
-```powershell
-$env:NGROK_AUTHTOKEN="3DRPn22jzgRgEx7SbJSqL6lMvIE_4nP7JwFXQ5FnwmbPqmc2L"
 npx expo start -c --tunnel
 ```
 
-**Bước 3 — Cài ứng dụng lên thiết bị**
-
-Android: Tải và cài trực tiếp file APK tại
-https://expo.dev/accounts/hey129/projects/ql-tai-chinh/builds/bc4bd7e3-4322-4402-b795-dca26ade579e
-
-iOS: Sau khi Expo khởi động, dùng Camera iOS quét mã QR hiển thị trong Terminal để mở ứng dụng qua Expo Go.
-
-**Tài khoản thử nghiệm**
-
-```
-Email   : truongvanhau0511@gmail.com
-Password: 1234567
-```
+Tài khoản thử nghiệm được cung cấp riêng theo yêu cầu; repository công khai không lưu thông tin đăng nhập.
 
 ## Demo
 
-https://drive.google.com/drive/u/0/folders/1DmiLFqAQDG6AMn9rlcI195tgFObR39Mf
+[Video và tài liệu demo](https://drive.google.com/drive/u/0/folders/1DmiLFqAQDG6AMn9rlcI195tgFObR39Mf)
 
-Đồ án chuyên ngành — Khoa CNTT, Trường Đại học Sài Gòn
+## Nhóm thực hiện
 
+Đồ án chuyên ngành — Khoa CNTT, Trường Đại học Sài Gòn  
 GVHD: PGS. TS. Nguyễn Tuấn Đăng
 
-| Họ và tên | MSSV |
-|---|---|
-| Trương Văn Hậu | 3122411050 |
-| Nguyễn Quốc Hùng | 3122411060 |
-| Lý Phúc Linh | 3122411111 |
-| Nguyễn Công Tuyển | 3122411239 |
+- Trương Văn Hậu
+- Nguyễn Quốc Hùng ([@nqhung212](https://github.com/nqhung212))
+- Lý Phúc Linh
+- Nguyễn Công Tuyển
+  
